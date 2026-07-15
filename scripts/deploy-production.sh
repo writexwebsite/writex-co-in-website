@@ -50,13 +50,14 @@ rsync -a --delete \
 
 ln -s "${ENV_FILE}" "${RELEASE_DIR}/.env.production"
 
-pushd "${RELEASE_DIR}" >/dev/null
-node --env-file="${ENV_FILE}" scripts/validate-production-env.mjs
-pnpm install --frozen-lockfile
-pnpm run lint
-pnpm run typecheck
-pnpm run build
-popd >/dev/null
+(
+  cd "${RELEASE_DIR}"
+  node --env-file="${ENV_FILE}" scripts/validate-production-env.mjs
+  pnpm install --frozen-lockfile
+  pnpm run lint
+  pnpm run typecheck
+  pnpm run build
+)
 
 if [[ -L "${CURRENT_LINK}" ]]; then
   PREVIOUS_TARGET="$(readlink -f "${CURRENT_LINK}")"
