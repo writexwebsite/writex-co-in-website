@@ -1,0 +1,476 @@
+WRITEX BACKEND PREPARATION MASTER SPEC v1
+=========================================
+
+Purpose
+-------
+Prepare the WriteX website backend in a controlled, production-ready way.
+
+Current state:
+The website is currently a brochure / SEO / WhatsApp lead-capture frontend.
+
+Immediate backend objective:
+Build a real lead backend before building the full LTS/PMT client portal.
+
+Backend phases:
+1. Phase 1: Quote Lead Backend
+2. Phase 2: File Upload + Email Notification
+3. Phase 3: Admin Lead Panel
+4. Phase 4: LTS/PMT Client Portal Integration
+
+Do NOT build the full client portal until LTS/PMT API details are available.
+
+Approved Stack
+--------------
+Frontend + Backend:
+- Next.js full-stack app
+
+Hosting:
+- GoDaddy VPS
+- Do not rely on basic/shared GoDaddy Node.js hosting for portal/backend
+
+Database:
+- AWS RDS PostgreSQL
+
+File Storage:
+- AWS S3 private bucket
+
+Email:
+- Resend initially
+- AWS SES-compatible later
+
+Auth:
+- Custom admin login
+- SQL admin_users table
+- Secure HTTP-only cookie/session
+- No JWT/localStorage for admin session
+
+Domain/DNS:
+- GoDaddy
+
+Future integrations:
+- LTS API
+- PMT API
+
+Core Principles
+---------------
+1. LTS will be source of truth for work/order journey.
+2. PMT will be source of truth for payment status.
+3. Website backend should never connect directly to LTS/PMT databases.
+4. Frontend should never receive database secrets, S3 secrets, or service-role keys.
+5. S3 files must be private.
+6. File access should happen using temporary signed URLs.
+7. Download unlock should later depend only on PMT settled/approved status.
+8. If a backend function is not connected, public UI must not fake it.
+
+Phase 1: Quote Lead Backend
+---------------------------
+Goal:
+When a visitor submits quote form, the lead should be saved and WriteX team should be notified.
+
+Required API:
+POST /api/quote
+
+Required fields:
+- name
+- email
+- whatsapp
+- country
+- service_required
+- academic_level
+- subject
+- word_count
+- deadline
+- instructions
+- lead_source
+- page_url
+- utm_source
+- utm_medium
+- utm_campaign
+
+Validation:
+- name required
+- whatsapp required
+- service_required required
+- deadline optional but preferred
+- email optional but validated if provided
+- instructions optional
+- reject obvious spam
+
+Response:
+Success:
+{
+  "ok": true,
+  "leadId": "...",
+  "message": "Thanks. WriteX will review your brief and respond with a quote."
+}
+
+Failure:
+{
+  "ok": false,
+  "message": "Something went wrong. Please send your brief on WhatsApp."
+}
+
+Fallback:
+If database/email is not configured, frontend should open WhatsApp with prefilled lead details.
+Do not pretend the lead has been saved.
+
+Phase 2: File Upload + Email Notification
+-----------------------------------------
+Goal:
+Allow quote form users to upload brief/rubric/draft securely.
+
+Required API:
+POST /api/upload-brief
+
+Storage:
+- AWS S3 private bucket
+- Do not make files public
+- Store file metadata in database
+- Generate private object key
+
+Allowed file types:
+- PDF
+- DOC
+- DOCX
+- PPT
+- PPTX
+- XLS
+- XLSX
+- CSV
+- JPG
+- JPEG
+- PNG
+- TXT
+- ZIP if needed
+
+File size:
+- Suggested max 25 MB initially
+
+Database:
+file_assets table
+
+Required email notifications:
+- New quote lead email to WriteX sales/support
+- Uploaded file included as secure internal reference, not public link
+- If using temporary signed links, keep expiry short
+
+Phase 3: Admin Lead Panel
+-------------------------
+Goal:
+Internal team can see quote leads and update lead status.
+
+Admin pages:
+- /admin/login
+- /admin/dashboard
+- /admin/leads
+- /admin/leads/:id
+
+Admin roles:
+- super_admin
+- sales
+- support
+- accounts
+- viewer
+
+Admin login:
+- email + password
+- password hashed using bcrypt or Argon2
+- session via secure HTTP-only cookie
+- no passwords in plain text
+- no JWT in localStorage
+
+Lead statuses:
+- new
+- contacted
+- quoted
+- converted
+- lost
+- spam
+
+Admin actions:
+- view lead
+- update status
+- add internal note
+- copy WhatsApp message
+- open WhatsApp
+- view uploaded file metadata
+- create signed file link if authorized
+
+Phase 4: LTS/PMT Client Portal Integration
+------------------------------------------
+Do this later after API details are available.
+
+Future client portal:
+- /client-login
+- /client/dashboard
+
+Client login:
+- Invoice ID
+- Registered WhatsApp number
+- OTP verification
+
+Data sources:
+- LTS: journey/order progress/files
+- PMT: invoice/payment status/payment instructions
+
+Client dashboard:
+- Greeting with client name
+- Invoice summary
+- Work journey
+- Preview locked/unlocked
+- Payment details
+- Download locked until payment settled
+- WhatsApp support CTA
+
+Preview/download:
+- Preview = watermarked PDF where possible
+- Final download = locked until PMT settled/approved
+- Download URL = temporary signed S3 URL
+- Every preview/download event logged
+
+Database Schema
+---------------
+
+admin_users:
+- id uuid primary key
+- name text not null
+- email text unique not null
+- password_hash text not null
+- role text not null
+- is_active boolean default true
+- last_login_at timestamptz
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+quote_leads:
+- id uuid primary key
+- name text not null
+- email text
+- whatsapp text not null
+- country text
+- service_required text not null
+- academic_level text
+- subject text
+- word_count integer
+- deadline date
+- instructions text
+- uploaded_file_asset_id uuid
+- source text
+- page_url text
+- utm_source text
+- utm_medium text
+- utm_campaign text
+- status text default 'new'
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+file_assets:
+- id uuid primary key
+- invoice_id text
+- quote_lead_id uuid
+- asset_type text not null
+- s3_key text not null
+- file_name text not null
+- mime_type text
+- file_size integer
+- uploaded_by text
+- created_at timestamptz default now()
+
+lead_notes:
+- id uuid primary key
+- lead_id uuid not null
+- admin_user_id uuid
+- note text not null
+- created_at timestamptz default now()
+
+client_sessions:
+- id uuid primary key
+- invoice_id text not null
+- whatsapp text not null
+- session_token_hash text not null
+- expires_at timestamptz not null
+- created_at timestamptz default now()
+- last_seen_at timestamptz
+- ip_address text
+- user_agent text
+
+otp_attempts:
+- id uuid primary key
+- invoice_id text not null
+- whatsapp text not null
+- otp_hash text not null
+- expires_at timestamptz not null
+- attempts integer default 0
+- verified_at timestamptz
+- created_at timestamptz default now()
+
+portal_invoice_cache:
+- id uuid primary key
+- invoice_id text unique not null
+- client_name text
+- whatsapp text
+- service_type text
+- subject text
+- deadline timestamptz
+- total_amount numeric
+- paid_amount numeric
+- balance_amount numeric
+- currency text
+- payment_status text
+- work_status text
+- raw_lts_payload jsonb
+- raw_pmt_payload jsonb
+- synced_at timestamptz
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+preview_download_logs:
+- id uuid primary key
+- invoice_id text not null
+- client_session_id uuid
+- action text not null
+- ip_address text
+- user_agent text
+- created_at timestamptz default now()
+
+payment_events:
+- id uuid primary key
+- invoice_id text not null
+- event_type text not null
+- amount numeric
+- payment_status text
+- source text
+- raw_payload jsonb
+- created_at timestamptz default now()
+
+integration_logs:
+- id uuid primary key
+- system text not null
+- endpoint text
+- request_id text
+- status text
+- error_message text
+- created_at timestamptz default now()
+
+Environment Variables
+---------------------
+Create .env.example:
+
+NEXT_PUBLIC_SITE_URL=https://www.writex.co.in
+NEXT_PUBLIC_WHATSAPP_NUMBER=918100977068
+
+DATABASE_URL=
+
+AWS_REGION=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=
+AWS_S3_PRIVATE_PREFIX=
+
+RESEND_API_KEY=
+QUOTE_NOTIFICATION_EMAIL=
+ACCOUNTS_NOTIFICATION_EMAIL=
+
+LTS_API_BASE_URL=
+LTS_API_KEY=
+PMT_API_BASE_URL=
+PMT_API_KEY=
+
+AUTH_COOKIE_NAME=writex_admin_session
+AUTH_COOKIE_SECRET=
+OTP_SECRET=
+OTP_EXPIRY_SECONDS=300
+
+Security Requirements
+---------------------
+- Use secure HTTP-only cookies
+- No auth/session token in localStorage
+- Hash passwords using bcrypt or Argon2
+- Hash OTPs, do not store plain OTP
+- Rate limit login and OTP attempts
+- Validate inputs with Zod or equivalent
+- Log preview/download/payment events
+- Signed URLs must expire
+- No public S3 objects
+- No secrets exposed to frontend
+- Server-side payment verification only
+- Public UI must not show mock backend/TODO text
+
+Folder Structure
+----------------
+Suggested:
+
+/app/api/quote/route.ts
+/app/api/upload-brief/route.ts
+/app/api/admin/login/route.ts
+/app/api/admin/logout/route.ts
+/app/api/admin/me/route.ts
+/app/api/admin/leads/route.ts
+/app/api/admin/leads/[id]/route.ts
+
+/lib/db
+/lib/auth
+/lib/validation
+/lib/storage/s3.ts
+/lib/notifications/email.ts
+/lib/integrations/lts.ts
+/lib/integrations/pmt.ts
+/lib/security/rate-limit.ts
+/lib/security/audit-log.ts
+
+/db/schema.sql
+/db/migrations
+
+/app/admin/login/page.tsx
+/app/admin/dashboard/page.tsx
+/app/admin/leads/page.tsx
+/app/admin/leads/[id]/page.tsx
+
+Immediate Build Scope
+---------------------
+Build now:
+- Database schema/migrations
+- .env.example
+- Quote lead API
+- S3 upload helper
+- Email notification helper
+- Admin login basics
+- Admin lead list basics
+- LTS/PMT placeholder adapters
+- README backend section
+
+Do NOT build now:
+- Full client portal
+- Payment-gated download
+- Real LTS/PMT calls without credentials
+- Fake preview/download
+- Fake upload success
+
+Production Behaviour
+--------------------
+If database/S3/email is configured:
+- Quote form saves lead
+- File uploads to S3
+- Email notification sent
+
+If not configured:
+- Quote form should fallback to WhatsApp
+- File upload should not pretend success
+- UI should guide user to WhatsApp
+
+Final QA
+--------
+Run:
+- lint
+- typecheck
+- build
+
+Verify:
+- No localhost URLs
+- No public mock backend text
+- No secrets in frontend
+- No fake success state
+- WhatsApp fallback works
+- Quote API validates data
+- S3 helper uses private storage
+- Admin auth uses secure cookies

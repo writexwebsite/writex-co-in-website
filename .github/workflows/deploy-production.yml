@@ -1,0 +1,73 @@
+name: Deploy WriteX production manually
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Commit, tag, or branch to deploy
+        required: true
+        default: main
+      confirmation:
+        description: Type DEPLOY_WRITEX_CO_IN
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: writex-co-in-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: inputs.confirmation == 'DEPLOY_WRITEX_CO_IN'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out approved revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Configure pinned SSH host
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.LIGHTSAIL_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package release source
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=.next \
+            --exclude=node_modules \
+            --exclude='.env*' \
+            --exclude='*.log' \
+            --exclude='.codex-*' \
+            -czf release-source.tgz .
+
+      - name: Upload release source
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: scp release-source.tgz "${USER}@${HOST}:/tmp/writex-co-in-${GITHUB_RUN_ID}.tgz"
+
+      - name: Run isolated deployment
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          ssh "${USER}@${HOST}" "RUN_ID='${GITHUB_RUN_ID}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          source_dir="$(mktemp -d /tmp/writex-co-in-source.XXXXXX)"
+          archive="/tmp/writex-co-in-${RUN_ID}.tgz"
+          cleanup() { rm -rf -- "$source_dir" "$archive"; }
+          trap cleanup EXIT
+          tar -xzf "$archive" -C "$source_dir"
+          SOURCE_DIR="$source_dir" bash "$source_dir/scripts/deploy-production.sh"
+          REMOTE

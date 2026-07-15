@@ -1,0 +1,763 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --wx-violet: #5516f2;
+  --wx-violet-soft: #8534ed;
+  --wx-magenta: #b42ce0;
+  --wx-pink: #e83874;
+  --wx-red: #e72d35;
+  --wx-orange: #fa5a3c;
+  --wx-blue: #0b81f7;
+  --wx-blue-soft: #68a1f2;
+  --wx-green: #1ecc6f;
+  --wx-text-primary: #101f5c;
+  --wx-text-secondary: #4b568d;
+  --wx-text-muted: #717ba4;
+  --wx-bg-elevated: #ffffff;
+  --wx-surface-elevated: #ffffff;
+  --wx-violet-700: #5516f2;
+  --wx-violet-500: #8534ed;
+  --wx-magenta-500: #b42ce0;
+  --wx-pink-500: #e83874;
+  --wx-red-500: #e72d35;
+  --wx-orange-500: #fa6a3e;
+  --wx-blue-500: #0b81f7;
+  --wx-blue-300: #68a1f2;
+  --wx-green-500: #1ecc6f;
+  --wx-indigo-900: #1c2775;
+  --wx-indigo-700: #263671;
+  --wx-indigo-500: #44508c;
+  --wx-bg: #f7f8ff;
+  --wx-surface: #ffffff;
+  --wx-surface-soft: #f5f1ff;
+  --wx-surface-blush: #fbf1fc;
+  --wx-border: rgba(85, 22, 242, 0.11);
+  --wx-border-strong: rgba(85, 22, 242, 0.22);
+  --wx-muted: #bebfd8;
+  --color-brand-primary: var(--wx-violet);
+  --color-brand-secondary: var(--wx-blue);
+  --color-brand-gradient: linear-gradient(
+    100deg,
+    #5516f2 0%,
+    #8534ed 24%,
+    #b42ce0 46%,
+    #e83874 70%,
+    #e72d35 86%,
+    #fa6a3e 100%
+  );
+  --color-action-primary: linear-gradient(
+    100deg,
+    #4b12dc 0%,
+    #7627da 28%,
+    #a824c8 50%,
+    #d72d69 74%,
+    #d84315 100%
+  );
+  --color-action-secondary: #ffffff;
+  --color-bg-page: var(--wx-bg);
+  --color-bg-soft: var(--wx-surface-soft);
+  --color-surface: var(--wx-surface);
+  --color-border: var(--wx-border);
+  --color-text-primary: var(--wx-text-primary);
+  --color-text-secondary: var(--wx-text-secondary);
+  --color-success: var(--wx-green);
+  --color-warning: var(--wx-orange);
+  --color-danger: var(--wx-red);
+  --color-info: var(--wx-blue);
+  --background: var(--color-bg-page);
+  --foreground: var(--color-text-primary);
+  --wx-duration-fast: 120ms;
+  --wx-duration-normal: 220ms;
+  --wx-duration-slow: 420ms;
+  --wx-ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --wx-page-canvas: radial-gradient(circle at 82% 18%, rgba(232,56,116,.13), transparent 30%), radial-gradient(circle at 68% 70%, rgba(85,22,242,.12), transparent 36%), linear-gradient(135deg, #fff 0%, #f6f3ff 55%, #fbf1fc 100%);
+  --wx-soft-band: linear-gradient(180deg, #fff 0%, #f7f8ff 52%, #fbf1fc 100%);
+  --wx-header: rgba(255, 255, 255, 0.9);
+  --wx-footer: rgba(255, 255, 255, 0.68);
+  --wx-legacy-strong: #1c2775;
+  --wx-shadow: 0 18px 52px rgba(85, 22, 242, 0.1);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --wx-bg: #090d25;
+  --wx-bg-elevated: #0f1433;
+  --wx-surface: #171c40;
+  --wx-surface-elevated: #1d234b;
+  --wx-surface-soft: #202751;
+  --wx-surface-blush: #191e43;
+  --wx-border: rgba(177, 159, 255, 0.16);
+  --wx-border-strong: rgba(177, 159, 255, 0.28);
+  --wx-text-primary: #f7f8ff;
+  --wx-text-secondary: #b8c0df;
+  --wx-text-muted: #858fb8;
+  --wx-violet: #8b5cff;
+  --wx-violet-soft: #a17cff;
+  --wx-blue: #4fa5ff;
+  --wx-blue-soft: #7abaff;
+  --wx-magenta: #d55bef;
+  --wx-pink: #ff5c9c;
+  --wx-orange: #ff7a45;
+  --wx-green: #34d17b;
+  --wx-red: #ff6674;
+  --wx-page-canvas: radial-gradient(circle at 78% 15%, rgba(232,56,116,.14), transparent 30%), radial-gradient(circle at 18% 78%, rgba(85,22,242,.20), transparent 36%), linear-gradient(135deg, #080b20 0%, #0f1433 54%, #201657 100%);
+  --wx-soft-band: linear-gradient(180deg, #0f1433 0%, #090d25 52%, #171c40 100%);
+  --wx-header: rgba(9, 13, 37, 0.88);
+  --wx-footer: linear-gradient(135deg, #080b20 0%, #11173a 55%, #22145a 100%);
+  --wx-legacy-strong: #1d234b;
+  --wx-shadow: 0 18px 52px rgba(0, 0, 0, 0.28);
+  --color-action-secondary: #171c40;
+}
+
+html[data-axo-paused] [class*="animate-"],
+html[data-axo-paused] .wx-axo-roam,
+html[data-axo-paused] .wx-axo-emotion {
+  animation-play-state: paused !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  background-image: var(--wx-page-canvas);
+  background-attachment: fixed;
+}
+
+html[data-theme-ready="true"] body,
+html[data-theme-ready="true"] header,
+html[data-theme-ready="true"] footer,
+html[data-theme-ready="true"] [class*="bg-"] {
+  transition: background-color 190ms ease, border-color 190ms ease, color 190ms ease, box-shadow 190ms ease;
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] [class*="bg-white/"],
+html[data-theme="dark"] [class*="bg-white\["] {
+  background-color: var(--wx-surface) !important;
+}
+
+html[data-theme="dark"] .bg-warmIvory { background-color: var(--wx-surface) !important; }
+html[data-theme="dark"] .bg-paleSage { background-color: var(--wx-bg-elevated) !important; }
+
+html[data-theme="dark"] [class*="border-white/"] { border-color: var(--wx-border) !important; }
+html[data-theme="dark"] [class*="text-black"] { color: var(--wx-text-primary) !important; }
+
+html[data-theme="dark"] table { color: var(--wx-text-primary); }
+html[data-theme="dark"] thead { background-color: var(--wx-surface-soft); }
+html[data-theme="dark"] tbody tr { border-color: var(--wx-border); }
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background-color: #111633;
+  border-color: var(--wx-border);
+  color: var(--wx-text-primary);
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: var(--wx-text-muted);
+  opacity: 1;
+}
+
+html[data-theme="dark"] option { background: #171c40; color: #f7f8ff; }
+
+html[data-theme="dark"] .shadow-soft,
+html[data-theme="dark"] .shadow-lift { box-shadow: var(--wx-shadow); }
+
+html[data-theme="dark"] .wx-brand-logo-image {
+  filter: grayscale(1) brightness(0) invert(1);
+  opacity: 0.94;
+}
+
+html[data-theme="dark"] .wx-spectrum-media { opacity: 0.09 !important; mix-blend-mode: screen; }
+html[data-theme="dark"] .wx-spectrum-overlay { background: var(--wx-page-canvas) !important; opacity: 0.96; }
+html[data-theme="dark"] .wx-login-illustration { opacity: 1; mix-blend-mode: normal; filter: none; }
+
+.wx-auth-shell {
+  isolation: isolate;
+  background: #f7f8ff;
+}
+
+.wx-auth-unified-background {
+  background-color: #f7f8ff;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.28)),
+    url("/images/backgrounds/writex-spectrum-bg-login.webp");
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.wx-auth-global-facets {
+  opacity: 0.78;
+}
+
+.wx-auth-global-ambience {
+  background:
+    radial-gradient(circle at 82% 24%, rgba(232, 56, 116, 0.10), transparent 27%),
+    radial-gradient(circle at 41% 58%, rgba(85, 22, 242, 0.08), transparent 31%),
+    linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.16));
+}
+
+.wx-auth-brand-panel {
+  background: transparent;
+}
+
+.wx-auth-left-elements {
+  z-index: 1;
+  overflow: hidden;
+}
+
+.wx-auth-crystal {
+  position: absolute;
+  display: block;
+  bottom: 0;
+  filter: saturate(1.04) drop-shadow(0 10px 20px rgba(85, 22, 242, 0.12));
+}
+
+.wx-auth-crystal-cluster {
+  z-index: 12;
+  bottom: 3.6%;
+  left: -0.4%;
+  width: clamp(6rem, 8vw, 8rem);
+  height: clamp(6.5rem, 12vh, 8rem);
+}
+
+.wx-auth-crystal-a {
+  left: 0;
+  width: 34%;
+  height: 100%;
+  opacity: 0.72;
+  background:
+    linear-gradient(118deg, transparent 48.8%, rgba(255,255,255,.72) 49.5%, transparent 50.5%),
+    linear-gradient(28deg, transparent 49%, rgba(255,255,255,.58) 49.8%, transparent 50.8%),
+    conic-gradient(from 205deg at 48% 68%, #345ff0, #8bd8ff 17%, #7651ef 34%, #d2c1ff 54%, #476af2 74%, #9ee3ff);
+  clip-path: polygon(4% 100%, 48% 0, 100% 100%);
+}
+
+.wx-auth-crystal-b {
+  left: 22%;
+  width: 38%;
+  height: 63%;
+  opacity: 0.68;
+  background:
+    linear-gradient(142deg, transparent 49%, rgba(255,255,255,.62) 49.8%, transparent 50.8%),
+    conic-gradient(from 220deg at 54% 66%, #5634cf, #b38cff 25%, #e6dcff 48%, #7858e8 70%, #5d8df5);
+  clip-path: polygon(0 100%, 52% 0, 100% 100%);
+}
+
+.wx-auth-crystal-c {
+  left: 48%;
+  width: 31%;
+  height: 78%;
+  opacity: 0.56;
+  background:
+    linear-gradient(128deg, transparent 49%, rgba(255,255,255,.7) 49.8%, transparent 51%),
+    conic-gradient(from 214deg at 52% 70%, #7563df, #d5c9ff 32%, #f5ddf5 55%, #a577e7 76%, #6a83e7);
+  clip-path: polygon(0 100%, 54% 0, 100% 100%);
+}
+
+.wx-auth-crystal-d {
+  left: 67%;
+  width: 28%;
+  height: 42%;
+  opacity: 0.52;
+  background:
+    linear-gradient(135deg, transparent 49%, rgba(255,255,255,.72) 50%, transparent 51%),
+    conic-gradient(from 210deg at 50% 72%, #5f71dc, #c7bcff 35%, #f0e9ff 58%, #8e6ee5 80%, #698be8);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+}
+
+.wx-auth-crystal-e {
+  left: 80%;
+  width: 20%;
+  height: 25%;
+  opacity: 0.42;
+  background: linear-gradient(145deg, #9db9f8, #e8ddff 52%, #a67de8);
+  clip-path: polygon(0 100%, 58% 0, 100% 100%);
+}
+
+.wx-auth-platform-light {
+  position: absolute;
+  right: 4%;
+  bottom: 0.5%;
+  width: 78%;
+  height: 11%;
+  border-radius: 50%;
+  opacity: 0.38;
+  background: radial-gradient(ellipse at center, rgba(180,44,224,.42), rgba(11,129,247,.14) 45%, transparent 72%);
+  filter: blur(14px);
+}
+
+.wx-auth-card {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 28px 80px rgba(50, 34, 120, 0.14);
+  -webkit-backdrop-filter: blur(22px) saturate(1.12);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+
+.wx-auth-card::before {
+  content: none;
+}
+
+.wx-auth-field {
+  background: rgba(255, 255, 255, 0.76);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+html[data-theme="dark"] .wx-auth-unified-background {
+  background-color: #080b20;
+  background-image:
+    linear-gradient(135deg, rgba(8,11,32,.70), rgba(20,14,60,.64)),
+    url("/images/backgrounds/writex-spectrum-bg-login.webp");
+  filter: saturate(0.92) brightness(0.64);
+}
+
+html[data-theme="dark"] .wx-auth-global-facets {
+  opacity: 0.22;
+  mix-blend-mode: screen;
+}
+
+html[data-theme="dark"] .wx-auth-global-ambience {
+  background:
+    radial-gradient(circle at 82% 25%, rgba(232,56,116,.18), transparent 27%),
+    radial-gradient(circle at 40% 56%, rgba(85,22,242,.23), transparent 32%);
+}
+
+html[data-theme="dark"] .wx-auth-crystal {
+  filter: saturate(0.88) brightness(0.78) drop-shadow(0 12px 24px rgba(137, 83, 255, 0.18));
+}
+
+html[data-theme="dark"] .wx-auth-platform-light {
+  opacity: 0.24;
+}
+
+html[data-theme="dark"] .wx-auth-card {
+  background: rgba(17, 22, 50, 0.84);
+  border-color: rgba(190, 191, 216, 0.16);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.34);
+}
+
+html[data-theme="dark"] .wx-auth-field {
+  background: rgba(8, 11, 32, 0.56);
+  border-color: rgba(190, 191, 216, 0.18);
+}
+
+@media (min-width: 1024px) {
+  .wx-auth-shell .wx-auth-card {
+    padding: 1.5rem !important;
+  }
+
+  .wx-auth-card-logo {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .wx-auth-card-logo-mark {
+    width: 16rem !important;
+    height: 4rem !important;
+  }
+
+  .wx-auth-form > .mt-7 {
+    margin-top: 1.25rem !important;
+  }
+
+  .wx-auth-form > .mt-6,
+  .wx-auth-form > .mt-5 {
+    margin-top: 1rem !important;
+  }
+
+  .wx-auth-form > .mt-4 {
+    margin-top: 0.875rem !important;
+  }
+
+  .wx-auth-form .wx-auth-field,
+  .wx-auth-form button[type="submit"] {
+    min-height: 3.25rem !important;
+    height: 3.25rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .wx-auth-shell .wx-auth-card {
+    min-height: 0 !important;
+    padding: 1.25rem 2rem !important;
+  }
+
+  .wx-auth-shell aside {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .wx-auth-card-logo {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .wx-auth-card-logo-mark {
+    width: 14rem !important;
+    height: 3.5rem !important;
+  }
+
+  .wx-auth-form h1 {
+    font-size: 1.75rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .wx-auth-form h1 + p {
+    margin-top: 0.45rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.4rem !important;
+  }
+
+  .wx-auth-form > .mt-7,
+  .wx-auth-form > .mt-6,
+  .wx-auth-form > .mt-5 {
+    margin-top: 0.85rem !important;
+  }
+
+  .wx-auth-form > .mt-4 {
+    margin-top: 0.65rem !important;
+  }
+
+  .wx-auth-form .wx-auth-field {
+    height: 3rem !important;
+  }
+
+  .wx-auth-form button[type="submit"] {
+    min-height: 3rem !important;
+  }
+
+  .wx-auth-brand-copy {
+    left: 7.5% !important;
+    top: 3.5% !important;
+  }
+
+  .wx-auth-hero-logo {
+    width: 17rem !important;
+    height: 3.75rem !important;
+  }
+
+  .wx-auth-brand-copy h2 {
+    margin-top: 0.75rem !important;
+    max-width: 19rem !important;
+    font-size: 1.6rem !important;
+  }
+
+  .wx-auth-brand-copy p {
+    margin-top: 0.5rem !important;
+    max-width: 18rem !important;
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  .wx-auth-brand-copy > span {
+    margin-top: 0.75rem !important;
+  }
+
+  .wx-auth-art-stage {
+    top: -3% !important;
+    bottom: -2% !important;
+  }
+
+  .wx-auth-crystal-cluster {
+    width: 6.25rem !important;
+    height: 5.75rem !important;
+    bottom: 3.2% !important;
+  }
+}
+
+.wx-axo-entrance { animation: wx-axo-entrance 620ms var(--wx-ease-premium) both; }
+@keyframes wx-axo-entrance { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.wx-axo-roam {
+  animation: wx-axo-roam 6.8s cubic-bezier(.45, 0, .25, 1) infinite;
+  transform-origin: 70% 100%;
+  will-change: transform;
+}
+
+.wx-axo-emotion {
+  animation: wx-axo-breathe 3.4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+.wx-axo-emotion-welcoming,
+.wx-axo-emotion-pleased { animation-name: wx-axo-wave; animation-duration: 2.4s; }
+.wx-axo-emotion-curious { animation-name: wx-axo-curious; animation-duration: 2.2s; }
+.wx-axo-emotion-thinking { animation-name: wx-axo-thinking; animation-duration: 2.9s; }
+.wx-axo-emotion-attentive,
+.wx-axo-emotion-guiding { animation-name: wx-axo-attentive; animation-duration: 2.7s; }
+.wx-axo-emotion-successful { animation-name: wx-axo-celebrate; animation-duration: 1.4s; animation-iteration-count: 2; }
+
+@keyframes wx-axo-roam {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  24% { transform: translate3d(-18px, -9px, 0) rotate(-2deg); }
+  52% { transform: translate3d(-7px, -14px, 0) rotate(1.5deg); }
+  76% { transform: translate3d(-14px, -4px, 0) rotate(-1deg); }
+}
+@keyframes wx-axo-breathe { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(0, -4px, 0) scale(1.025); } }
+@keyframes wx-axo-wave { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); } 50% { transform: translate3d(0, -7px, 0) rotate(3deg) scale(1.04); } }
+@keyframes wx-axo-curious { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0); } 45% { transform: translate3d(5px, -3px, 0) rotate(-4deg); } }
+@keyframes wx-axo-thinking { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); } 50% { transform: translate3d(0, -3px, 0) rotate(2deg); } }
+@keyframes wx-axo-attentive { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(0, -4px, 0) scale(1.045); } }
+@keyframes wx-axo-celebrate { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(0, -8px, 0) scale(1.06); } }
+html[data-theme="dark"] footer { background: var(--wx-footer); border-top-color: var(--wx-border-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-ready="true"] body,
+  html[data-theme-ready="true"] header,
+  html[data-theme-ready="true"] footer,
+  html[data-theme-ready="true"] [class*="bg-"] { transition: none !important; }
+}
+
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: var(--wx-violet);
+  color: #ffffff;
+}
+
+.wx-gradient-action {
+  background: var(--color-action-primary);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(132, 52, 237, 0.22);
+}
+
+.wx-gradient-action:hover {
+  box-shadow: 0 20px 40px rgba(216, 45, 105, 0.24);
+}
+
+.wx-gradient-text {
+  background: var(--color-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#quote {
+  scroll-margin-top: 96px;
+}
+
+.wx-reveal,
+.wx-reveal-up,
+.wx-fade-in,
+.wx-stagger,
+.wx-image-reveal,
+.wx-process-step,
+.wx-card-hover {
+  will-change: opacity, transform, filter;
+}
+
+.wx-card-hover {
+  transition:
+    border-color var(--wx-duration-normal) var(--wx-ease-premium),
+    box-shadow var(--wx-duration-normal) var(--wx-ease-premium),
+    background-color var(--wx-duration-normal) var(--wx-ease-premium);
+}
+
+.wx-card-hover:hover {
+  box-shadow: 0 14px 34px rgba(7, 31, 51, 0.11);
+}
+
+.wx-cta-glow {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform var(--wx-duration-normal) var(--wx-ease-premium),
+    border-color var(--wx-duration-normal) var(--wx-ease-premium),
+    background-color var(--wx-duration-normal) var(--wx-ease-premium),
+    box-shadow var(--wx-duration-normal) var(--wx-ease-premium);
+}
+
+.wx-cta-glow::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 34%,
+    rgba(232, 56, 116, 0.18) 52%,
+    transparent 72%
+  );
+  opacity: 0;
+  transform: translateX(-36%);
+  transition:
+    opacity var(--wx-duration-normal) var(--wx-ease-premium),
+    transform var(--wx-duration-slow) var(--wx-ease-premium);
+}
+
+.wx-cta-glow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(7, 31, 51, 0.14);
+}
+
+.wx-cta-glow:hover::after {
+  opacity: 1;
+  transform: translateX(36%);
+}
+
+.wx-soft-float {
+  animation: wx-soft-float 420ms var(--wx-ease-premium) both;
+}
+
+.wx-admin-enter {
+  animation: wx-admin-enter var(--wx-duration-slow) var(--wx-ease-premium) both;
+}
+
+.wx-row-hover {
+  transition:
+    background-color var(--wx-duration-normal) var(--wx-ease-premium),
+    border-color var(--wx-duration-normal) var(--wx-ease-premium),
+    transform var(--wx-duration-fast) var(--wx-ease-premium);
+}
+
+.wx-row-hover:hover {
+  transform: translateY(-1px);
+}
+
+.wx-critical-pulse {
+  animation: wx-critical-pulse 1.8s var(--wx-ease-premium) infinite;
+}
+
+.wx-skeleton {
+  background: linear-gradient(90deg, #f3ebfd 0%, #ffffff 48%, #f3ebfd 100%);
+  background-size: 200% 100%;
+  animation: wx-skeleton 1.2s var(--wx-ease-premium) infinite;
+}
+
+@keyframes wx-soft-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes wx-admin-enter {
+  from {
+    opacity: 0.88;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wx-critical-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(230, 107, 31, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(230, 107, 31, 0.12);
+  }
+}
+
+@keyframes wx-skeleton {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.premium-container {
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .premium-container {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .premium-container {
+    padding-inline: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .wx-cta-glow:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .wx-cta-glow::after {
+    display: none;
+  }
+
+  .wx-admin-enter,
+  .wx-critical-pulse,
+  .wx-skeleton,
+  .wx-soft-float {
+    animation: none !important;
+  }
+
+  .wx-row-hover:hover {
+    transform: none;
+  }
+
+  .wx-axo-entrance,
+  .wx-axo-roam,
+  .wx-axo-emotion { animation: none !important; }
+}

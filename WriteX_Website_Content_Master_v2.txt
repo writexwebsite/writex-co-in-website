@@ -1,0 +1,1367 @@
+WRITEX WEBSITE CONTENT MASTER PACK V2
+For Codex Implementation
+Prepared for: WriteX Academic Support Website
+Format: Plain Notepad / .txt
+Purpose: Replace cluttered, risky, assignment-writing style content with clean, premium, SEO-safe, brand-led website copy.
+
+================================================================================
+0. CORE STRATEGIC POSITIONING
+================================================================================
+
+Public brand name:
+WriteX Academic Support
+
+Primary category:
+Academic Support & Review
+
+Brand positioning:
+Premium academic support for university students who need clarity before deadlines.
+
+Core brand line:
+Academic Support for Complex Briefs, Tight Deadlines, and Serious Students
+
+Short brand description:
+WriteX helps students review, structure, edit, reference, and improve academic documents through confidential research guidance, academic editing, originality review, formatting, referencing, and QA-led support.
+
+What WriteX should feel like:
+- Premium
+- Academic
+- Clean
+- Process-driven
+- Confidential
+- Serious but not cold
+- Modern but not gimmicky
+- Helpful but not desperate
+- Capable of supporting both student academic work and future corporate documentation credibility
+
+What WriteX should NOT feel like:
+- Assignment writing vendor
+- Essay mill
+- Cheap freelancer marketplace
+- Coaching institute
+- Homework help shop
+- AI tool
+- Generic content agency
+- Over-explaining documentation page
+
+Main business goal of website:
+Convert qualified students into WhatsApp enquiries or scope-based quote requests while protecting WriteX's long-term brand credibility.
+
+================================================================================
+1. LANGUAGE RULES
+================================================================================
+
+PRIMARY WORDS TO USE:
+- Academic support
+- Academic review
+- Coursework support
+- University brief
+- Research guidance
+- Academic editing
+- Proofreading
+- Document improvement
+- Dissertation support
+- Thesis support
+- SOP and admissions support
+- Originality review
+- AI review
+- Formatting and referencing
+- Citation review
+- Model solutions for learning
+- QA-led workflow
+- Scope-based quote
+- Confidential support
+- Brief review
+- Rubric review
+
+SECONDARY WORDS TO USE CAREFULLY:
+- Assignment support
+- University assignment support
+- Coursework brief
+- Academic writing support
+
+CONTROLLED SEO USE ONLY:
+- Assignment writing
+- Essay writing
+- Assignment help
+
+These should NOT appear in:
+- Homepage hero
+- Main navigation
+- CTA buttons
+- Main public positioning
+- Trust sections
+
+These may appear only in:
+- FAQ question with safe answer
+- Help centre educational content
+- SEO metadata carefully, preferably as "assignment support" not "assignment writing"
+
+FORBIDDEN WORDS / PHRASES:
+- Ghostwriting
+- We write your exam
+- Complete your assignment
+- Submit as your own
+- Guaranteed grades
+- Guaranteed marks
+- Paper works / exams
+- Cheap assignment writing
+- Do my assignment
+- Best essay writing service
+- Pay someone to do assignment
+- 100% grade guarantee
+- Any language suggesting academic misconduct
+
+SAFE FAQ WORDING FOR SEO:
+Question:
+Is this an assignment writing service?
+
+Answer:
+WriteX positions its work as academic support and review, not academic misconduct. Students can request research guidance, structure review, academic editing, formatting, referencing support, originality review, and model solutions for learning. Students are responsible for following their institution's academic integrity policies.
+
+================================================================================
+2. SITE ARCHITECTURE
+================================================================================
+
+Launch pages:
+1. Home
+2. Coursework & Brief Support
+3. Dissertation & Thesis Support
+4. Academic Editing & Proofreading
+5. SOP & Admissions Support
+6. Originality & AI Review
+7. Formatting & Referencing Support
+8. Pricing / Scope-Based Quote
+9. Samples
+10. Contact
+11. Privacy
+12. Terms
+
+SEO phase 2 pages:
+1. MBA Coursework Support
+2. Management Coursework Support
+3. Nursing Academic Support
+4. Law Academic Support
+5. Finance Academic Support
+6. Marketing Academic Support
+7. Psychology Academic Support
+8. Computer Science Academic Support
+
+Help centre phase 2:
+1. How to Structure a University Brief
+2. How to Write a Dissertation Literature Review
+3. Harvard Referencing Guide
+4. APA Referencing Guide
+5. How to Reduce Similarity Ethically
+6. Dissertation Proposal Checklist
+7. SOP Writing Mistakes to Avoid
+8. How to Manage Urgent Academic Deadlines
+
+================================================================================
+3. NAVIGATION COPY
+================================================================================
+
+Header navigation:
+- Services
+- Dissertation
+- Editing
+- SOP
+- Originality Review
+- Pricing
+- Contact
+- Get Quote
+
+Services dropdown:
+- Coursework & Brief Support
+- Dissertation & Thesis Support
+- Academic Editing & Proofreading
+- SOP & Admissions Support
+- Originality & AI Review
+- Formatting & Referencing Support
+
+Primary CTA:
+Send Brief on WhatsApp
+
+Secondary CTA:
+Get Quote
+
+Short CTA variants:
+- Start Quote Request
+- Share Your Brief
+- Get Scope-Based Quote
+- Send Brief
+- Continue to Quote Form
+
+Avoid:
+- Instant Quote, unless actual automated pricing exists
+- Upload Brief for Quote, unless real upload backend exists
+- Assignment Writing
+- Order Now
+- Buy Now
+
+================================================================================
+4. HOMEPAGE CONTENT
+================================================================================
+
+SEO TITLE:
+Premium Academic Support for University Students | WriteX
+
+META DESCRIPTION:
+WriteX provides confidential academic support, research guidance, academic editing, dissertation support, SOP/admissions support, originality review, formatting, and referencing for university students.
+
+CANONICAL:
+https://www.writex.co.in/
+
+H1:
+Academic Support for Complex Briefs, Tight Deadlines, and Serious Students
+
+Hero subheadline:
+WriteX helps students review, structure, edit, reference, and improve academic documents through confidential research guidance, academic editing, originality review, and QA-led support.
+
+Hero microcopy:
+Share your brief, deadline, and files. WriteX reviews the scope before quoting.
+
+Hero CTAs:
+Primary: Send Brief on WhatsApp
+Secondary: Get Quote
+
+Hero trust line:
+10+ years of academic support experience. 150+ team capability. Confidential handling. QA-led workflow.
+
+Hero workflow labels:
+- Brief
+- Scope Review
+- Expert Match
+- QA Check
+- Quote
+
+Hero visual instruction:
+Keep the visual calm. Do not show too many floating cards. Do not overload the hero with tiny labels, dense grid backgrounds, or excessive animation. The headline and CTA must remain the visual priority.
+
+------------------------------------------------------------
+HOMEPAGE SECTION: TRUST STRIP
+------------------------------------------------------------
+
+Section objective:
+Build immediate legitimacy without adding long text.
+
+Trust item 1:
+10+ Years
+Academic and research-led document support experience.
+
+Trust item 2:
+150+ Team Capability
+Writers, editors, researchers, QA, and project coordination support.
+
+Trust item 3:
+Confidential Handling
+Briefs, drafts, rubrics, and conversations stay within the support workflow.
+
+Trust item 4:
+QA-Led Workflow
+Requests are reviewed for clarity, structure, references, formatting, and instructions.
+
+------------------------------------------------------------
+HOMEPAGE SECTION: SERVICES SNAPSHOT
+------------------------------------------------------------
+
+Section label:
+Services
+
+Section headline:
+Support for academic documents that need clarity and review
+
+Section intro:
+Choose the support path closest to your requirement. WriteX reviews the brief before confirming the scope.
+
+Service Card 1:
+Title:
+Coursework & Brief Support
+
+Copy:
+Research guidance, structure support, editing, and referencing for university coursework briefs.
+
+Tags:
+Brief review | Structure | Referencing
+
+CTA:
+View service
+
+Service Card 2:
+Title:
+Dissertation & Thesis Support
+
+Copy:
+Support for proposals, literature reviews, methodology clarity, chapter editing, formatting, and referencing.
+
+Tags:
+Proposal | Literature review | Chapters
+
+CTA:
+View service
+
+Service Card 3:
+Title:
+Academic Editing & Proofreading
+
+Copy:
+Editing for clarity, grammar, academic tone, structure, citations, formatting, and final-readiness.
+
+Tags:
+Clarity | Tone | Citations
+
+CTA:
+View service
+
+Service Card 4:
+Title:
+SOP & Admissions Support
+
+Copy:
+Support for SOPs, personal statements, LOR editing, CV polishing, and profile positioning.
+
+Tags:
+SOP | Personal statement | CV/LOR
+
+CTA:
+View service
+
+Service Card 5:
+Title:
+Originality & AI Review
+
+Copy:
+Similarity review, citation correction, AI-style review, and academic integrity support.
+
+Tags:
+Similarity | Citations | Human review
+
+CTA:
+View service
+
+Service Card 6:
+Title:
+Formatting & Referencing Support
+
+Copy:
+Support for Harvard, APA, MLA, Chicago, OSCOLA, and university-specific formatting requirements.
+
+Tags:
+Harvard | APA | OSCOLA
+
+CTA:
+View service
+
+Small subject line:
+Common subjects include business, finance, law, nursing, psychology, IT, engineering, and research methods.
+
+Link:
+View all support areas
+
+------------------------------------------------------------
+HOMEPAGE SECTION: SIMPLE WORKFLOW
+------------------------------------------------------------
+
+Section label:
+Workflow
+
+Section headline:
+From brief to quote, without confusion
+
+Section intro:
+WriteX reviews the requirement before confirming the right support path.
+
+Step 1:
+Share brief
+Send your brief, draft, rubric, deadline, or SOP prompt.
+
+Step 2:
+Scope reviewed
+The requirement is checked for service type, level, deadline, and file condition.
+
+Step 3:
+Expert matched
+The request is mapped to the right writer, editor, researcher, or reviewer.
+
+Step 4:
+QA planned
+The workflow includes checks for clarity, references, formatting, and instructions.
+
+Step 5:
+Quote shared
+You receive a scope-based quote and the next step.
+
+------------------------------------------------------------
+HOMEPAGE SECTION: QUALITY + CONFIDENTIALITY
+------------------------------------------------------------
+
+Section label:
+Quality
+
+Section headline:
+Built for private, reviewed academic support
+
+Section copy:
+Serious academic work needs more than a quick response. WriteX reviews the brief, checks the support path, and handles files through a confidential workflow.
+
+Checklist:
+- Brief alignment
+- Rubric check
+- Structure review
+- Citation review
+- Language clarity
+- Formatting check
+- Final QA
+- Confidential file handling
+
+CTA:
+Get Scope-Based Quote
+
+------------------------------------------------------------
+HOMEPAGE SECTION: BRIEF CTA
+------------------------------------------------------------
+
+Section label:
+Start here
+
+Section headline:
+Have the brief ready?
+
+Section copy:
+Send your brief, rubric, draft, SOP prompt, dissertation chapter, or deadline instructions. Clear files help WriteX review the scope faster.
+
+CTA 1:
+Send Brief on WhatsApp
+
+CTA 2:
+Start Quote Request
+
+Note:
+If file upload backend is not active, do not show a fake upload success message. Guide users to WhatsApp or quote form.
+
+------------------------------------------------------------
+HOMEPAGE SECTION: SHORT FAQ
+------------------------------------------------------------
+
+FAQ 1:
+Question:
+How fast can I get a quote?
+
+Answer:
+Complete briefs are easier to review quickly. Share the service type, deadline, academic level, word count, and files. WhatsApp is the fastest route for urgent requests.
+
+FAQ 2:
+Question:
+Is my information confidential?
+
+Answer:
+Yes. WriteX handles briefs, drafts, rubrics, SOP prompts, and conversations through a private academic support workflow.
+
+FAQ 3:
+Question:
+What should I share for a quote?
+
+Answer:
+Share the brief, rubric, draft, supervisor comments, deadline, academic level, word count, and referencing style if available.
+
+FAQ 4:
+Question:
+Is this service for learning support?
+
+Answer:
+Yes. WriteX provides academic support, research guidance, editing, proofreading, formatting, originality review, and model solutions for learning purposes. Students are responsible for following their institution's academic integrity policies.
+
+------------------------------------------------------------
+HOMEPAGE FINAL CTA
+------------------------------------------------------------
+
+Headline:
+Share your brief. Get clarity before your deadline.
+
+Copy:
+Send the requirement and WriteX will review the scope before quoting.
+
+CTA 1:
+Send Brief on WhatsApp
+
+CTA 2:
+Get Quote
+
+Trust note:
+Confidential review. Scope-based quote. Academic integrity-safe support.
+
+================================================================================
+5. COURSEWORK & BRIEF SUPPORT PAGE
+================================================================================
+
+URL:
+Keep /assignment-support if already created for SEO, but display page title as Coursework & Brief Support.
+
+SEO TITLE:
+Coursework & Assignment Support for University Students | WriteX
+
+META DESCRIPTION:
+Get academic support for coursework briefs, research guidance, structure review, editing, referencing, and model solutions for learning.
+
+H1:
+Coursework & Brief Support for University Students
+
+Hero copy:
+University coursework often begins with a complex brief, tight deadline, unclear structure, or detailed rubric. WriteX helps students understand the requirement, improve structure, review references, polish drafts, and move forward with a clearer support path.
+
+CTA:
+Send Coursework Brief on WhatsApp
+Get Scope-Based Quote
+
+Section: Who this is for
+This service is for students who have a coursework brief, draft, rubric, or university requirement and need support with structure, research direction, editing, formatting, referencing, or learning-focused model solutions.
+
+Use cases:
+- You have a brief but are not sure how to structure the response.
+- You have a draft that needs academic editing.
+- You need help understanding the rubric.
+- You need referencing support.
+- You need a model solution for learning and guidance.
+- You need urgent scope review before a deadline.
+
+Section: What WriteX can support
+- Brief and rubric review
+- Research direction
+- Structure planning
+- Academic editing
+- Referencing support
+- Formatting support
+- Draft improvement
+- Model solutions for learning
+- Final-readiness review
+
+Section: What to share
+To get a clearer quote, share:
+- Coursework brief
+- Marking rubric
+- Deadline
+- Word count
+- Academic level
+- Draft or notes
+- Referencing style
+- Supervisor comments, if any
+
+Section: Process
+1. Share the brief
+2. Requirements reviewed
+3. Scope mapped
+4. Support path confirmed
+5. Quote shared
+6. Work reviewed through QA-led workflow
+
+FAQ:
+Question:
+Is this an assignment writing service?
+
+Answer:
+WriteX positions its work as academic support and review, not academic misconduct. Students can request research guidance, structure review, academic editing, formatting, referencing support, originality review, and model solutions for learning. Students are responsible for following their institution's academic integrity policies.
+
+Question:
+Can I send only the brief?
+
+Answer:
+Yes. A brief is enough to start scoping. A rubric, draft, word count, deadline, and referencing style help us quote more accurately.
+
+Question:
+Can you help with urgent coursework?
+
+Answer:
+Urgent requests can be reviewed, but availability depends on subject complexity, word count, file condition, and realistic review scope.
+
+Question:
+Can you edit my existing draft?
+
+Answer:
+Yes. WriteX can support draft editing for clarity, structure, academic tone, referencing, formatting, and final-readiness.
+
+CTA:
+Send Your Coursework Brief
+
+================================================================================
+6. DISSERTATION & THESIS SUPPORT PAGE
+================================================================================
+
+SEO TITLE:
+Dissertation & Thesis Support | WriteX
+
+META DESCRIPTION:
+Research proposal, literature review, methodology, chapter editing, formatting, and referencing support through a confidential academic workflow.
+
+H1:
+Dissertation & Thesis Support
+
+Hero copy:
+Dissertation work needs structure, patience, research clarity, and careful review. WriteX supports students with proposals, literature reviews, methodology clarity, chapter editing, formatting, referencing, and supervisor-comment response support.
+
+CTA:
+Send Dissertation Brief
+Get Quote
+
+Section: Who this is for
+This service is for students working on research proposals, dissertation chapters, thesis drafts, supervisor feedback, methodology sections, literature reviews, or formatting requirements.
+
+Section: What WriteX can support
+- Research proposal review
+- Aim and objective clarity
+- Literature review support
+- Methodology explanation support
+- Chapter editing
+- Supervisor-comment response support
+- Formatting and referencing
+- Final document consistency review
+
+Section: What to upload
+- Dissertation brief
+- Supervisor comments
+- Existing chapter draft
+- Proposal guidelines
+- Methodology notes
+- Data analysis instructions
+- University formatting guide
+- Referencing style
+
+Section: Process
+1. Share the chapter or requirement
+2. Scope and research stage reviewed
+3. Missing details requested if needed
+4. Support path confirmed
+5. Editing/review begins
+6. QA checks structure, references, clarity, and formatting
+
+FAQ:
+Question:
+Can WriteX help with a literature review?
+
+Answer:
+Yes. WriteX can support theme grouping, source integration, academic tone, structure, and chapter readability.
+
+Question:
+Can you help with methodology?
+
+Answer:
+WriteX can help clarify methodology writing, research design explanation, section structure, and presentation of methods based on the supplied research direction.
+
+Question:
+Can I send supervisor comments?
+
+Answer:
+Yes. Supervisor comments are useful for scoping revisions, chapter improvement, and response planning.
+
+Question:
+Can you format my dissertation?
+
+Answer:
+Yes. Formatting and referencing support can be included based on university guidelines.
+
+CTA:
+Send Dissertation Details
+
+================================================================================
+7. ACADEMIC EDITING & PROOFREADING PAGE
+================================================================================
+
+SEO TITLE:
+Academic Editing & Proofreading Services | WriteX
+
+META DESCRIPTION:
+Improve grammar, clarity, academic tone, structure, formatting, citations, and final-readiness with WriteX academic editing support.
+
+H1:
+Academic Editing & Proofreading
+
+Hero copy:
+A strong draft still needs clarity, structure, academic tone, and careful referencing. WriteX supports students with academic editing, proofreading, formatting review, citation checks, and final-readiness improvement.
+
+CTA:
+Send Draft for Review
+Get Quote
+
+Section: Who this is for
+This service is for students who already have a draft and need it reviewed for language, clarity, flow, tone, referencing, formatting, or final-readiness.
+
+Section: What WriteX can support
+- Grammar and sentence clarity
+- Academic tone
+- Flow and structure
+- Paragraph transitions
+- Referencing checks
+- Formatting checks
+- Final-readiness review
+- Supervisor-comment response polishing
+
+Section: What to upload
+- Current draft
+- Brief or rubric
+- Referencing style
+- Supervisor comments
+- Formatting guide
+- Deadline
+
+FAQ:
+Question:
+Is proofreading different from editing?
+
+Answer:
+Proofreading focuses on surface-level corrections such as grammar, punctuation, spelling, and consistency. Editing can include clarity, tone, structure, flow, and academic expression.
+
+Question:
+Can you edit urgent drafts?
+
+Answer:
+Urgent draft review can be scoped depending on word count, file condition, subject, and deadline.
+
+Question:
+Can you check references?
+
+Answer:
+Yes. Citation and reference list checks can be included based on the required referencing style.
+
+CTA:
+Send Draft for Editing
+
+================================================================================
+8. SOP & ADMISSIONS SUPPORT PAGE
+================================================================================
+
+SEO TITLE:
+SOP & Admissions Support | WriteX
+
+META DESCRIPTION:
+Support for SOPs, personal statements, LOR editing, CV polishing, and profile positioning for university applications.
+
+H1:
+SOP & Admissions Support
+
+Hero copy:
+Admissions documents need clarity, specificity, and a strong profile narrative. WriteX supports students with SOPs, personal statements, LOR editing, CV polishing, and university-focused profile positioning.
+
+CTA:
+Send SOP Requirement
+Get Quote
+
+Section: Who this is for
+This service is for students applying to universities who need support with SOPs, personal statements, letters of recommendation, CVs, or profile notes.
+
+Section: What WriteX can support
+- SOP planning
+- Personal statement editing
+- LOR editing
+- CV polishing
+- Profile positioning
+- Programme-specific narrative
+- Draft improvement
+- Language clarity
+
+Section: What to upload
+- Target programme
+- Target country/university
+- Existing SOP draft
+- CV/resume
+- Academic background
+- Work experience notes
+- Achievements
+- Admissions prompt
+- Deadline
+
+FAQ:
+Question:
+Can WriteX write an SOP from notes?
+
+Answer:
+WriteX can support planning, structuring, editing, and improving SOP content based on profile notes and admissions requirements. The final document should reflect the student's own background and goals.
+
+Question:
+Can you edit my personal statement?
+
+Answer:
+Yes. WriteX can review clarity, structure, tone, specificity, and fit with the programme or university prompt.
+
+Question:
+Can you help with LOR and CV?
+
+Answer:
+Yes. LOR editing and CV polishing can be included in the admissions support scope.
+
+CTA:
+Send SOP Details
+
+================================================================================
+9. ORIGINALITY & AI REVIEW PAGE
+================================================================================
+
+SEO TITLE:
+Originality & AI Review Support | WriteX
+
+META DESCRIPTION:
+Similarity review, citation correction, originality guidance, AI-style review, and human academic review for learning-focused academic integrity support.
+
+H1:
+Originality & AI Review Support
+
+Hero copy:
+Academic work should be clear, properly referenced, and responsibly reviewed. WriteX supports students with similarity review, citation correction, originality guidance, AI-style review, and human-led language review.
+
+CTA:
+Send Document for Review
+Get Quote
+
+Section: Who this is for
+This service is for students who want to check similarity concerns, improve citations, review academic tone, reduce repetitive phrasing, and ensure responsible document improvement.
+
+Section: What WriteX can support
+- Similarity review
+- Citation correction
+- Reference alignment
+- Source attribution guidance
+- AI-style language review
+- Human academic language review
+- Academic integrity guidance
+- Document improvement suggestions
+
+Section: What to upload
+- Draft
+- Similarity report, if available
+- Referencing style
+- Brief/rubric
+- Source list
+- Deadline
+
+FAQ:
+Question:
+Can you reduce plagiarism?
+
+Answer:
+WriteX can support ethical similarity reduction through citation correction, paraphrasing guidance, source attribution review, reference alignment, and academic editing. Students remain responsible for following institutional policies.
+
+Question:
+Can you review AI-style writing?
+
+Answer:
+Yes. WriteX can review language that feels repetitive, unnatural, unclear, or inconsistent with academic tone.
+
+Question:
+Do you provide a report?
+
+Answer:
+If a formal report is required, the availability and format should be confirmed during scope review.
+
+CTA:
+Send Document for Originality Review
+
+================================================================================
+10. FORMATTING & REFERENCING SUPPORT PAGE
+================================================================================
+
+SEO TITLE:
+Formatting & Referencing Support | WriteX
+
+META DESCRIPTION:
+Harvard, APA, MLA, Chicago, OSCOLA, and university-specific formatting and referencing support for academic documents.
+
+H1:
+Formatting & Referencing Support
+
+Hero copy:
+Formatting and referencing can affect clarity, professionalism, and final-readiness. WriteX supports students with citation style checks, reference list formatting, layout cleanup, and university-specific formatting requirements.
+
+CTA:
+Send Formatting Requirement
+Get Quote
+
+Section: What WriteX can support
+- Harvard referencing
+- APA referencing
+- MLA referencing
+- Chicago referencing
+- OSCOLA referencing
+- In-text citation checks
+- Reference list formatting
+- Table/figure formatting
+- Heading and spacing cleanup
+- University template alignment
+
+Section: What to upload
+- Draft
+- Referencing style
+- University formatting guide
+- Brief/rubric
+- Source list
+- Deadline
+
+FAQ:
+Question:
+Can you format references from scratch?
+
+Answer:
+Reference formatting can be scoped based on available source details. Complete source information helps avoid missing or inaccurate references.
+
+Question:
+Do you support OSCOLA?
+
+Answer:
+Yes. OSCOLA formatting and citation review can be scoped where required.
+
+Question:
+Can you fix document layout?
+
+Answer:
+Yes. Layout, headings, spacing, tables, figures, and final formatting can be reviewed based on the supplied guidelines.
+
+CTA:
+Send Document for Formatting Review
+
+================================================================================
+11. PRICING / SCOPE-BASED QUOTE PAGE
+================================================================================
+
+SEO TITLE:
+Get a Scope-Based Academic Support Quote | WriteX
+
+META DESCRIPTION:
+Share your brief, deadline, academic level, word count, and files to request a confidential scope-based quote from WriteX.
+
+H1:
+Get a Scope-Based Quote for Your Academic Brief
+
+Hero copy:
+Share your service type, deadline, academic level, word count, and files. WriteX reviews the scope before confirming the quote.
+
+CTA:
+Send Brief on WhatsApp
+Start Quote Request
+
+Trust line:
+Confidential review. No fake fixed pricing. Academic integrity-safe support.
+
+Section: Why quote-based pricing?
+Academic support depends on the service type, academic level, subject, word count, deadline, file condition, and review depth. Scope-based pricing helps avoid misleading one-size-fits-all rates.
+
+Scope cards:
+1. Coursework & Brief Support
+For coursework briefs requiring research guidance, structure support, editing, referencing, or learning-focused model solutions.
+
+2. Dissertation & Thesis Support
+For proposals, literature reviews, methodology clarity, chapter editing, formatting, and supervisor-comment response support.
+
+3. Academic Editing & Proofreading
+For draft review, grammar, clarity, academic tone, structure, citations, formatting, and final-readiness.
+
+4. SOP & Admissions Support
+For SOPs, personal statements, LOR editing, CV polishing, and profile positioning.
+
+5. Originality & AI Review
+For similarity review, citation correction, AI-style review, and academic integrity support.
+
+6. Formatting & Referencing Support
+For Harvard, APA, MLA, Chicago, OSCOLA, and university-specific formatting requirements.
+
+What affects your quote:
+- Service type
+- Academic level
+- Subject complexity
+- Word count
+- Deadline urgency
+- Draft condition
+- Referencing style
+- File clarity
+- Revision expectations
+
+What your quote review includes:
+- Scope review
+- Timeline assessment
+- File and rubric review
+- Support pathway recommendation
+- Expert matching
+- Academic integrity-safe guidance
+- Clear next step
+
+Form microcopy:
+A complete brief helps WriteX quote faster and more accurately.
+
+Success state:
+Your request has been received. WriteX will review the scope and respond with a quote. For urgent deadlines, send the same brief on WhatsApp for faster handling.
+
+Failure state:
+Something went wrong while submitting your request. You can still send your brief directly on WhatsApp.
+
+FAQ:
+Question:
+Why does WriteX use quote-based pricing?
+
+Answer:
+Academic support varies by service type, academic level, subject, word count, deadline, source files, and review depth. Scope-based pricing helps avoid misleading fixed rates.
+
+Question:
+What should I upload?
+
+Answer:
+Upload the brief, rubric, draft, supervisor comments, SOP prompt, dissertation chapter, formatting guide, or any file that explains the requirement.
+
+Question:
+Can I use WhatsApp instead?
+
+Answer:
+Yes. WhatsApp is the fastest route for urgent requests. Share the brief, deadline, academic level, word count, and files.
+
+CTA:
+Start Quote Request
+
+================================================================================
+12. SAMPLES PAGE
+================================================================================
+
+SEO TITLE:
+Academic Support Sample Categories | WriteX
+
+META DESCRIPTION:
+View anonymised academic support sample categories including coursework structure, dissertation editing, SOP improvement, referencing correction, and proposal refinement.
+
+H1:
+Sample Categories for Academic Improvement
+
+Intro:
+These samples are anonymised category examples. They are designed to show the type of structure, clarity, referencing, editing, and document improvement students can request. WriteX does not display fake student names, fake university logos, invented ratings, or unverifiable outcome claims.
+
+Sample category 1:
+MBA Coursework Structure Improvement
+
+What it shows:
+Improving flow, section structure, argument clarity, and Harvard-style referencing around a management brief.
+
+Category tags:
+MBA | Structure | Referencing
+
+Sample category 2:
+Dissertation Literature Review Editing
+
+What it shows:
+Improving theme grouping, source integration, academic tone, and chapter readability.
+
+Category tags:
+Dissertation | Literature review | Editing
+
+Sample category 3:
+SOP Transformation
+
+What it shows:
+Turning scattered profile notes into a clear, specific, university-focused admissions narrative.
+
+Category tags:
+SOP | Admissions | Narrative
+
+Sample category 4:
+Harvard Referencing Correction
+
+What it shows:
+Fixing citation consistency, reference list formatting, missing source details, and in-text citation alignment.
+
+Category tags:
+Harvard | Citations | Formatting
+
+Sample category 5:
+Research Proposal Refinement
+
+What it shows:
+Improving research aim, objectives, methodology clarity, feasibility, and academic presentation.
+
+Category tags:
+Proposal | Methods | Clarity
+
+CTA:
+Send Your Brief for Review
+
+================================================================================
+13. CONTACT PAGE
+================================================================================
+
+SEO TITLE:
+Contact WriteX | Academic Support & Review
+
+META DESCRIPTION:
+Contact WriteX for confidential academic support, coursework brief review, dissertation support, academic editing, SOP/admissions support, originality review, and quote requests.
+
+H1:
+Contact WriteX
+
+Intro:
+Share your requirement with WriteX and get a scope-based response. For urgent deadlines, WhatsApp is the fastest route.
+
+Contact sections:
+WhatsApp:
+Send brief on WhatsApp
+
+Email:
+info@writex.co.in
+customer@writex.co.in
+
+Phone:
++91 81009 77068
++91 81007 45556
++91 70038 82237
+
+Address:
+42A, Express Tower, Auckland Square, Kolkata - 700017
+
+Support hours:
+Monday to Saturday, 10:00 AM - 8:00 PM IST
+
+Contact form helper:
+Share your service type, deadline, academic level, subject, and files so WriteX can review the requirement clearly.
+
+CTA:
+Send Brief on WhatsApp
+
+================================================================================
+14. PRIVACY PAGE CONTENT
+================================================================================
+
+SEO TITLE:
+Privacy Policy | WriteX
+
+META DESCRIPTION:
+Read the WriteX privacy policy for academic support enquiries, submitted files, contact details, quote requests, and client communication.
+
+H1:
+Privacy Policy
+
+Intro:
+WriteX respects the privacy of students, clients, and website visitors. This policy explains how we collect, use, store, and protect information shared through the website, WhatsApp, quote forms, email, and support workflows.
+
+Sections:
+1. Information we collect
+We may collect name, email, WhatsApp number, country, service requirement, academic level, subject, deadline, uploaded files, instructions, and communication history.
+
+2. How we use information
+We use information to review requirements, prepare quotes, provide academic support, communicate with clients, manage files, improve services, and maintain support records.
+
+3. File handling
+Briefs, drafts, rubrics, SOP prompts, dissertation chapters, and related files are handled within the support workflow and are not displayed publicly.
+
+4. Communication
+We may contact clients through WhatsApp, email, or phone for quote clarification, support updates, payment communication, or service-related follow-up.
+
+5. Data security
+WriteX uses reasonable administrative, technical, and operational safeguards to protect submitted information. No public display of student files or identities is permitted.
+
+6. Third-party tools
+The website may use hosting, storage, email, analytics, payment, and communication tools to operate the service.
+
+7. User responsibility
+Students are responsible for ensuring that their use of WriteX support follows their institution's academic integrity policies.
+
+8. Contact
+For privacy questions, contact WriteX through the official email listed on the website.
+
+================================================================================
+15. TERMS PAGE CONTENT
+================================================================================
+
+SEO TITLE:
+Terms of Service | WriteX
+
+META DESCRIPTION:
+Read the WriteX terms of service for academic support, research guidance, editing, formatting, referencing, quote requests, payments, and responsible use.
+
+H1:
+Terms of Service
+
+Intro:
+These terms explain how WriteX provides academic support, research guidance, editing, formatting, referencing, originality review, SOP/admissions support, and related services.
+
+Sections:
+1. Nature of service
+WriteX provides academic support, research guidance, editing, proofreading, formatting, originality review, referencing support, admissions support, and model solutions for learning purposes.
+
+2. Student responsibility
+Students are responsible for following their institution's academic integrity policies. WriteX support should be used for learning, guidance, drafting support, editing, review, and document improvement.
+
+3. Quotes and scope
+Quotes depend on service type, academic level, subject, word count, deadline, file condition, and review depth. Scope must be confirmed before work begins.
+
+4. Files and instructions
+Clients should provide accurate briefs, rubrics, drafts, supervisor comments, deadlines, and formatting requirements. New instructions may affect scope, timeline, and pricing.
+
+5. Payment
+Payment terms depend on the invoice, agreed scope, and support arrangement. Final download access may be subject to payment settlement where applicable.
+
+6. Revisions
+Revision support depends on the original brief, agreed scope, and supplied instructions. New requirements may be treated as additional scope.
+
+7. Confidentiality
+WriteX does not publicly display student files, identities, or private academic documents.
+
+8. Limitations
+WriteX does not guarantee grades, marks, admission outcomes, or institutional decisions.
+
+9. Contact
+For questions, contact WriteX through the official website communication channels.
+
+================================================================================
+16. GLOBAL MICROCOPY
+================================================================================
+
+Form helper:
+A complete brief helps us quote faster.
+
+Upload helper:
+Share your rubric, draft, deadline, or SOP prompt for a clearer scope review.
+
+Quote helper:
+Pricing depends on service type, deadline, academic level, word count, and file condition.
+
+Confidentiality helper:
+Your files and conversations stay within the WriteX support workflow.
+
+Payment-gated future portal helper:
+Preview may be available before download. Final download unlocks only after payment settlement.
+
+Success message:
+Your request has been received. WriteX will review the scope and respond with the next step.
+
+Error message:
+Something went wrong. You can still send your brief directly on WhatsApp.
+
+No backend fallback:
+For urgent requests, send your brief directly on WhatsApp.
+
+Academic integrity disclaimer:
+WriteX provides academic support, research guidance, editing, proofreading, formatting, originality review, and model solutions for learning purposes. Students are responsible for following their institution's academic integrity policies.
+
+================================================================================
+17. INTERNAL LINKING MAP
+================================================================================
+
+Homepage links to:
+- /assignment-support
+- /dissertation-thesis-support
+- /editing-proofreading
+- /sop-admissions-writing
+- /plagiarism-ai-review
+- /formatting-referencing
+- /pricing#quote
+- /samples
+- /contact
+
+Coursework & Brief Support links to:
+- /pricing#quote
+- /editing-proofreading
+- /formatting-referencing
+- /plagiarism-ai-review
+- WhatsApp CTA
+
+Dissertation & Thesis Support links to:
+- /pricing#quote
+- /editing-proofreading
+- /formatting-referencing
+- /samples
+- WhatsApp CTA
+
+Editing & Proofreading links to:
+- /pricing#quote
+- /formatting-referencing
+- /plagiarism-ai-review
+- WhatsApp CTA
+
+SOP & Admissions links to:
+- /pricing#quote
+- /samples
+- /contact
+- WhatsApp CTA
+
+Originality & AI Review links to:
+- /pricing#quote
+- /formatting-referencing
+- /editing-proofreading
+- WhatsApp CTA
+
+Formatting & Referencing links to:
+- /pricing#quote
+- /editing-proofreading
+- /plagiarism-ai-review
+- WhatsApp CTA
+
+Pricing links to:
+- all service pages
+- /contact
+- WhatsApp CTA
+
+Samples links to:
+- relevant service pages
+- /pricing#quote
+- WhatsApp CTA
+
+================================================================================
+18. SCHEMA REQUIREMENTS
+================================================================================
+
+Global:
+Organization schema
+
+All pages:
+Breadcrumb schema
+
+Service pages:
+Service schema
+FAQ schema if FAQ exists
+
+Help centre articles:
+Article schema
+FAQ schema if FAQ exists
+
+Pricing page:
+Service schema
+FAQ schema
+Breadcrumb schema
+
+Samples page:
+CollectionPage schema or standard webpage schema
+
+Do not add fake rating schema.
+Do not add review schema unless verified reviews exist.
+Do not add university affiliation schema unless real.
+
+================================================================================
+19. FINAL IMPLEMENTATION RULES FOR CODEX
+================================================================================
+
+1. Replace public "Assignment Writing" positioning with "Academic Support & Review."
+2. Use "Coursework & Brief Support" as public service label.
+3. Keep /assignment-support URL for SEO if already implemented.
+4. Use "assignment support" only in metadata/FAQ/body where safe.
+5. Remove all risky wording.
+6. Keep homepage clean and short.
+7. Move detailed content to inner pages.
+8. Use the existing WriteX logo unchanged.
+9. Align theme with logo colors.
+10. Remove awkward blank spaces.
+11. Reduce hero visual noise.
+12. Remove fake backend/upload language from public UI.
+13. Ensure no local development URLs.
+14. Ensure no dev tooling in production output.
+15. Ensure all CTAs work.
+16. Ensure WhatsApp fallback works.
+17. Ensure one H1 per page.
+18. Ensure unique metadata per page.
+19. Ensure FAQ content is not hidden permanently by animation.
+20. Run lint, typecheck, build.
+
+================================================================================
+20. CONTENT GOVERNANCE NOTE
+================================================================================
+
+The public website should not make WriteX look like a company that completes academic work for submission.
+
+The public website should make WriteX look like a premium academic support and review company that helps students understand, improve, structure, edit, format, reference, and responsibly review academic documents.
+
+Final brand stance:
+WriteX is not an assignment-writing vendor.
+WriteX is a premium academic support and review company.
+
+================================================================================
+END OF CONTENT PACK
+================================================================================

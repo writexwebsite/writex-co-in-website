@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="facetA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7857ff" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#34c5ff" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="facetB" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff78ba" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.01"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.90"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#db8fc1" fill-opacity="0.18"/>
+    </pattern>
+    <filter id="blur24"><feGaussianBlur stdDeviation="24"/></filter>
+  </defs>
+
+  <ellipse cx="1040" cy="510" rx="500" ry="390" fill="#b6a5ff" fill-opacity="0.08" filter="url(#blur24)"/>
+  <ellipse cx="1630" cy="110" rx="330" ry="250" fill="#ff8bbf" fill-opacity="0.13" filter="url(#blur24)"/>
+  <ellipse cx="250" cy="210" rx="320" ry="250" fill="url(#glowA)" opacity="0.75"/>
+
+  <g opacity="0.90">
+    <polygon points="0,340 180,180 360,420 0,610" fill="url(#facetA)"/>
+    <polygon points="0,610 210,430 420,760 0,930" fill="url(#facetB)"/>
+    <polygon points="0,860 150,735 280,1080 0,1080" fill="#537dff" fill-opacity="0.08"/>
+    <polygon points="122,760 260,620 354,910" fill="#8c5cff" fill-opacity="0.07"/>
+    <polygon points="160,900 268,812 324,1015" fill="#ffffff" fill-opacity="0.28"/>
+  </g>
+
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.34" stroke-width="2">
+    <path d="M0 610 L180 180 L360 420 L210 430 L0 610 Z"/>
+    <path d="M0 930 L210 430 L420 760 L280 1080"/>
+    <path d="M0 860 L150 735 L280 1080"/>
+  </g>
+
+  <rect x="1690" y="0" width="230" height="1080" fill="url(#dots)" opacity="0.82"/>
+  <polygon points="1730,890 1920,710 1920,1080 1640,1080" fill="#ff7bb8" fill-opacity="0.035"/>
+</svg>
