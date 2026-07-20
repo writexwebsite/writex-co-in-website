@@ -1,6 +1,9 @@
 name: Deploy WriteX consistency patch
 
 on:
+  push:
+    branches:
+      - consistency-release
   workflow_dispatch:
     inputs:
       confirmation:
@@ -16,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: inputs.confirmation == 'DEPLOY_WRITEX_CONSISTENCY_PATCH'
+    if: github.event_name == 'push' || inputs.confirmation == 'DEPLOY_WRITEX_CONSISTENCY_PATCH'
     runs-on: ubuntu-latest
     environment: production
     steps:
