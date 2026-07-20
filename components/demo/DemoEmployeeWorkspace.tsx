@@ -40,7 +40,7 @@ export function DemoEmployeeWorkspace({ data }: { data: DemoEmployeeData }) {
       <DemoBanner />
       <header className="sticky top-0 z-30 border-b border-wxBorder bg-wxSurface/95 backdrop-blur">
         <div className="mx-auto flex max-w-[96rem] items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Open navigation" className="grid h-11 w-11 place-items-center rounded-lg border border-wxBorder lg:hidden"><Menu className="h-5 w-5" /></button><BrandLogo markClassName="h-9 w-32" /><span className="rounded-full border border-wxBorder px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-wxViolet700">Demo</span></div>
+          <div className="flex items-center gap-3"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Open navigation" className="grid h-11 w-11 place-items-center rounded-lg border border-wxBorder lg:hidden"><Menu className="h-5 w-5" /></button><BrandLogo markClassName="w-32" sizes="128px" /><span className="rounded-full border border-wxBorder px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-wxViolet700">Demo</span></div>
           <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-semibold">Demo Team Member</p><p className="text-xs text-wxIndigo500">{data.user.designation.name}</p></div><button type="button" onClick={logout} disabled={loggingOut} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-wxBorder px-3 text-sm font-semibold hover:border-wxViolet700 disabled:opacity-60"><LogOut className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">{loggingOut ? "Leaving..." : "Logout"}</span></button></div>
         </div>
       </header>
@@ -85,3 +85,4 @@ export function DemoEmployeeWorkspace({ data }: { data: DemoEmployeeData }) {
     </main>
   );
 }
+

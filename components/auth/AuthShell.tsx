@@ -43,7 +43,10 @@ export function AuthShell({ variant, children }: AuthShellProps) {
             <span className="wx-auth-platform-light" />
           </div>
           <div className="wx-auth-brand-copy absolute left-[9.5%] top-[5.5%] z-20 max-w-[24rem]">
-            <BrandLogo markClassName="wx-auth-hero-logo h-[4.5rem] w-[18rem] xl:h-20 xl:w-[22.5rem]" />
+            <BrandLogo
+              markClassName="wx-auth-hero-logo w-[18rem] xl:w-[22.5rem]"
+              sizes="(min-width: 1280px) 360px, 288px"
+            />
             <h2 className="mt-5 max-w-[22rem] text-[clamp(1.65rem,2.1vw,2.2rem)] font-medium leading-[1.12] text-wxIndigo900">
               {copy.title}
             </h2>
@@ -73,3 +76,4 @@ export function AuthShell({ variant, children }: AuthShellProps) {
     </main>
   );
 }
+

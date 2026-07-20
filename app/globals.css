@@ -376,7 +376,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-card-logo-mark {
     width: 16rem !important;
-    height: 4rem !important;
   }
 
   .wx-auth-form > .mt-7 {
@@ -416,7 +415,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-card-logo-mark {
     width: 14rem !important;
-    height: 3.5rem !important;
   }
 
   .wx-auth-form h1 {
@@ -455,7 +453,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-hero-logo {
     width: 17rem !important;
-    height: 3.75rem !important;
   }
 
   .wx-auth-brand-copy h2 {
@@ -761,3 +758,4 @@ select {
   .wx-axo-roam,
   .wx-axo-emotion { animation: none !important; }
 }
+

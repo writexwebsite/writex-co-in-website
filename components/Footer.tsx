@@ -24,6 +24,7 @@ const resources: FooterLink[] = [
 
 const company: FooterLink[] = [
   { label: "About Us", href: "/about-us" },
+  { label: "Trust Centre™", href: "/trust-centre" },
   { label: "Contact Us", href: "/contact" },
   { label: "Client Login", href: "/client-login" },
   { label: "Employee Login", href: "/employee-login" }
@@ -52,7 +53,7 @@ export function Footer() {
         <div className="premium-container">
           <div className="grid gap-9 lg:grid-cols-[1.35fr_1fr_0.85fr_0.85fr_1.15fr]">
             <section aria-label="WriteX overview">
-              <BrandLogo markClassName="h-12 w-44" />
+              <BrandLogo markClassName="w-44" sizes="176px" />
               <p className="mt-4 max-w-xs text-sm leading-6 text-wxIndigo500">Academic Support &amp; Review for university students worldwide.</p>
               <p className="mt-2 text-sm font-semibold text-wxIndigo700">Confidential. Professional. QA-led.</p>
               <div className="mt-5 flex gap-2">
@@ -88,3 +89,4 @@ export function Footer() {
     </footer>
   );
 }
+

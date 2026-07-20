@@ -20,7 +20,7 @@ export function PortalShell({
     <div className="min-h-screen bg-wxBg text-wxIndigo900">
       <header className="border-b border-wxBorder bg-wxSurface">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
-          <BrandLogo markClassName="h-9 w-32" />
+          <BrandLogo markClassName="w-32" sizes="128px" />
           <div className="flex items-center gap-2">
             {isDemo ? <span className="rounded-full border border-wxBorder px-2.5 py-1 text-xs font-bold text-wxViolet700">Demo</span> : null}
             <ThemeMenu />
@@ -41,3 +41,4 @@ export function PortalShell({
     </div>
   );
 }
+

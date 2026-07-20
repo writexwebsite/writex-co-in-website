@@ -15,6 +15,7 @@ import { ThemeMenu } from "./theme/ThemeMenu";
 
 const desktopNavItems = [
   { label: "About Us", href: "/about-us" },
+  { label: "Trust Centre™", href: "/trust-centre" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" }
 ];
@@ -75,8 +76,9 @@ export function Header() {
           className="shrink-0"
           markClassName={cn(
             "transition-all duration-200",
-            scrolled ? "h-10 w-36" : "h-11 w-40"
+            scrolled ? "w-36" : "w-40"
           )}
+          sizes="160px"
         />
 
         <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Main">
@@ -278,7 +280,7 @@ export function Header() {
           >
             <button
               type="button"
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-wxViolet700/20 bg-wxSurfaceSoft px-3 text-sm font-semibold text-wxViolet700 transition hover:-translate-y-0.5 hover:border-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-wxViolet700/20 bg-wxSurfaceSoft px-3 text-sm font-semibold text-wxIndigo700 transition hover:-translate-y-0.5 hover:border-wxViolet700 hover:text-wxIndigo900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700"
               aria-expanded={loginOpen}
               aria-haspopup="menu"
               onClick={() => setLoginOpen((value) => !value)}
@@ -332,3 +334,4 @@ export function Header() {
     </motion.header>
   );
 }
+

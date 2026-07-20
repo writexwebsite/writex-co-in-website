@@ -5,7 +5,7 @@ import { ArrowRight, FileText, SearchCheck, ShieldCheck, UserCheck, Waypoints } 
 import type { LucideIcon } from "lucide-react";
 
 const steps: Array<{ title: string; copy: string; icon: LucideIcon; tone: string }> = [
-  { title: "Share Brief", copy: "Send the brief, draft, rubric, or prompt.", icon: FileText, tone: "text-wxBlue500 bg-wxBlue500/10" },
+  { title: "Share Brief", copy: "Send the brief, rubric, draft, lecture notes, or formatting requirements.", icon: FileText, tone: "text-wxBlue500 bg-wxBlue500/10" },
   { title: "Scope Review", copy: "Requirements and deadline are checked.", icon: SearchCheck, tone: "text-wxViolet700 bg-wxViolet700/10" },
   { title: "Expert Match", copy: "The right subject capability is selected.", icon: UserCheck, tone: "text-wxMagenta500 bg-wxMagenta500/10" },
   { title: "QA Review", copy: "Quality checks are planned into the workflow.", icon: ShieldCheck, tone: "text-wxPink500 bg-wxPink500/10" },
@@ -53,3 +53,4 @@ export function CommandProtocol() {
     </section>
   );
 }
+

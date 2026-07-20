@@ -1,0 +1,92 @@
+name: Deploy WriteX consistency patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DEPLOY_WRITEX_CONSISTENCY_PATCH
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: writex-co-in-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: inputs.confirmation == 'DEPLOY_WRITEX_CONSISTENCY_PATCH'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out approved patch
+        uses: actions/checkout@v4
+
+      - name: Configure pinned SSH host
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.LIGHTSAIL_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package approved consistency files
+        run: |
+          tar -czf consistency-patch.tgz \
+            app/globals.css \
+            'app/employee/[[...slug]]/page.tsx' \
+            components/BrandLogo.tsx \
+            components/LogoWithTrademark.tsx \
+            components/Header.tsx \
+            components/Footer.tsx \
+            components/CommandProtocol.tsx \
+            components/WhyWriteX.tsx \
+            components/QuoteForm.tsx \
+            components/auth/AuthShell.tsx \
+            components/auth/axo/AxoLoginTransition.tsx \
+            components/auth/axo/AxoScrollStory.tsx \
+            components/client/PortalShell.tsx \
+            components/demo/DemoEmployeeWorkspace.tsx
+
+      - name: Upload patch
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: scp consistency-patch.tgz "${USER}@${HOST}:/tmp/writex-consistency-${GITHUB_RUN_ID}.tgz"
+
+      - name: Build isolated release and reload WriteX only
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          ssh "${USER}@${HOST}" "RUN_ID='${GITHUB_RUN_ID}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          app_root="/var/www/writex-co-in"
+          current="$(readlink -f "${app_root}/current")"
+          archive="/tmp/writex-consistency-${RUN_ID}.tgz"
+          source_dir="$(mktemp -d /tmp/writex-consistency-source.XXXXXX)"
+          cleanup() { rm -rf -- "$source_dir" "$archive"; }
+          trap cleanup EXIT
+
+          if [[ "$current" != "${app_root}/releases/"* || ! -f "$current/package.json" ]]; then
+            echo "WriteX current release is unavailable or outside its isolated app root." >&2
+            exit 1
+          fi
+
+          rsync -a --delete \
+            --exclude='.next/' \
+            --exclude='node_modules/' \
+            --exclude='.env.production' \
+            "$current/" "$source_dir/"
+          tar -xzf "$archive" -C "$source_dir"
+
+          release_id="$(date -u +%Y%m%dT%H%M%SZ)-consistency-${RUN_ID}"
+          SOURCE_DIR="$source_dir" RELEASE_ID="$release_id" KEEP_RELEASES=5 \
+            bash "$source_dir/scripts/deploy-production.sh"
+          printf 'RELEASE_ID=%s\n' "$release_id"
+          REMOTE
+

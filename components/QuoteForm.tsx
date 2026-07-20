@@ -339,6 +339,7 @@ function buildQuoteWhatsAppMessage(values: QuoteFormValues, fileName: string) {
 export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
   const shouldReduceMotion = useReducedMotion();
   const startedRef = useRef(false);
+  const submissionKeyRef = useRef("");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [fileReference, setFileReference] = useState<FileReference | null>(null);
   const [success, setSuccess] = useState(false);
@@ -502,6 +503,10 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
     setPreparedWhatsAppUrl(whatsappUrl);
 
     try {
+      if (!submissionKeyRef.current) {
+        submissionKeyRef.current = crypto.randomUUID();
+      }
+
       const submittedLeadIntelligence = buildQuoteLeadIntelligence({
         service: values.service,
         level: values.level,
@@ -520,6 +525,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
 
       const result = await submitQuoteLead({
         ...values,
+        idempotencyKey: submissionKeyRef.current,
         fileName: fileReference?.name,
         fileSize: fileReference?.size,
         fileType: fileReference?.type,
@@ -598,6 +604,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               setLeadId("");
               setActiveStepIndex(0);
               setWhatsappClicked(false);
+              submissionKeyRef.current = "";
               startedRef.current = false;
             }}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-sageBorder bg-white px-5 text-sm font-semibold text-charcoalInk transition hover:border-mutedCopper"
@@ -640,113 +647,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               Start your quote request
             </h2>
             <p className="mt-2 text-sm leading-6 text-slateText">
-              A complete brief helps WriteX quote faster and more accurately.
-            </p>
-          </div>
-          <span className="inline-flex w-fit rounded-md bg-paleSage px-3 py-2 text-sm font-semibold text-charcoalInk">
-            {progress}% complete
-          </span>
-        </div>
-        <div
-          className="mt-5 h-2 overflow-hidden rounded-full bg-paleSage"
-          aria-label={`Quote form ${progress}% complete`}
-          role="progressbar"
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <motion.div
-            className="h-full bg-mutedCopper"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={
-              shouldReduceMotion ? { duration: 0 } : { duration: 0.35 }
-            }
-          />
-        </div>
-        <ol className="mt-5 grid gap-2 sm:grid-cols-3">
-          {formSteps.map((step, index) => {
-            const isActive = index === activeStepIndex;
-            const isComplete = step.fields.every((fieldName) =>
-              isFieldComplete(fieldName, watchedValues)
-            );
-
-            return (
-              <li
-                key={step.name}
-                aria-current={isActive ? "step" : undefined}
-                className={cn(
-                  "rounded-md border px-3 py-3 text-xs font-semibold transition",
-                  isActive
-                    ? "border-mutedCopper bg-mutedCopper/10 text-charcoalInk"
-                    : isComplete
-                      ? "border-academicGreen/30 bg-academicGreen/10 text-charcoalInk"
-                      : "border-sageBorder bg-paleSage text-slateText"
-                )}
-              >
-                <span className="block uppercase tracking-[0.12em]">
-                  {step.eyebrow}
-                </span>
-                <span className="mt-1 block text-sm">{step.name}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      {fallbackNotice ? (
-        <motion.div
-          className="mb-6 rounded-md border border-mutedCopper/35 bg-mutedCopper/10 p-4 text-sm leading-6 text-charcoalInk"
-          role="status"
-          aria-live="polite"
-          initial={shouldReduceMotion ? false : { opacity: 0.94, y: 8 }}
-          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: motionDurations.normal, ease: motionEase }}
-        >
-          <div className="flex gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-mutedCopper" aria-hidden />
-            <div>
-              <p>{fallbackNotice}</p>
-              <p className="mt-2 text-xs text-slateText">
-                Your entered details remain in the form. Use the WhatsApp
-                button below to send the same information with your files.
-              </p>
-              <a
-                href={preparedWhatsAppUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() =>
-                  trackQuoteEvent(quoteTrackingEvents.whatsappQuoteClicked, {
-                    source: "quote_failure_state"
-                  })
-                }
-                className="mt-3 inline-flex items-center gap-2 font-semibold text-charcoalInk underline"
-              >
-                <WhatsAppIcon className="h-4 w-4 shrink-0" />
-                Send brief and files on WhatsApp
-              </a>
-            </div>
-          </div>
-        </motion.div>
-      ) : null}
-
-      <div className="mb-5 flex items-center justify-between gap-4 rounded-md border border-sageBorder bg-paleSage px-4 py-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mutedCopper">
-            Current step
-          </p>
-          <p className="mt-1 text-base font-semibold text-charcoalInk">
-            {activeStep.name}
-          </p>
-        </div>
-        <span className="rounded-md bg-white px-3 py-2 text-xs font-semibold text-slateText">
-          {activeStepIndex + 1} of {formSteps.length}
-        </span>
-      </div>
-
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={activeStepIndex}
+              A complete brief helps WriteX quote faster…1035 tokens truncated…iveStepIndex}
           initial={shouldReduceMotion ? false : { opacity: 0.94, x: 10 }}
           animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
           exit={shouldReduceMotion ? undefined : { opacity: 0.94, x: -8 }}
@@ -920,7 +821,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               className="mt-2 flex min-h-[58px] cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-softTeal/50 bg-paleSage px-4 py-3 text-sm text-slateText transition hover:border-mutedCopper hover:bg-white"
             >
               <span className="truncate">
-                {fileReference?.name || "Upload your brief, rubric, draft, or prompt."}
+                {fileReference?.name || "Upload your brief, rubric, draft, lecture notes, or formatting requirements."}
               </span>
               <motion.span
                 animate={
@@ -1285,3 +1186,4 @@ function RequiredBadge() {
     </span>
   );
 }
+

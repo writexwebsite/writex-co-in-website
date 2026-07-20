@@ -1,15 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { LogoWithTrademark } from "./LogoWithTrademark";
 
 type BrandLogoProps = {
   className?: string;
   markClassName?: string;
+  priority?: boolean;
+  sizes?: string;
 };
 
 export function BrandLogo({
   className,
-  markClassName
+  markClassName,
+  priority = true,
+  sizes
 }: BrandLogoProps) {
   return (
     <Link
@@ -18,23 +22,14 @@ export function BrandLogo({
         "inline-flex items-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-mutedCopper",
         className
       )}
-      aria-label="WriteX home"
+      aria-label="WriteX trademark home"
     >
-      <span
-        className={cn(
-          "flex h-10 w-36 items-center justify-center overflow-hidden",
-          markClassName
-        )}
-      >
-        <Image
-          src="/images/original/writex-logo-cropped.png"
-          alt="WriteX"
-          width={1040}
-          height={293}
-          className="wx-brand-logo-image h-full w-full object-contain"
-          priority
-        />
-      </span>
+      <LogoWithTrademark
+        className={cn("w-36", markClassName)}
+        priority={priority}
+        sizes={sizes}
+      />
     </Link>
   );
 }
+
