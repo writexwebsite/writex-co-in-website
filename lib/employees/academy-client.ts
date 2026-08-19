@@ -34,7 +34,16 @@ type AcademySyncResult = {
   teamReference: string | null;
   sessionsRevoked: number;
   created: boolean;
+  credentialsGenerated?: boolean;
   initialPassword?: string;
+};
+
+export type AcademyCredentialResult = {
+  academyUserId: string;
+  employeeReference: string;
+  loginEmail: string;
+  initialPassword: string;
+  sessionsRevoked: number;
 };
 
 export class AcademySyncError extends Error {
@@ -309,5 +318,44 @@ export async function syncEmployeeToAcademy(payload: AcademySyncPayload) {
     throw safeError;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+export async function resetAcademyEmployeePassword(
+  employeeId: string,
+  requestedBy: { adminId: string; email: string }
+) {
+  const requestId = randomUUID();
+  const pathname = `/api/internal/employees/${encodeURIComponent(employeeId)}/credentials/reset`;
+  try {
+    const result = await signedAcademyRequest<AcademyCredentialResult>({
+      pathname,
+      method: "POST",
+      body: JSON.stringify({ requestId, requestedBy })
+    });
+    await logIntegrationEvent({
+      system: "sales_academy",
+      endpoint: pathname,
+      requestId,
+      status: "success"
+    });
+    return { ...result, requestId };
+  } catch (error) {
+    const safeError = error instanceof AcademySyncError
+      ? error
+      : new AcademySyncError(
+          "Academy password reset is temporarily unavailable. Retry from this employee record.",
+          "ACADEMY_UNAVAILABLE",
+          requestId,
+          503
+        );
+    await logIntegrationEvent({
+      system: "sales_academy",
+      endpoint: pathname,
+      requestId,
+      status: "failed",
+      errorMessage: `${safeError.code}: ${safeError.message}`
+    });
+    throw safeError;
   }
 }
