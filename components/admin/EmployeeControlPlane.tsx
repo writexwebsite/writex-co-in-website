@@ -365,12 +365,20 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
       router.refresh();
       return;
     }
-    const generated = payload?.data?.credentials || (payload?.data?.sync?.initialPassword ? {
+    const credentials = payload?.data?.credentials;
+    const credentialPassword = credentials?.initialPassword?.trim();
+    const syncPassword = payload?.data?.sync?.initialPassword?.trim();
+    const generated = credentials && credentialPassword ? {
+      employeeName: credentials.employeeName,
+      loginEmail: credentials.loginEmail,
+      initialPassword: credentialPassword,
+      academyUrl: credentials.academyUrl
+    } : syncPassword ? {
       employeeName: employee.displayName,
       loginEmail: employee.officialEmail,
-      initialPassword: payload.data.sync.initialPassword,
+      initialPassword: syncPassword,
       academyUrl: "https://academy.writex.co.in"
-    } : null);
+    } : null;
     if (generated) setCredentials(generated);
     setDialog(null);
     router.refresh();
@@ -747,13 +755,15 @@ function AcademyAccessReadyModal({
 }) {
   const [copied, setCopied] = useState<"email" | "password" | "details" | null>(null);
   const academyUrl = credentials.academyUrl || "https://academy.writex.co.in";
+  const password = credentials.initialPassword.trim();
+  if (!password) return null;
 
   async function copy(kind: "email" | "password" | "details") {
     const value = kind === "email"
       ? credentials.loginEmail
       : kind === "password"
-        ? credentials.initialPassword
-        : `WriteX Sales Academy\n${academyUrl}\n\nEmail: ${credentials.loginEmail}\nPassword: ${credentials.initialPassword}`;
+        ? password
+        : `WriteX Sales Academy\n${academyUrl}\n\nEmail: ${credentials.loginEmail}\nPassword: ${password}`;
     await navigator.clipboard.writeText(value);
     setCopied(kind);
   }
@@ -780,7 +790,7 @@ function AcademyAccessReadyModal({
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase text-wxIndigo500">Password</dt>
-            <dd className="mt-1"><input aria-label="Generated Academy password" readOnly value={credentials.initialPassword} className={`${inputClass} font-mono`} /></dd>
+            <dd className="mt-1"><input aria-label="Generated Academy password" readOnly value={password} className={`${inputClass} font-mono`} /></dd>
           </div>
           <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Academy URL</dt><dd className="mt-1"><a href={academyUrl} target="_blank" rel="noreferrer" className="font-semibold text-wxViolet700 underline underline-offset-4">{academyUrl}</a></dd></div>
         </dl>
