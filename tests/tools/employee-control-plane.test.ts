@@ -140,3 +140,22 @@ test("Website Admin enforces the Manager TL to Trainer to Employee hierarchy", a
   assert.match(ui, /Reports To Manager \/ TL/);
   assert.match(ui, /The Manager \/ TL is derived through this Trainer/);
 });
+
+test("Website Admin treats Senior BDE as an audited employee segment rather than an RBAC role", async () => {
+  const domain = await read("lib/employees/domain.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  const route = await read("app/api/admin/employees/[employeeId]/route.ts");
+  const migration = await read("database/migrations/20260820_senior_bde_employee_segment.sql");
+  assert.match(domain, /employeeSegments = \["NEW_BDE", "SENIOR_BDE"\]/);
+  assert.doesNotMatch(domain, /academyRoles = \[[^\]]*SENIOR_BDE/);
+  assert.match(validation, /employeeSegment: z\.enum\(employeeSegments\)/);
+  assert.match(repository, /employeeSegment: row\.employee_segment/);
+  assert.match(repository, /access: \{ enabled: row\.enabled, role: row\.application_role, employeeSegment:/);
+  assert.match(ui, /Employee segment/);
+  assert.match(ui, /Changing it preserves the employee identity and all history/);
+  assert.match(route, /academy_employee_segment_changed/);
+  assert.match(route, /identityPreserved: true/);
+  assert.match(migration, /check \(employee_segment in \('NEW_BDE','SENIOR_BDE'\)\)/);
+});

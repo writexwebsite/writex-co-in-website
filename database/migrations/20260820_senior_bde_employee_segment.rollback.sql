@@ -1,0 +1,3 @@
+drop index if exists employee_application_access_segment_idx;
+alter table employee_application_access drop constraint if exists employee_application_access_segment_check;
+alter table employee_application_access drop column if exists employee_segment;

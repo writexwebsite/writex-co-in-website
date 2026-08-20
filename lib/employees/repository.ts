@@ -12,6 +12,7 @@ import {
   type EmployeeDeletionAssessment,
   type EmployeeDirectoryItem,
   type EmployeeLifecycleFilter,
+  type EmployeeSegment,
   type EmployeeStatus,
   type EmployeeTeam,
   isClearlyTemporaryEmployee
@@ -31,6 +32,7 @@ type EmployeeRow = {
   manager_name: string | null;
   academy_enabled: boolean;
   academy_role: AcademyRole;
+  employee_segment: EmployeeSegment;
   sync_status: "PENDING" | "SYNCED" | "FAILED";
   last_synced_at: Date | null;
   last_sync_error: string | null;
@@ -48,6 +50,7 @@ const employeeSelect = `
   e.manager_employee_id, manager.display_name as manager_name,
   coalesce(a.enabled, false) as academy_enabled,
   coalesce(a.application_role, 'EMPLOYEE') as academy_role,
+  coalesce(a.employee_segment, 'NEW_BDE') as employee_segment,
   coalesce(a.sync_status, 'SYNCED') as sync_status,
   a.last_synced_at, a.last_sync_error, a.external_application_user_id,
   e.archived_at, e.archive_previous_employment_status,
@@ -70,6 +73,7 @@ function mapEmployee(row: EmployeeRow): EmployeeDirectoryItem {
     managerName: row.manager_name,
     academyEnabled: row.academy_enabled,
     academyRole: row.academy_role,
+    employeeSegment: row.employee_segment,
     syncStatus: row.sync_status,
     lastSyncedAt: row.last_synced_at?.toISOString() ?? null,
     lastSyncError: row.last_sync_error,
@@ -158,6 +162,7 @@ export type EmployeeMutationInput = {
   managerEmployeeId: string | null;
   academyEnabled: boolean;
   academyRole: AcademyRole;
+  employeeSegment: EmployeeSegment;
 };
 
 async function validateRelationships(
@@ -252,11 +257,11 @@ export async function createEmployee(input: EmployeeMutationInput, actor: AdminS
     }
     await query(
       `insert into employee_application_access
-        (employee_id, application_key, enabled, application_role, granted_by_admin_id,
+        (employee_id, application_key, enabled, application_role, employee_segment, granted_by_admin_id,
          granted_at, sync_status, sync_version)
-       values ($1, $2, $3, $4, $5, case when $3 then now() else null end,
+       values ($1, $2, $3, $4, $5, $6, case when $3 then now() else null end,
          case when $3 then 'PENDING' else 'SYNCED' end, case when $3 then 1 else 0 end)`,
-      [employeeId, academyApplicationKey, input.academyEnabled, input.academyRole, actor.adminUserId]
+      [employeeId, academyApplicationKey, input.academyEnabled, input.academyRole, input.employeeSegment, actor.adminUserId]
     );
     return employeeId;
   });
@@ -271,11 +276,12 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
       manager_employee_id: string | null;
       enabled: boolean;
       application_role: AcademyRole;
+      employee_segment: EmployeeSegment;
       external_application_user_id: string | null;
       archived_at: Date | null;
     }>(
       `select e.employment_status, e.primary_team_id, e.manager_employee_id,
-          e.archived_at, a.enabled, a.application_role, a.external_application_user_id
+          e.archived_at, a.enabled, a.application_role, a.employee_segment, a.external_application_user_id
        from employees e join employee_application_access a on a.employee_id = e.id
        where e.id = $1 and a.application_key = $2 for update`,
       [employeeId, academyApplicationKey]
@@ -318,6 +324,7 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
     await query(
       `update employee_application_access
        set enabled = $3, application_role = $4, granted_by_admin_id = $5,
+           employee_segment = $7,
            granted_at = case when $3 and not enabled then now() else granted_at end,
            revoked_at = case when not $3 and enabled then now() when $3 then null else revoked_at end,
            sync_status = case when $6 then 'PENDING' else 'SYNCED' end,
@@ -325,7 +332,7 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
            sync_version = sync_version + case when $6 then 1 else 0 end
        where employee_id = $1 and application_key = $2`,
       [employeeId, academyApplicationKey, effectiveAcademyEnabled, academyRole,
-        actor.adminUserId, shouldSync]
+        actor.adminUserId, shouldSync, input.employeeSegment]
     );
   });
 }
@@ -610,6 +617,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
     manager_employee_id: string | null;
     enabled: boolean;
     application_role: AcademyRole;
+    employee_segment: EmployeeSegment;
     team_id: string | null;
     team_code: string | null;
     team_name: string | null;
@@ -618,7 +626,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
   }>(
     `select e.id, e.employee_code, e.display_name, e.official_email, e.department,
         e.designation, e.employment_status, e.manager_employee_id,
-        a.enabled, a.application_role,
+        a.enabled, a.application_role, a.employee_segment,
         t.id as team_id, t.team_code, t.name as team_name, t.status as team_status,
         case
           when a.application_role='MANAGER_TL' then e.id
@@ -647,7 +655,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
       employmentStatus: row.employment_status,
       managerEmployeeId: row.manager_employee_id
     },
-    access: { enabled: row.enabled, role: row.application_role },
+    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.application_role === "EMPLOYEE" ? row.employee_segment : "SENIOR_BDE" },
     team: row.team_id ? {
       id: row.team_id,
       code: row.team_code!,

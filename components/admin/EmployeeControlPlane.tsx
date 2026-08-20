@@ -29,6 +29,7 @@ import type {
   EmployeeDeletionAssessment,
   EmployeeDirectoryItem,
   EmployeeLifecycleFilter,
+  EmployeeSegment,
   EmployeeTeam
 } from "@/lib/employees/domain";
 
@@ -546,9 +547,12 @@ function EmployeeEditor({
   const [academyRole, setAcademyRole] = useState<Exclude<AcademyRole, "SUPER_ADMIN">>(
     employee?.academyRole === "SUPER_ADMIN" ? "EMPLOYEE" : employee?.academyRole || "EMPLOYEE"
   );
+  const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? "");
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
+  const [confirmingSegment, setConfirmingSegment] = useState(false);
   const deactivationConfirmed = useRef(false);
+  const segmentConfirmed = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const compatibleTeams = useMemo(
     () => teams.filter((team) => !department || team.department.toLowerCase() === department.toLowerCase()),
@@ -580,11 +584,20 @@ function EmployeeEditor({
       setConfirmingDeactivation(true);
       return;
     }
+    const changesSegment = employee?.academyRole === "EMPLOYEE" && employee.employeeSegment !== employeeSegment;
+    if (changesSegment && !segmentConfirmed.current) {
+      setBusy(false);
+      setConfirmingSegment(true);
+      return;
+    }
     deactivationConfirmed.current = false;
     setConfirmingDeactivation(false);
+    segmentConfirmed.current = false;
+    setConfirmingSegment(false);
     const input = {
       ...values,
       academyEnabled,
+      employeeSegment,
       primaryTeamId: values.primaryTeamId || null,
       managerEmployeeId: values.managerEmployeeId || null
     };
@@ -662,6 +675,7 @@ function EmployeeEditor({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? "Enabled" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} />
           <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
           <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Sync status" value={employee.syncStatus} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" ? "danger" : undefined} />
@@ -702,6 +716,17 @@ function EmployeeEditor({
             <button type="button" onClick={() => setConfirmingDeactivation(false)} className="min-h-11 rounded-md border border-amber-300 bg-white px-4 text-sm font-semibold">
               Cancel
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmingSegment ? (
+        <div role="alertdialog" aria-labelledby="segment-change-title" className="rounded-md border border-violet-300 bg-violet-50 p-4 text-violet-950">
+          <h2 id="segment-change-title" className="font-semibold">Confirm employee training-track change</h2>
+          <p className="mt-1 text-sm leading-6">This changes which governed Academy journey the employee receives. Their identity, progress, practice, customer history, and audit records remain preserved.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => { segmentConfirmed.current = true; formRef.current?.requestSubmit(); }} className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white">Confirm segment change</button>
+            <button type="button" onClick={() => setConfirmingSegment(false)} className="min-h-11 rounded-md border border-violet-300 bg-white px-4 text-sm font-semibold">Cancel</button>
           </div>
         </div>
       ) : null}
@@ -748,6 +773,7 @@ function EmployeeEditor({
               {employee?.academyRole === "SUPER_ADMIN" ? <span className="text-xs font-normal text-wxIndigo500">Primary Academy Super Admin access is controlled from AI Usage &amp; Budgets.</span> : null}
             </Field>
           </div>
+          {academyRole === "EMPLOYEE" ? <div className="mt-4 max-w-xl"><Field label="Employee segment"><select name="employeeSegment" value={employeeSegment} onChange={(event) => setEmployeeSegment(event.target.value as EmployeeSegment)} className={inputClass}><option value="NEW_BDE">New BDE · Foundation journey</option><option value="SENIOR_BDE">Senior BDE · Diagnostic and focused development</option></select><span className="text-xs font-normal text-wxIndigo500">This is a training segment, not an Academy role. Changing it preserves the employee identity and all history.</span></Field></div> : <input type="hidden" name="employeeSegment" value="SENIOR_BDE" />}
           {academyRole !== "MANAGER_TL" && employee?.academyRole !== "SUPER_ADMIN" ? <div className="mt-4 max-w-xl"><Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? "The Manager / TL is derived through this Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field></div> : <input type="hidden" name="managerEmployeeId" value="" />}
 
           {employee ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
