@@ -543,6 +543,9 @@ function EmployeeEditor({
   const [error, setError] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const [academyEnabled, setAcademyEnabled] = useState(employee?.academyEnabled ?? false);
+  const [academyRole, setAcademyRole] = useState<Exclude<AcademyRole, "SUPER_ADMIN">>(
+    employee?.academyRole === "SUPER_ADMIN" ? "EMPLOYEE" : employee?.academyRole || "EMPLOYEE"
+  );
   const [department, setDepartment] = useState(employee?.department ?? "");
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
   const deactivationConfirmed = useRef(false);
@@ -551,6 +554,17 @@ function EmployeeEditor({
     () => teams.filter((team) => !department || team.department.toLowerCase() === department.toLowerCase()),
     [department, teams]
   );
+  const supervisorOptions = employees.filter((item) => item.id !== employee?.id
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && (academyRole === "EMPLOYEE" ? item.academyRole === "TRAINER" : item.academyRole === "MANAGER_TL"));
+  const directSupervisor = employees.find((item) => item.id === employee?.managerEmployeeId) || null;
+  const displayedTrainer = employee?.academyRole === "EMPLOYEE" ? directSupervisor : employee?.academyRole === "TRAINER" ? employee : null;
+  const displayedManager = employee?.academyRole === "MANAGER_TL"
+    ? employee
+    : employee?.academyRole === "TRAINER"
+      ? directSupervisor
+      : employees.find((item) => item.id === displayedTrainer?.managerEmployeeId) || null;
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -647,7 +661,9 @@ function EmployeeEditor({
       {employee ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
-          <StatusTile label="Academy access" value={employee.academyEnabled ? "ON" : "OFF"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy access" value={employee.academyEnabled ? "Enabled" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
+          <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Sync status" value={employee.syncStatus} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" ? "danger" : undefined} />
           <StatusTile label="Last Academy sync" value={employee.lastSyncedAt ? new Date(employee.lastSyncedAt).toLocaleString() : "Not synced yet"} icon={<RefreshCw className="h-4 w-4" />} />
         </div>
@@ -705,7 +721,6 @@ function EmployeeEditor({
             <Field label="Designation"><input name="designation" required maxLength={120} defaultValue={employee?.designation} className={inputClass} /></Field>
             <Field label="Employment status"><select name="employmentStatus" defaultValue={employee?.employmentStatus || "ACTIVE"} className={inputClass}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></Field>
             <Field label="Primary team"><select name="primaryTeamId" defaultValue={employee?.primaryTeamId || ""} className={inputClass}><option value="">No team</option>{compatibleTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></Field>
-            <Field label="Manager / TL"><select name="managerEmployeeId" defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">No manager</option>{employees.filter((item) => item.id !== employee?.id && item.employmentStatus === "ACTIVE").map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select></Field>
           </div>
         </section>
 
@@ -725,7 +740,7 @@ function EmployeeEditor({
             </label>
             <Field label="Academy role">
               {employee?.academyRole === "SUPER_ADMIN" ? <input type="hidden" name="academyRole" value="EMPLOYEE" /> : null}
-              <select name={employee?.academyRole === "SUPER_ADMIN" ? undefined : "academyRole"} defaultValue={employee?.academyRole === "SUPER_ADMIN" ? "EMPLOYEE" : employee?.academyRole || "EMPLOYEE"} disabled={employee?.academyRole === "SUPER_ADMIN"} className={inputClass}>
+              <select name={employee?.academyRole === "SUPER_ADMIN" ? undefined : "academyRole"} value={academyRole} onChange={(event) => setAcademyRole(event.target.value as Exclude<AcademyRole, "SUPER_ADMIN">)} disabled={employee?.academyRole === "SUPER_ADMIN"} className={inputClass}>
                 <option value="EMPLOYEE">Employee</option>
                 <option value="TRAINER">Trainer</option>
                 <option value="MANAGER_TL">Manager / TL</option>
@@ -733,6 +748,13 @@ function EmployeeEditor({
               {employee?.academyRole === "SUPER_ADMIN" ? <span className="text-xs font-normal text-wxIndigo500">Primary Academy Super Admin access is controlled from AI Usage &amp; Budgets.</span> : null}
             </Field>
           </div>
+          {academyRole !== "MANAGER_TL" && employee?.academyRole !== "SUPER_ADMIN" ? <div className="mt-4 max-w-xl"><Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? "The Manager / TL is derived through this Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field></div> : <input type="hidden" name="managerEmployeeId" value="" />}
+
+          {employee ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
+            <StatusTile label="Manager / TL" value={displayedManager?.displayName || (employee.academyRole === "MANAGER_TL" ? employee.displayName : "Reassignment required")} icon={<UsersRound className="h-4 w-4" />} tone={displayedManager ? undefined : "danger"}/>
+            <StatusTile label="Trainer" value={displayedTrainer?.displayName || (employee.academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={employee.academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
+            <StatusTile label="Employee" value={employee.displayName} icon={<UserRound className="h-4 w-4" />}/>
+          </div> : null}
         </section>
 
         <div className="flex flex-col gap-2 rounded-md border border-wxBorder bg-wxSurfaceElevated/95 p-3 shadow-lift sm:flex-row sm:items-center sm:justify-between md:sticky md:bottom-20 md:z-20 md:backdrop-blur">

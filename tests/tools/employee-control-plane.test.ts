@@ -126,3 +126,17 @@ test("Website Admin exposes one-time Academy credentials and signed password res
   assert.match(lifecycleRoute, /const credentials = employee && initialPassword/);
   assert.doesNotMatch(lifecycleRoute, /metadata:\s*\{[^}\n]*(?:initialPassword|password)/i);
 });
+
+test("Website Admin enforces the Manager TL to Trainer to Employee hierarchy", async () => {
+  const repository = await read("lib/employees/repository.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  assert.match(repository, /Assigned Trainer must be an active employee with Academy Trainer access/);
+  assert.match(repository, /Reports To must be an active employee with Academy Manager \/ TL access/);
+  assert.match(repository, /Assign an active Trainer before enabling Academy access/);
+  assert.match(repository, /Assign an active Manager \/ TL before enabling Academy access/);
+  assert.match(repository, /This change would create a circular reporting relationship/);
+  assert.match(repository, /when a\.application_role='EMPLOYEE' then supervisor\.manager_employee_id/);
+  assert.match(ui, /Assigned Trainer/);
+  assert.match(ui, /Reports To Manager \/ TL/);
+  assert.match(ui, /The Manager \/ TL is derived through this Trainer/);
+});
