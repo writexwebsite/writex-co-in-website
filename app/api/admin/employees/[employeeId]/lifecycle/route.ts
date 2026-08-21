@@ -42,8 +42,9 @@ export async function GET(
   try {
     const admin = getAdminSessionFromRequest(request);
     assertCanManageEmployees(admin);
+    await assertActiveAdminActor(admin.adminUserId);
     const { employeeId } = await params;
-    return apiOk({ assessment: await getEmployeeDeletionAssessment(employeeId) }, {
+    return apiOk({ assessment: await getEmployeeDeletionAssessment(employeeId, admin) }, {
       headers: { "cache-control": "private, no-store" }
     });
   } catch (error) {
@@ -128,23 +129,16 @@ export async function DELETE(
       params,
       parseJson(request, employeePermanentDeleteSchema)
     ]);
-    const deleted = await permanentlyDeleteEmployee(employeeId, input.confirmation);
-    await auditEmployeeMutation({
-      actor: admin,
-      employeeId,
-      action: "employee_permanently_deleted",
-      metadata: {
-        reason: input.reason,
-        employeeCode: deleted.employee_code,
-        displayName: deleted.display_name,
-        officialEmail: deleted.official_email
-      },
-      request
+    const deleted = await permanentlyDeleteEmployee(employeeId, {
+      confirmation: input.confirmation,
+      reason: input.reason,
+      mode: input.mode,
+      actor: admin
     });
-    return apiOk({ deleted: true }, { headers: { "cache-control": "private, no-store" } });
+    return apiOk({ deleted: true, mode: input.mode, academy: deleted.academy }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return apiError(new ApiError(400, "BAD_REQUEST", "Provide a reason and type the exact employee name or code."));
+      return apiError(new ApiError(400, "BAD_REQUEST", "A reason, acknowledgement and exact DELETE employee-code confirmation are required."));
     }
     return apiError(error);
   }

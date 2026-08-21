@@ -16,7 +16,8 @@ export const employeeMutationSchema = z.object({
   academyEnabled: z.boolean(),
   academyRole: z.enum(assignableAcademyRoles),
   employeeSegment: z.enum(employeeSegments),
-  academyRoleChangeReason: z.string().trim().max(500).optional()
+  academyRoleChangeReason: z.string().trim().max(500).optional(),
+  initialBootstrapConfirmed: z.boolean().optional()
 });
 
 export const employeeTeamSchema = z.object({
@@ -29,15 +30,18 @@ export const employeeLifecycleMutationSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("DEACTIVATE"), reason: z.string().trim().min(3).max(500) }),
   z.object({ action: z.literal("ARCHIVE"), reason: z.string().trim().min(3).max(500) }),
   z.object({ action: z.literal("RESTORE"), reason: z.string().trim().min(3).max(500) }),
-  z.object({ action: z.literal("SET_ACADEMY_ACCESS"), enabled: z.boolean() }),
+  z.object({ action: z.literal("SET_ACADEMY_ACCESS"), enabled: z.boolean(), managerEmployeeId: optionalUuid.optional() }),
   z.object({
     action: z.literal("SET_ACADEMY_ROLE"),
     role: z.enum(assignableAcademyRoles),
-    reason: z.string().trim().min(3).max(500)
+    reason: z.string().trim().min(3).max(500),
+    managerEmployeeId: optionalUuid.optional()
   })
 ]);
 
 export const employeePermanentDeleteSchema = z.object({
-  confirmation: z.string().trim().min(2).max(254),
-  reason: z.string().trim().min(10).max(500)
+  confirmation: z.string().trim().min(8).max(254),
+  reason: z.string().trim().min(10).max(500),
+  mode: z.enum(["ZERO_HISTORY", "FULL_PURGE"]),
+  acknowledged: z.literal(true)
 });

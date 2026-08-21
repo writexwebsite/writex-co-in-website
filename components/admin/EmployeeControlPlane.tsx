@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { AdminStatusBadge } from "@/components/admin/AdminPrimitives";
 import type {
+  AcademyInitialAdminBootstrap,
   AcademyRole,
   EmployeeDeletionAssessment,
   EmployeeDirectoryItem,
@@ -40,6 +41,8 @@ type AcademyAccessCredentials = {
   loginEmail: string;
   initialPassword: string;
   academyUrl?: string;
+  academyRole?: AcademyRole;
+  primarySuperAdmin?: boolean;
 };
 
 function syncTone(status: EmployeeDirectoryItem["syncStatus"]) {
@@ -51,13 +54,15 @@ export function EmployeeDirectoryControl({
   teams,
   initialSearch = "",
   attentionOnly = false,
-  lifecycle = "active"
+  lifecycle = "active",
+  bootstrap
 }: {
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
   initialSearch?: string;
   attentionOnly?: boolean;
   lifecycle?: EmployeeLifecycleFilter;
+  bootstrap: AcademyInitialAdminBootstrap;
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -117,9 +122,10 @@ export function EmployeeDirectoryControl({
             <EmployeeEditor
               employees={employees}
               teams={teams}
-              onCreated={({ employeeName, loginEmail, initialPassword }) => {
+              bootstrap={bootstrap}
+              onCreated={(result) => {
                 setCreating(false);
-                if (initialPassword) setProvisionedAccess({ employeeName, loginEmail, initialPassword });
+                if (result.initialPassword) setProvisionedAccess(result as AcademyAccessCredentials);
               }}
             />
           </div>
@@ -204,7 +210,7 @@ export function EmployeeDirectoryControl({
                       Academy {employee.academyEnabled ? "On" : "Off"}
                     </AdminStatusBadge>
                     <AdminStatusBadge tone={syncTone(employee.syncStatus)}>{employee.syncStatus}</AdminStatusBadge>
-                    <EmployeeLifecycleMenu employee={employee} />
+                    <EmployeeLifecycleMenu employee={employee} employees={employees} />
                   </div>
                 </div>
               ))}
@@ -212,8 +218,17 @@ export function EmployeeDirectoryControl({
           ) : (
             <div className="px-5 py-12 text-center">
               <UsersRound className="mx-auto h-6 w-6 text-wxIndigo400" />
-              <p className="mt-3 font-semibold text-wxIndigo900">No {lifecycle === "all" ? "" : lifecycle} employees match this view</p>
-              <p className="mt-1 text-sm text-wxIndigo500">Choose another filter, clear the search or create an employee.</p>
+              <p className="mt-3 font-semibold text-wxIndigo900">{bootstrap.requiresConfirmation ? "No employees yet" : `No ${lifecycle === "all" ? "" : lifecycle} employees match this view`}</p>
+              <p className="mt-1 text-sm text-wxIndigo500">{bootstrap.requiresConfirmation ? "The Academy directory is clean. Create the first employee to initialise Academy governance." : "Choose another filter, clear the search or create an employee."}</p>
+              {bootstrap.requiresConfirmation ? (
+                <div className="mx-auto mt-5 max-w-md rounded-md border border-violet-200 bg-violet-50 p-4 text-left text-sm text-violet-950">
+                  <p><span className="font-semibold">Primary SuperAdmin:</span> Not yet assigned</p>
+                  <p className="mt-1"><span className="font-semibold">Bootstrap:</span> Ready</p>
+                  <button type="button" onClick={() => setCreating(true)} className="wx-gradient-action mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 font-semibold text-white">
+                    <Plus className="h-4 w-4" /> Create First Employee
+                  </button>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -276,12 +291,15 @@ type LifecycleDialog =
   | "RESET_PASSWORD"
   | "DELETE";
 
-function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }) {
+function EmployeeLifecycleMenu({ employee, employees }: { employee: EmployeeDirectoryItem; employees: EmployeeDirectoryItem[] }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<LifecycleDialog | null>(null);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [role, setRole] = useState<AcademyRole>(employee.academyRole);
+  const [managerEmployeeId, setManagerEmployeeId] = useState(employee.managerEmployeeId || "");
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [deletionMode, setDeletionMode] = useState<"ZERO_HISTORY" | "FULL_PURGE">("ZERO_HISTORY");
   const [assessment, setAssessment] = useState<EmployeeDeletionAssessment | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -299,7 +317,10 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
         if (!response.ok || !payload?.data?.assessment) {
           throw new Error(payload?.error?.message || "Deletion eligibility could not be checked.");
         }
-        if (active) setAssessment(payload.data.assessment);
+        if (active) {
+          setAssessment(payload.data.assessment);
+          setDeletionMode(payload.data.assessment.recommendedMode === "FULL_PURGE" ? "FULL_PURGE" : "ZERO_HISTORY");
+        }
       })
       .catch((loadError) => {
         if (active) setError(loadError instanceof Error ? loadError.message : "Deletion eligibility could not be checked.");
@@ -311,6 +332,8 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
     setDialog(next);
     setReason("");
     setConfirmation("");
+    setAcknowledged(false);
+    setManagerEmployeeId(employee.managerEmployeeId || "");
     setError("");
     if (next === "DELETE") setAssessment(null);
   }
@@ -328,11 +351,11 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
       body = {};
     } else if (dialog === "DELETE") {
       method = "DELETE";
-      body = { confirmation, reason };
+      body = { confirmation, reason, mode: deletionMode, acknowledged };
     } else if (dialog === "ACCESS") {
-      body = { action: "SET_ACADEMY_ACCESS", enabled: !employee.academyEnabled };
+      body = { action: "SET_ACADEMY_ACCESS", enabled: !employee.academyEnabled, managerEmployeeId: managerEmployeeId || null };
     } else if (dialog === "ROLE") {
-      body = { action: "SET_ACADEMY_ROLE", role, reason };
+      body = { action: "SET_ACADEMY_ROLE", role, reason, managerEmployeeId: managerEmployeeId || null };
     } else {
       body = { action: dialog, reason };
     }
@@ -392,10 +415,28 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
     : "Permanently delete employee";
 
   const needsReason = dialog === "DEACTIVATE" || dialog === "ARCHIVE" || dialog === "RESTORE" || dialog === "DELETE" || dialog === "ROLE";
+  const effectiveRole = dialog === "ROLE" ? role : employee.academyRole;
+  const needsSupervisor = (dialog === "ROLE" || (dialog === "ACCESS" && !employee.academyEnabled))
+    && (effectiveRole === "EMPLOYEE" || effectiveRole === "TRAINER");
+  const validManagers = employees.filter((item) => item.id !== employee.id
+    && !item.archivedAt
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && item.academyRole === "MANAGER_TL");
+  const validManagerIds = new Set(validManagers.map((item) => item.id));
+  const supervisorOptions = employees.filter((item) => item.id !== employee.id
+    && !item.archivedAt
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && (effectiveRole === "EMPLOYEE"
+      ? item.academyRole === "TRAINER" && Boolean(item.managerEmployeeId && validManagerIds.has(item.managerEmployeeId))
+      : item.academyRole === "MANAGER_TL"));
   const deleteReady = dialog !== "DELETE" || (
     assessment?.allowed
+    && (deletionMode === "FULL_PURGE" ? assessment.fullPurgeAllowed : assessment.zeroHistoryAllowed)
+    && acknowledged
     && reason.trim().length >= 10
-    && [employee.displayName, employee.employeeCode].some((value) => value.toLowerCase() === confirmation.trim().toLowerCase())
+    && confirmation.trim().toUpperCase() === `DELETE ${employee.employeeCode}`.toUpperCase()
   );
 
   return (
@@ -440,7 +481,7 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
               <RotateCcw className="h-4 w-4" /> Restore Employee
             </button>
           )}
-          <button type="button" onClick={() => openDialog("DELETE")} className={menuItemClass}>
+          <button type="button" onClick={() => openDialog("DELETE")} className={`${menuItemClass} text-red-700 hover:text-red-800`}>
             <Trash2 className="h-4 w-4" /> Permanently Delete
           </button>
         </div>
@@ -476,26 +517,68 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
                 <span className="text-xs font-normal text-wxIndigo500">Role changes are explicit, audited, and do not alter the employee segment or learning history.</span>
               </label>
             ) : null}
+            {needsSupervisor ? (
+              <div className="mt-4">
+                {supervisorOptions.length ? (
+                  <label className="grid gap-1.5 text-sm font-semibold text-wxIndigo800">
+                    {effectiveRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}
+                    <select value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)} className={inputClass}>
+                      <option value="">Select {effectiveRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"}</option>
+                      {supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
+                    <p className="font-semibold">No active Academy {effectiveRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} available</p>
+                    <p className="mt-1 text-sm leading-6">Create, enable or repair an authorised supervisor before assigning this employee.</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
             {dialog === "DELETE" ? (
               <div className="mt-5 space-y-4">
                 {!assessment && !error ? <p className="text-sm text-wxIndigo500">Checking Website and Academy dependencies...</p> : null}
-                {assessment && !assessment.allowed ? (
+                {assessment ? (
+                  <div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4">
+                    <p className="font-semibold text-wxIndigo900">Delete impact</p>
+                    {assessment.dependencies.length ? (
+                      <ul className="mt-3 space-y-1 text-sm text-wxIndigo700">
+                        {assessment.dependencies.map((dependency) => <li key={dependency.code}>• {dependency.label} ({dependency.count})</li>)}
+                      </ul>
+                    ) : <p className="mt-2 text-sm text-wxIndigo500">No meaningful governed history was found.</p>}
+                  </div>
+                ) : null}
+                {assessment && !assessment.fullPurgeAllowed ? (
                   <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
                     <p className="font-semibold">Permanent deletion is blocked</p>
-                    <p className="mt-1 text-sm">Archive this employee to preserve required history.</p>
+                    <p className="mt-1 text-sm">Resolve protected reporting or governance assignments first. Archive remains available.</p>
                     <ul className="mt-3 space-y-1 text-sm">
                       {assessment.blockers.map((blocker) => <li key={blocker.code}>• {blocker.label}{blocker.count > 1 ? ` (${blocker.count})` : ""}</li>)}
                     </ul>
                   </div>
                 ) : null}
-                {assessment?.allowed ? (
+                {assessment?.fullPurgeAllowed ? (
                   <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-900">
-                    No protected dependency was found. This removes the clearly marked temporary identity and cannot be undone.
+                    {assessment.academyHasMeaningfulHistory
+                      ? "Archive is recommended because governed history exists. Founder-authorised full purge remains available with deliberate confirmation."
+                      : "No meaningful governed history was found. This identity can be permanently deleted."}
                   </div>
                 ) : null}
+                {assessment?.fullPurgeAllowed && assessment.academyHasMeaningfulHistory ? (
+                  <label className="grid gap-1.5 text-sm font-semibold text-wxIndigo800">
+                    Deletion mode
+                    <select value={deletionMode} onChange={(event) => setDeletionMode(event.target.value as "ZERO_HISTORY" | "FULL_PURGE")} className={inputClass}>
+                      <option value="FULL_PURGE">Permanently purge employee and linked history</option>
+                    </select>
+                  </label>
+                ) : null}
                 <label className="grid gap-1.5 text-sm font-semibold text-wxIndigo800">
-                  Type employee name or code
-                  <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className={inputClass} disabled={!assessment?.allowed} />
+                  Type DELETE {employee.employeeCode}
+                  <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className={inputClass} disabled={!assessment?.fullPurgeAllowed} />
+                </label>
+                <label className="flex items-start gap-3 text-sm leading-6 text-wxIndigo700">
+                  <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-1 h-4 w-4 accent-red-700" disabled={!assessment?.fullPurgeAllowed} />
+                  <span>I understand that training, practice and linked employee data may be permanently removed.</span>
                 </label>
               </div>
             ) : null}
@@ -511,11 +594,11 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
               <button type="button" onClick={() => setDialog(null)} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700">Cancel</button>
               <button
                 type="button"
-                disabled={busy || !deleteReady || (needsReason && reason.trim().length < (dialog === "DELETE" ? 10 : 3))}
+                disabled={busy || !deleteReady || (needsSupervisor && (!managerEmployeeId || supervisorOptions.length === 0)) || (needsReason && reason.trim().length < (dialog === "DELETE" ? 10 : 3))}
                 onClick={submitLifecycle}
                 className={`min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${dialog === "DELETE" ? "bg-red-700" : "wx-gradient-action"}`}
               >
-                {busy ? "Working..." : dialog === "DELETE" ? "Permanently Delete" : dialog === "RESET_PASSWORD" ? "Reset Academy Password" : "Confirm"}
+                {busy ? "Working..." : dialog === "DELETE" ? deletionMode === "FULL_PURGE" ? "Permanently Purge Employee" : "Permanently Delete Employee" : dialog === "RESET_PASSWORD" ? "Reset Academy Password" : "Confirm"}
               </button>
             </div>
           </section>
@@ -530,12 +613,20 @@ function EmployeeEditor({
   employee,
   employees,
   teams,
-  onCreated
+  onCreated,
+  bootstrap
 }: {
   employee?: EmployeeDirectoryItem;
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
-  onCreated?: (result: { employeeName: string; loginEmail: string; initialPassword?: string }) => void;
+  onCreated?: (result: {
+    employeeName: string;
+    loginEmail: string;
+    initialPassword?: string;
+    academyRole?: AcademyRole;
+    primarySuperAdmin?: boolean;
+  }) => void;
+  bootstrap?: AcademyInitialAdminBootstrap;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -543,11 +634,14 @@ function EmployeeEditor({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
-  const [academyEnabled, setAcademyEnabled] = useState(employee?.academyEnabled ?? false);
-  const [academyRole, setAcademyRole] = useState<AcademyRole>(employee?.academyRole || "EMPLOYEE");
+  const initialBootstrap = !employee && Boolean(bootstrap?.requiresConfirmation);
+  const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || (employee?.academyEnabled ?? false));
+  const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || "EMPLOYEE"));
   const [academyRoleChangeReason, setAcademyRoleChangeReason] = useState("");
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? "");
+  const [managerEmployeeId, setManagerEmployeeId] = useState(employee?.managerEmployeeId || "");
+  const [bootstrapConfirmed, setBootstrapConfirmed] = useState(false);
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
   const [confirmingSegment, setConfirmingSegment] = useState(false);
   const deactivationConfirmed = useRef(false);
@@ -557,17 +651,44 @@ function EmployeeEditor({
     () => teams.filter((team) => !department || team.department.toLowerCase() === department.toLowerCase()),
     [department, teams]
   );
-  const supervisorOptions = employees.filter((item) => item.id !== employee?.id
+  const validManagers = employees.filter((item) => item.id !== employee?.id
+    && !item.archivedAt
     && item.employmentStatus === "ACTIVE"
     && item.academyEnabled
-    && (academyRole === "EMPLOYEE" ? item.academyRole === "TRAINER" : item.academyRole === "MANAGER_TL"));
-  const directSupervisor = employees.find((item) => item.id === employee?.managerEmployeeId) || null;
-  const displayedTrainer = employee?.academyRole === "EMPLOYEE" ? directSupervisor : employee?.academyRole === "TRAINER" ? employee : null;
-  const displayedManager = employee?.academyRole === "MANAGER_TL"
-    ? employee
-    : employee?.academyRole === "TRAINER"
+    && item.academyRole === "MANAGER_TL");
+  const validManagerIds = new Set(validManagers.map((item) => item.id));
+  const supervisorOptions = employees.filter((item) => item.id !== employee?.id
+    && !item.archivedAt
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && (academyRole === "EMPLOYEE"
+      ? item.academyRole === "TRAINER" && Boolean(item.managerEmployeeId && validManagerIds.has(item.managerEmployeeId))
+      : item.academyRole === "MANAGER_TL"));
+  const directSupervisor = employees.find((item) => item.id === managerEmployeeId) || null;
+  const displayedTrainer = academyRole === "EMPLOYEE"
+    ? directSupervisor?.academyRole === "TRAINER"
+      && directSupervisor.employmentStatus === "ACTIVE"
+      && directSupervisor.academyEnabled
+      && Boolean(directSupervisor.managerEmployeeId && validManagerIds.has(directSupervisor.managerEmployeeId))
+      ? directSupervisor
+      : null
+    : academyRole === "TRAINER" ? employee || null : null;
+  const displayedManager = academyRole === "MANAGER_TL"
+    ? employee || null
+    : academyRole === "TRAINER"
       ? directSupervisor
       : employees.find((item) => item.id === displayedTrainer?.managerEmployeeId) || null;
+  const hierarchyRequired = academyEnabled && (academyRole === "EMPLOYEE" || academyRole === "TRAINER");
+  const hierarchyValid = !hierarchyRequired || Boolean(managerEmployeeId && supervisorOptions.some((item) => item.id === managerEmployeeId));
+  const storedSupervisor = employee ? employees.find((item) => item.id === employee.managerEmployeeId) || null : null;
+  const storedHierarchyValid = !employee?.academyEnabled
+    || !["EMPLOYEE", "TRAINER"].includes(employee.academyRole)
+    || Boolean(storedSupervisor
+      && storedSupervisor.employmentStatus === "ACTIVE"
+      && storedSupervisor.academyEnabled
+      && (employee.academyRole === "EMPLOYEE"
+        ? storedSupervisor.academyRole === "TRAINER" && Boolean(storedSupervisor.managerEmployeeId && validManagerIds.has(storedSupervisor.managerEmployeeId))
+        : storedSupervisor.academyRole === "MANAGER_TL"));
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -596,10 +717,12 @@ function EmployeeEditor({
     const input = {
       ...values,
       academyEnabled,
+      academyRole,
       employeeSegment,
       academyRoleChangeReason,
+      initialBootstrapConfirmed: initialBootstrap ? bootstrapConfirmed : undefined,
       primaryTeamId: values.primaryTeamId || null,
-      managerEmployeeId: values.managerEmployeeId || null
+      managerEmployeeId: managerEmployeeId || null
     };
     const response = await fetch(employee ? `/api/admin/employees/${employee.id}` : "/api/admin/employees", {
       method: employee ? "PATCH" : "POST",
@@ -622,7 +745,9 @@ function EmployeeEditor({
     onCreated?.({
       employeeName: String(values.displayName || "Employee"),
       loginEmail: String(values.officialEmail || ""),
-      initialPassword: payload?.data?.sync?.initialPassword
+      initialPassword: payload?.data?.sync?.initialPassword,
+      academyRole: payload?.data?.employee?.academyRole,
+      primarySuperAdmin: payload?.data?.employee?.primarySuperAdmin
     });
     router.refresh();
   }
@@ -674,27 +799,48 @@ function EmployeeEditor({
       {employee ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
-          <StatusTile label="Academy access" value={employee.academyEnabled ? "Enabled" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Setup Incomplete" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
           <StatusTile label="Academy role" value={employee.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : employee.academyRole === "MANAGER_TL" ? "Manager / TL" : employee.academyRole === "TRAINER" ? "Trainer" : "Employee / BDE"} icon={<ShieldCheck className="h-4 w-4" />} />
           <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
           {employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
           <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
-          <StatusTile label="Sync status" value={employee.syncStatus} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" ? "danger" : undefined} />
+          <StatusTile label="Sync status" value={!storedHierarchyValid ? "Requires Action" : employee.syncStatus === "FAILED" ? "Runtime Failure" : employee.syncStatus === "PENDING" ? "Requires Action" : "Healthy"} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" || !storedHierarchyValid ? "danger" : undefined} />
           <StatusTile label="Last Academy sync" value={employee.lastSyncedAt ? new Date(employee.lastSyncedAt).toLocaleString() : "Not synced yet"} icon={<RefreshCw className="h-4 w-4" />} />
         </div>
       ) : null}
 
       {employee?.syncStatus === "FAILED" ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-4">
-          <p className="font-semibold text-red-900">Academy access is out of sync</p>
+          <p className="font-semibold text-red-900">{storedHierarchyValid ? "Academy access is out of sync" : "Hierarchy required"}</p>
           <p className="mt-1 text-sm leading-6 text-red-800">{employee.lastSyncError || "The Academy did not accept the latest change."}</p>
-          {!employee.academyEnabled || employee.employmentStatus === "INACTIVE" ? (
+          {!storedHierarchyValid && (employee.academyRole === "EMPLOYEE" || employee.academyRole === "TRAINER") ? (
+            <div className="mt-4 max-w-xl">
+              {supervisorOptions.length ? (
+                <label className="grid gap-1.5 text-sm font-semibold text-red-950">
+                  {employee.academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Manager / TL"}
+                  <select value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)} className={inputClass}>
+                    <option value="">Select {employee.academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"}</option>
+                    {supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
+                  </select>
+                  {displayedManager ? <span className="text-xs font-normal">Manager / TL: {displayedManager.displayName}</span> : null}
+                </label>
+              ) : (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
+                  <p className="font-semibold">No active Academy {employee.academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} available</p>
+                  <p className="mt-1 text-sm">Create/enable a supervisor or repair an existing hierarchy before assigning this employee.</p>
+                </div>
+              )}
+              <button type="button" disabled={!hierarchyValid || busy} onClick={() => formRef.current?.requestSubmit()} className="wx-gradient-action mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50">
+                <RefreshCw className="h-4 w-4" /> Save & Retry Academy Sync
+              </button>
+            </div>
+          ) : !employee.academyEnabled || employee.employmentStatus === "INACTIVE" ? (
             <p className="mt-2 text-sm font-semibold text-red-900">Security attention: confirm deactivation by retrying until the status is SYNCED.</p>
           ) : null}
-          <button type="button" disabled={retrying} onClick={retrySync} className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-700 px-4 text-sm font-semibold text-white disabled:opacity-60">
+          {storedHierarchyValid ? <button type="button" disabled={retrying} onClick={retrySync} className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-700 px-4 text-sm font-semibold text-white disabled:opacity-60">
             <RefreshCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} /> {retrying ? "Retrying..." : "Retry Academy Sync"}
-          </button>
+          </button> : null}
         </div>
       ) : null}
 
@@ -734,6 +880,17 @@ function EmployeeEditor({
       ) : null}
 
       <form ref={formRef} onSubmit={save} className="grid gap-5">
+        {initialBootstrap ? (
+          <section className="rounded-lg border border-violet-300 bg-violet-50 p-5 text-violet-950 shadow-soft md:p-6">
+            <p className="text-xs font-semibold uppercase text-violet-700">Academy initial admin setup</p>
+            <h2 className="mt-2 text-lg font-semibold">First Academy Admin</h2>
+            <p className="mt-2 text-sm leading-6">This is the first real Academy account. It will receive SuperAdmin access and unique Primary SuperAdmin governance after successful credential creation.</p>
+            <label className="mt-4 flex items-start gap-3 text-sm leading-6">
+              <input type="checkbox" checked={bootstrapConfirmed} onChange={(event) => setBootstrapConfirmed(event.target.checked)} className="mt-1 h-4 w-4 accent-violet-700" />
+              <span>I confirm this is the real first Academy administrator, not a test, UAT, demo or temporary identity.</span>
+            </label>
+          </section>
+        ) : null}
         <section className="rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6">
           <div className="flex items-center gap-2">
             <UserRound className="h-5 w-5 text-wxViolet700" />
@@ -763,10 +920,10 @@ function EmployeeEditor({
                 <span className="block font-semibold text-wxIndigo900">Sales Academy access</span>
                 <span className="mt-1 block text-sm text-wxIndigo500">Turning this off revokes active Academy sessions.</span>
               </span>
-              <input type="checkbox" checked={academyEnabled} onChange={(event) => setAcademyEnabled(event.target.checked)} className="h-5 w-5 accent-violet-700" />
+              <input type="checkbox" checked={academyEnabled} onChange={(event) => setAcademyEnabled(event.target.checked)} disabled={initialBootstrap} className="h-5 w-5 accent-violet-700 disabled:opacity-60" />
             </label>
             <Field label="Academy role">
-              <select name="academyRole" value={academyRole} onChange={(event) => setAcademyRole(event.target.value as AcademyRole)} className={inputClass}>
+              <select name="academyRole" value={academyRole} onChange={(event) => { setAcademyRole(event.target.value as AcademyRole); setManagerEmployeeId(""); }} disabled={initialBootstrap} className={inputClass}>
                 <option value="EMPLOYEE">Employee / BDE</option>
                 <option value="TRAINER">Trainer</option>
                 <option value="MANAGER_TL">Manager / TL</option>
@@ -783,27 +940,36 @@ function EmployeeEditor({
             </div>
           ) : null}
           {academyRole === "EMPLOYEE" ? <div className="mt-4 max-w-xl"><Field label="Employee segment"><select name="employeeSegment" value={employeeSegment} onChange={(event) => setEmployeeSegment(event.target.value as EmployeeSegment)} className={inputClass}><option value="NEW_BDE">New BDE · Foundation journey</option><option value="SENIOR_BDE">Senior BDE · Diagnostic and focused development</option></select><span className="text-xs font-normal text-wxIndigo500">This is a training segment, not an Academy role. Changing it preserves the employee identity and all history.</span></Field></div> : <input type="hidden" name="employeeSegment" value="SENIOR_BDE" />}
-          {academyRole === "EMPLOYEE" || academyRole === "TRAINER" ? <div className="mt-4 max-w-xl"><Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? "The Manager / TL is derived through this Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field></div> : <input type="hidden" name="managerEmployeeId" value="" />}
+          {academyRole === "EMPLOYEE" || academyRole === "TRAINER" ? <div id="academy-hierarchy" className="mt-4 max-w-xl">{supervisorOptions.length ? <Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? displayedManager ? `Manager / TL: ${displayedManager.displayName}` : "The Manager / TL resolves automatically through the selected Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field> : <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950"><p className="font-semibold">No active Academy {academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} available</p><p className="mt-1 text-sm leading-6">Create/enable a {academyRole === "EMPLOYEE" ? "Trainer or repair an existing Trainer" : "Manager / TL"} before assigning this employee.</p></div>}</div> : <input type="hidden" name="managerEmployeeId" value="" />}
+
+          {hierarchyRequired && !hierarchyValid ? (
+            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
+              <p className="font-semibold">Academy setup incomplete</p>
+              <p className="mt-1 text-sm leading-6">Assign an active {academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} before enabling Academy access for this employee.</p>
+            </div>
+          ) : null}
 
           {academyRole === "SUPER_ADMIN" ? (
             <div className="mt-4 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo700">
-              <p><span className="font-semibold">Primary SuperAdmin:</span> {employee?.primarySuperAdmin ? "YES" : "NO"}</p>
-              <p className="mt-1 leading-6">Multiple SuperAdmins are allowed. Exactly one Primary is managed through the separate governance transfer control.</p>
-              <Link href="/admin/ai-governance#primary-superadmin" className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-wxBorder bg-wxSurface px-4 font-semibold text-wxViolet700">Manage Primary SuperAdmin</Link>
+              <p><span className="font-semibold">Primary SuperAdmin:</span> {initialBootstrap ? "Will be assigned after successful credential creation" : employee?.primarySuperAdmin ? "YES" : "NO"}</p>
+              <p className="mt-1 leading-6">{initialBootstrap
+                ? "This one-time bootstrap does not apply to any later employee."
+                : "Multiple SuperAdmins are allowed. Exactly one Primary is managed through the separate governance transfer control."}</p>
+              {!initialBootstrap ? <Link href="/admin/ai-governance#primary-superadmin" className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-wxBorder bg-wxSurface px-4 font-semibold text-wxViolet700">Manage Primary SuperAdmin</Link> : null}
             </div>
           ) : null}
 
           {employee && academyRole !== "SUPER_ADMIN" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
-            <StatusTile label="Manager / TL" value={displayedManager?.displayName || (employee.academyRole === "MANAGER_TL" ? employee.displayName : "Reassignment required")} icon={<UsersRound className="h-4 w-4" />} tone={displayedManager ? undefined : "danger"}/>
-            <StatusTile label="Trainer" value={displayedTrainer?.displayName || (employee.academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={employee.academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
+            <StatusTile label="Manager / TL" value={displayedManager?.displayName || (academyRole === "MANAGER_TL" ? employee.displayName : "Reassignment required")} icon={<UsersRound className="h-4 w-4" />} tone={displayedManager ? undefined : "danger"}/>
+            <StatusTile label="Trainer" value={displayedTrainer?.displayName || (academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
             <StatusTile label="Employee" value={employee.displayName} icon={<UserRound className="h-4 w-4" />}/>
           </div> : null}
         </section>
 
         <div className="flex flex-col gap-2 rounded-md border border-wxBorder bg-wxSurfaceElevated/95 p-3 shadow-lift sm:flex-row sm:items-center sm:justify-between md:sticky md:bottom-20 md:z-20 md:backdrop-blur">
           <p className="text-xs leading-5 text-wxIndigo500">Changes are audited. Academy sync runs after the Website record is safely saved.</p>
-          <button disabled={busy} className="wx-gradient-action inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold text-white disabled:opacity-60">
-            <Check className="h-4 w-4" /> {busy ? "Saving..." : employee ? "Save Employee" : "Create Employee"}
+          <button disabled={busy || !hierarchyValid || (initialBootstrap && !bootstrapConfirmed)} className="wx-gradient-action inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold text-white disabled:opacity-60">
+            <Check className="h-4 w-4" /> {busy ? "Saving..." : initialBootstrap ? "Create Primary SuperAdmin" : employee ? "Save Employee" : "Create Employee"}
           </button>
         </div>
       </form>
@@ -849,6 +1015,8 @@ function AcademyAccessReadyModal({
 
         <dl className="mt-5 grid gap-4">
           <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Employee</dt><dd className="mt-1 font-semibold text-wxIndigo900">{credentials.employeeName}</dd></div>
+          {credentials.academyRole ? <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Academy Role</dt><dd className="mt-1 font-semibold text-wxIndigo900">{credentials.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : credentials.academyRole.replace("_", " / ")}</dd></div> : null}
+          {credentials.primarySuperAdmin ? <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Primary SuperAdmin</dt><dd className="mt-1 font-semibold text-emerald-700">Yes</dd></div> : null}
           <div>
             <dt className="text-xs font-semibold uppercase text-wxIndigo500">Login Email</dt>
             <dd className="mt-1 break-all rounded-md border border-wxBorder bg-wxSurfaceSoft px-3 py-2 font-mono text-sm text-wxIndigo900">{credentials.loginEmail}</dd>

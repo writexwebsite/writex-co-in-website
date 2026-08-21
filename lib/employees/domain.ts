@@ -55,8 +55,27 @@ export type EmployeeDeletionBlocker = {
 
 export type EmployeeDeletionAssessment = {
   allowed: boolean;
+  zeroHistoryAllowed: boolean;
+  fullPurgeAllowed: boolean;
+  recommendedMode: "ZERO_HISTORY" | "FULL_PURGE" | "ARCHIVE";
   temporaryIdentity: boolean;
   blockers: EmployeeDeletionBlocker[];
+  dependencies: EmployeeDeletionBlocker[];
+  academyAvailable: boolean;
+  academyHasMeaningfulHistory: boolean;
+  totalDependencyCount: number;
+};
+
+export type AcademyInitialAdminBootstrap = {
+  status: "DISABLED" | "READY" | "RESERVED" | "CONSUMED";
+  candidateEmployeeId: string | null;
+  consumedByEmployeeId: string | null;
+  readyAt: string | null;
+  consumedAt: string | null;
+  backupReference: string | null;
+  employeeCount: number;
+  primarySuperAdminEmployeeId: string | null;
+  requiresConfirmation: boolean;
 };
 
 export function isClearlyTemporaryEmployee(employee: Pick<EmployeeDirectoryItem, "employeeCode" | "displayName" | "officialEmail">) {

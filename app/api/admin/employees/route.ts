@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
     });
     const input = await parseJson(request, employeeMutationSchema);
     const employeeId = await createEmployee(input, admin);
+    const createdEmployee = await getEmployee(employeeId);
+    if (!createdEmployee) throw new Error("The employee record was not available after creation.");
     await auditEmployeeMutation({
       actor: admin,
       employeeId,
@@ -57,9 +59,9 @@ export async function POST(request: NextRequest) {
       metadata: {
         employeeCode: input.employeeCode,
         department: input.department,
-        academyAccess: input.academyEnabled,
-        academyRole: input.academyRole,
-        employeeSegment: input.employeeSegment
+        academyAccess: createdEmployee.academyEnabled,
+        academyRole: createdEmployee.academyRole,
+        employeeSegment: createdEmployee.employeeSegment
       },
       request
     });
@@ -68,7 +70,11 @@ export async function POST(request: NextRequest) {
       actor: admin,
       employeeId,
       action: sync.synced ? "academy_access_synced" : "academy_access_sync_failed",
-      metadata: { requestId: sync.requestId, academyAccess: input.academyEnabled, employeeSegment: input.employeeSegment },
+      metadata: {
+        requestId: sync.requestId,
+        academyAccess: createdEmployee.academyEnabled,
+        employeeSegment: createdEmployee.employeeSegment
+      },
       request
     });
     return apiOk({ employee: await getEmployee(employeeId), sync }, {

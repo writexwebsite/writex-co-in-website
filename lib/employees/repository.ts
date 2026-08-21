@@ -5,10 +5,16 @@ import type { AdminSession } from "@/lib/auth";
 import { ApiError } from "@/lib/api/response";
 import { dbQuery, withDbTransaction } from "@/lib/db";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
-import { AcademySyncError, syncEmployeeToAcademy } from "@/lib/employees/academy-client";
+import {
+  AcademySyncError,
+  permanentlyPurgeAcademyEmployee,
+  previewAcademyEmployeePurge,
+  syncEmployeeToAcademy
+} from "@/lib/employees/academy-client";
 import {
   academyApplicationKey,
   type AcademyRole,
+  type AcademyInitialAdminBootstrap,
   type EmployeeDeletionAssessment,
   type EmployeeDirectoryItem,
   type EmployeeLifecycleFilter,
@@ -171,7 +177,57 @@ export type EmployeeMutationInput = {
   academyRole: AcademyRole;
   employeeSegment: EmployeeSegment;
   academyRoleChangeReason?: string;
+  initialBootstrapConfirmed?: boolean;
 };
+
+type BootstrapRow = {
+  status: AcademyInitialAdminBootstrap["status"];
+  candidate_employee_id: string | null;
+  consumed_by_employee_id: string | null;
+  ready_at: Date | null;
+  consumed_at: Date | null;
+  backup_reference: string | null;
+};
+
+export async function getAcademyInitialAdminBootstrap(): Promise<AcademyInitialAdminBootstrap> {
+  const result = await dbQuery<BootstrapRow & {
+    employee_count: string;
+    primary_superadmin_employee_id: string | null;
+  }>(
+    `select bootstrap.status,bootstrap.candidate_employee_id,bootstrap.consumed_by_employee_id,
+        bootstrap.ready_at,bootstrap.consumed_at,bootstrap.backup_reference,
+        (select count(*)::text from employees) employee_count,
+        (select primary_superadmin_employee_id from ai_governance_products where product_key=$1) primary_superadmin_employee_id
+     from academy_initial_admin_bootstrap bootstrap where bootstrap.singleton=true`,
+    [academyApplicationKey]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return {
+      status: "DISABLED",
+      candidateEmployeeId: null,
+      consumedByEmployeeId: null,
+      readyAt: null,
+      consumedAt: null,
+      backupReference: null,
+      employeeCount: 0,
+      primarySuperAdminEmployeeId: null,
+      requiresConfirmation: false
+    };
+  }
+  const employeeCount = Number(row.employee_count);
+  return {
+    status: row.status,
+    candidateEmployeeId: row.candidate_employee_id,
+    consumedByEmployeeId: row.consumed_by_employee_id,
+    readyAt: row.ready_at?.toISOString() || null,
+    consumedAt: row.consumed_at?.toISOString() || null,
+    backupReference: row.backup_reference,
+    employeeCount,
+    primarySuperAdminEmployeeId: row.primary_superadmin_employee_id,
+    requiresConfirmation: row.status === "READY" && employeeCount === 0 && !row.primary_superadmin_employee_id
+  };
+}
 
 async function validateRelationships(
   query: <R extends Record<string, unknown>>(text: string, values?: unknown[]) => Promise<R[]>,
@@ -244,7 +300,26 @@ async function validateRelationships(
 
 export async function createEmployee(input: EmployeeMutationInput, actor: AdminSession) {
   return withDbTransaction(async (query) => {
-    await validateRelationships(query, input);
+    const bootstrapRows = await query<BootstrapRow>(
+      "select status,candidate_employee_id,consumed_by_employee_id,ready_at,consumed_at,backup_reference from academy_initial_admin_bootstrap where singleton=true for update"
+    );
+    const employeeCountRows = await query<{ count: string }>("select count(*)::text count from employees");
+    const bootstrap = bootstrapRows[0];
+    const initialBootstrap = bootstrap?.status === "READY" && Number(employeeCountRows[0]?.count || 0) === 0;
+    if (initialBootstrap && !input.initialBootstrapConfirmed) {
+      throw new ApiError(409, "BAD_REQUEST", "Confirm CREATE PRIMARY SUPERADMIN before creating the first real Academy employee.");
+    }
+    if (initialBootstrap && isClearlyTemporaryEmployee(input)) {
+      throw new ApiError(409, "BAD_REQUEST", "A test, UAT, demo or temporary identity cannot consume the one-time Primary SuperAdmin bootstrap.");
+    }
+    const effectiveInput: EmployeeMutationInput = initialBootstrap ? {
+      ...input,
+      employmentStatus: "ACTIVE",
+      academyEnabled: true,
+      academyRole: "SUPER_ADMIN",
+      managerEmployeeId: null
+    } : input;
+    await validateRelationships(query, effectiveInput);
     let employeeId: string;
     try {
       const rows = await query<{ id: string }>(
@@ -252,9 +327,9 @@ export async function createEmployee(input: EmployeeMutationInput, actor: AdminS
           (employee_code, display_name, official_email, department, designation,
            employment_status, primary_team_id, manager_employee_id, created_by_admin_id)
          values ($1, $2, lower($3), $4, $5, $6, $7, $8, $9) returning id`,
-        [input.employeeCode, input.displayName, input.officialEmail, input.department,
-          input.designation, input.employmentStatus, input.primaryTeamId,
-          input.managerEmployeeId, actor.adminUserId]
+        [effectiveInput.employeeCode, effectiveInput.displayName, effectiveInput.officialEmail, effectiveInput.department,
+          effectiveInput.designation, effectiveInput.employmentStatus, effectiveInput.primaryTeamId,
+          effectiveInput.managerEmployeeId, actor.adminUserId]
       );
       employeeId = rows[0].id;
     } catch (error) {
@@ -269,8 +344,16 @@ export async function createEmployee(input: EmployeeMutationInput, actor: AdminS
          granted_at, sync_status, sync_version)
        values ($1, $2, $3, $4, $5, $6, case when $3 then now() else null end,
          case when $3 then 'PENDING' else 'SYNCED' end, case when $3 then 1 else 0 end)`,
-      [employeeId, academyApplicationKey, input.academyEnabled, input.academyRole, input.employeeSegment, actor.adminUserId]
+      [employeeId, academyApplicationKey, effectiveInput.academyEnabled, effectiveInput.academyRole, effectiveInput.employeeSegment, actor.adminUserId]
     );
+    if (initialBootstrap) {
+      await query(
+        `update academy_initial_admin_bootstrap
+         set status='RESERVED',candidate_employee_id=$1,reserved_at=now(),updated_by_admin_id=$2,updated_at=now()
+         where singleton=true and status='READY'`,
+        [employeeId, actor.adminUserId]
+      );
+    }
     return employeeId;
   });
 }
@@ -352,8 +435,8 @@ export type EmployeeLifecycleMutation =
   | { action: "DEACTIVATE"; reason: string }
   | { action: "ARCHIVE"; reason: string }
   | { action: "RESTORE"; reason: string }
-  | { action: "SET_ACADEMY_ACCESS"; enabled: boolean }
-  | { action: "SET_ACADEMY_ROLE"; role: AcademyRole; reason: string };
+  | { action: "SET_ACADEMY_ACCESS"; enabled: boolean; managerEmployeeId?: string | null }
+  | { action: "SET_ACADEMY_ROLE"; role: AcademyRole; reason: string; managerEmployeeId?: string | null };
 
 export async function applyEmployeeLifecycleMutation(
   employeeId: string,
@@ -371,10 +454,19 @@ export async function applyEmployeeLifecycleMutation(
       external_application_user_id: string | null;
       lifecycle_version: number;
       primary_superadmin: boolean;
+      employee_code: string;
+      display_name: string;
+      official_email: string;
+      department: string;
+      designation: string;
+      primary_team_id: string | null;
+      manager_employee_id: string | null;
+      employee_segment: EmployeeSegment;
     }>(
-      `select e.employment_status, e.archived_at, e.archive_previous_employment_status,
-          e.archive_previous_academy_enabled, e.lifecycle_version,
-          a.enabled, a.application_role, a.external_application_user_id,
+       `select e.employee_code,e.display_name,e.official_email,e.department,e.designation,
+           e.primary_team_id,e.manager_employee_id,e.employment_status, e.archived_at, e.archive_previous_employment_status,
+           e.archive_previous_academy_enabled, e.lifecycle_version,
+           a.enabled, a.application_role,a.employee_segment,a.external_application_user_id,
           exists(select 1 from ai_governance_products p where p.product_key=$2 and p.primary_superadmin_employee_id=e.id) primary_superadmin
        from employees e
        join employee_application_access a on a.employee_id = e.id and a.application_key = $2
@@ -398,7 +490,11 @@ export async function applyEmployeeLifecycleMutation(
       );
     }
 
-    if ((input.action === "DEACTIVATE" || input.action === "ARCHIVE") && ["TRAINER", "MANAGER_TL"].includes(current.application_role)) {
+    const removesSupervisor = input.action === "DEACTIVATE"
+      || input.action === "ARCHIVE"
+      || (input.action === "SET_ACADEMY_ACCESS" && !input.enabled)
+      || (input.action === "SET_ACADEMY_ROLE" && input.role !== current.application_role);
+    if (removesSupervisor && ["TRAINER", "MANAGER_TL"].includes(current.application_role)) {
       const reports = await query<{ count: string }>(
         `select count(*)::text count from employees e
          join employee_application_access a on a.employee_id=e.id and a.application_key=$2
@@ -455,6 +551,19 @@ export async function applyEmployeeLifecycleMutation(
       }
       const restoredStatus = current.archive_previous_employment_status || "INACTIVE";
       const restoredAccess = restoredStatus === "ACTIVE" && Boolean(current.archive_previous_academy_enabled);
+      await validateRelationships(query, {
+        employeeCode: current.employee_code,
+        displayName: current.display_name,
+        officialEmail: current.official_email,
+        department: current.department,
+        designation: current.designation,
+        employmentStatus: restoredStatus,
+        primaryTeamId: current.primary_team_id,
+        managerEmployeeId: current.manager_employee_id,
+        academyEnabled: restoredAccess,
+        academyRole: current.application_role,
+        employeeSegment: current.employee_segment
+      }, employeeId);
       await query(
         `update employees
          set archived_at = null, archived_by_admin_id = null,
@@ -482,6 +591,21 @@ export async function applyEmployeeLifecycleMutation(
       if (input.enabled && current.employment_status !== "ACTIVE") {
         throw new ApiError(409, "BAD_REQUEST", "Activate employment before enabling Academy access.");
       }
+      const managerEmployeeId = input.managerEmployeeId === undefined ? current.manager_employee_id : input.managerEmployeeId;
+      await validateRelationships(query, {
+        employeeCode: current.employee_code,
+        displayName: current.display_name,
+        officialEmail: current.official_email,
+        department: current.department,
+        designation: current.designation,
+        employmentStatus: current.employment_status,
+        primaryTeamId: current.primary_team_id,
+        managerEmployeeId,
+        academyEnabled: input.enabled,
+        academyRole: current.application_role,
+        employeeSegment: current.employee_segment
+      }, employeeId);
+      await query("update employees set manager_employee_id=$2 where id=$1", [employeeId, managerEmployeeId]);
       const shouldSync = input.enabled || Boolean(current.external_application_user_id);
       await query(
         `update employee_application_access
@@ -498,6 +622,23 @@ export async function applyEmployeeLifecycleMutation(
       if (current.archived_at) {
         throw new ApiError(409, "BAD_REQUEST", "Restore the employee before changing the Academy role.");
       }
+      const managerEmployeeId = ["EMPLOYEE", "TRAINER"].includes(input.role)
+        ? (input.managerEmployeeId === undefined ? current.manager_employee_id : input.managerEmployeeId)
+        : null;
+      await validateRelationships(query, {
+        employeeCode: current.employee_code,
+        displayName: current.display_name,
+        officialEmail: current.official_email,
+        department: current.department,
+        designation: current.designation,
+        employmentStatus: current.employment_status,
+        primaryTeamId: current.primary_team_id,
+        managerEmployeeId,
+        academyEnabled: current.enabled,
+        academyRole: input.role,
+        employeeSegment: current.employee_segment
+      }, employeeId);
+      await query("update employees set manager_employee_id=$2 where id=$1", [employeeId, managerEmployeeId]);
       const shouldSync = current.enabled || Boolean(current.external_application_user_id);
       await query(
         `update employee_application_access
@@ -523,7 +664,7 @@ const baselineEmployeeAuditActions = [
   "academy_access_sync_failed"
 ] as const;
 
-export async function getEmployeeDeletionAssessment(employeeId: string): Promise<EmployeeDeletionAssessment> {
+export async function getEmployeeDeletionAssessment(employeeId: string, actor: AdminSession): Promise<EmployeeDeletionAssessment> {
   const employee = await getEmployee(employeeId);
   if (!employee) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
   const result = await dbQuery<{
@@ -544,29 +685,72 @@ export async function getEmployeeDeletionAssessment(employeeId: string): Promise
     [employeeId, baselineEmployeeAuditActions]
   );
   const counts = result.rows[0];
-  const blockers = [
-    employee.academyUserId ? { code: "ACADEMY_HISTORY", label: "Academy identity or learning history", count: 1 } : null,
+  const protectedBlockers = [
     Number(counts.subordinate_count) ? { code: "REPORTING_LINE", label: "Employee reporting relationships", count: Number(counts.subordinate_count) } : null,
-    Number(counts.primary_superadmin_count) ? { code: "PRIMARY_SUPERADMIN", label: "Primary Academy Super Admin assignment", count: Number(counts.primary_superadmin_count) } : null,
+    Number(counts.primary_superadmin_count) ? { code: "PRIMARY_SUPERADMIN", label: "Current Primary Academy SuperAdmin assignment", count: Number(counts.primary_superadmin_count) } : null
+  ].filter((item): item is { code: string; label: string; count: number } => Boolean(item));
+  const localDependencies = [
     Number(counts.ai_usage_count) ? { code: "AI_USAGE", label: "Academy AI usage records", count: Number(counts.ai_usage_count) } : null,
     Number(counts.active_session_count) ? { code: "WEBSITE_SESSION", label: "Active employee sessions", count: Number(counts.active_session_count) } : null,
     Number(counts.meaningful_audit_count) ? { code: "AUDIT_HISTORY", label: "Meaningful employee lifecycle or role history", count: Number(counts.meaningful_audit_count) } : null
   ].filter((item): item is { code: string; label: string; count: number } => Boolean(item));
-  const temporaryIdentity = isClearlyTemporaryEmployee(employee);
-  if (!temporaryIdentity) {
-    blockers.unshift({ code: "NOT_TEMPORARY", label: "Employee is not clearly marked as a test, UAT, demo, temporary or duplicate identity", count: 1 });
+  let academyAvailable = true;
+  let academyHasMeaningfulHistory = false;
+  let academyDependencies: Array<{ code: string; label: string; count: number }> = [];
+  try {
+    const preview = await previewAcademyEmployeePurge(employeeId, { adminId: actor.adminUserId, email: actor.email });
+    academyHasMeaningfulHistory = preview.hasMeaningfulHistory;
+    academyDependencies = preview.categories.map((item) => ({
+      code: `ACADEMY_${item.code}`,
+      label: item.label,
+      count: item.count
+    }));
+  } catch {
+    academyAvailable = false;
+    protectedBlockers.push({ code: "ACADEMY_UNAVAILABLE", label: "Academy dependency check is unavailable. Retry before deleting.", count: 1 });
   }
-  return { allowed: temporaryIdentity && blockers.length === 0, temporaryIdentity, blockers };
+  const dependencies = [...localDependencies, ...academyDependencies];
+  const temporaryIdentity = isClearlyTemporaryEmployee(employee);
+  const meaningfulHistory = academyHasMeaningfulHistory || localDependencies.some((item) => item.code !== "WEBSITE_SESSION");
+  const zeroHistoryAllowed = academyAvailable && protectedBlockers.length === 0 && !meaningfulHistory;
+  const fullPurgeAllowed = academyAvailable && protectedBlockers.length === 0;
+  return {
+    allowed: fullPurgeAllowed,
+    zeroHistoryAllowed,
+    fullPurgeAllowed,
+    recommendedMode: !fullPurgeAllowed ? "ARCHIVE" : meaningfulHistory ? "FULL_PURGE" : "ZERO_HISTORY",
+    temporaryIdentity,
+    blockers: protectedBlockers,
+    dependencies,
+    academyAvailable,
+    academyHasMeaningfulHistory,
+    totalDependencyCount: dependencies.reduce((sum, item) => sum + item.count, 0)
+  };
 }
 
 export async function permanentlyDeleteEmployee(
   employeeId: string,
-  confirmation: string
-) {
-  const assessment = await getEmployeeDeletionAssessment(employeeId);
-  if (!assessment.allowed) {
-    throw new ApiError(409, "BAD_REQUEST", "Permanent deletion is blocked because this employee has protected history. Archive the employee instead.");
+  input: {
+    confirmation: string;
+    reason: string;
+    mode: "ZERO_HISTORY" | "FULL_PURGE";
+    actor: AdminSession;
   }
+) {
+  const employee = await getEmployee(employeeId);
+  if (!employee) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
+  if (input.confirmation.trim().toUpperCase() !== `DELETE ${employee.employeeCode}`.toUpperCase()) {
+    throw new ApiError(400, "BAD_REQUEST", `Type DELETE ${employee.employeeCode} to confirm permanent deletion.`);
+  }
+  const assessment = await getEmployeeDeletionAssessment(employeeId, input.actor);
+  if (!assessment.fullPurgeAllowed || (input.mode === "ZERO_HISTORY" && !assessment.zeroHistoryAllowed)) {
+    throw new ApiError(409, "BAD_REQUEST", "Permanent deletion is blocked. Resolve the protected relationship or choose Archive.");
+  }
+  const academy = await permanentlyPurgeAcademyEmployee(employeeId, {
+    mode: input.mode,
+    reason: input.reason,
+    requestedBy: { adminId: input.actor.adminUserId, email: input.actor.email }
+  });
   return withDbTransaction(async (query) => {
     const rows = await query<{
       employee_code: string;
@@ -582,20 +766,34 @@ export async function permanentlyDeleteEmployee(
     );
     const current = rows[0];
     if (!current) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
-    const matches = [current.employee_code, current.display_name]
-      .some((value) => value.toLowerCase() === confirmation.trim().toLowerCase());
-    if (!matches) {
-      throw new ApiError(400, "BAD_REQUEST", "Type the exact employee name or code to confirm permanent deletion.");
+    const protectedCounts = await query<{ reports: string; primary_count: string }>(
+      `select (select count(*)::text from employees where manager_employee_id=$1) reports,
+        (select count(*)::text from ai_governance_products where primary_superadmin_employee_id=$1) primary_count`,
+      [employeeId]
+    );
+    if (Number(protectedCounts[0]?.reports || 0) || Number(protectedCounts[0]?.primary_count || 0)) {
+      throw new ApiError(409, "BAD_REQUEST", "The employee became protected during deletion. Latest state has been loaded; retry after reassignment.");
     }
-    if (current.external_application_user_id) {
-      throw new ApiError(409, "BAD_REQUEST", "This employee has Academy history and must be archived instead.");
-    }
+    await query("delete from employee_sessions where employee_id=$1::text", [employeeId]);
+    await query("delete from ai_usage_ledger where employee_id=$1::text", [employeeId]);
+    await query("delete from audit_logs where entity_type='employee' and entity_id=$1::text", [employeeId]);
     await query(
       "delete from employee_application_access where employee_id = $1 and application_key = $2",
       [employeeId, academyApplicationKey]
     );
     await query("delete from employees where id = $1", [employeeId]);
-    return current;
+    await query(
+      `insert into employee_deletion_tombstones(
+         employee_reference,employee_code,deletion_mode,dependency_counts,reason,
+         performed_by_admin_id,performed_by_email,academy_request_id
+       ) values($1,$2,$3,$4::jsonb,$5,$6,$7,$8)`,
+      [employeeId,current.employee_code,input.mode,JSON.stringify({
+        website: assessment.dependencies,
+        academy: academy.counts,
+        total: assessment.totalDependencyCount
+      }),input.reason,input.actor.adminUserId,input.actor.email,academy.requestId]
+    );
+    return { ...current, academy };
   });
 }
 
@@ -668,7 +866,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
       employmentStatus: row.employment_status,
       managerEmployeeId: row.manager_employee_id
     },
-    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.application_role === "EMPLOYEE" ? row.employee_segment : "SENIOR_BDE" },
+    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.employee_segment },
     team: row.team_id ? {
       id: row.team_id,
       code: row.team_code!,
@@ -707,11 +905,36 @@ export async function attemptEmployeeAcademySync(employeeId: string, actor: Admi
        where employee_id = $1 and application_key = $2 and last_sync_request_id = $3`,
       [employeeId, academyApplicationKey, requestId, result.academyUserId]
     );
+    const bootstrapRows = await withDbTransaction(async (query) => {
+      const bootstrap = await query<{ status: string; candidate_employee_id: string | null }>(
+        "select status,candidate_employee_id from academy_initial_admin_bootstrap where singleton=true for update"
+      );
+      if (bootstrap[0]?.status !== "RESERVED" || bootstrap[0].candidate_employee_id !== employeeId) return [];
+      const governanceProduct = await query<{ id: string }>(
+        `update ai_governance_products
+         set primary_superadmin_employee_id=$2,updated_by_admin_id=$3
+         where product_key=$1
+         returning id`,
+        [academyApplicationKey, employeeId, actor.adminUserId]
+      );
+      if (!governanceProduct[0]) {
+        throw new Error("Sales Academy governance is unavailable. The first SuperAdmin bootstrap remains reserved for retry.");
+      }
+      await query(
+        `update academy_initial_admin_bootstrap
+         set status='CONSUMED',consumed_by_employee_id=$1,consumed_at=now(),candidate_employee_id=null,
+             updated_by_admin_id=$2,updated_at=now()
+         where singleton=true and status='RESERVED' and candidate_employee_id=$1`,
+        [employeeId, actor.adminUserId]
+      );
+      return [{ consumed: true }];
+    });
     return {
       synced: true as const,
       requestId,
       initialPassword: result.initialPassword,
-      sessionsRevoked: result.sessionsRevoked
+      sessionsRevoked: result.sessionsRevoked,
+      bootstrapConsumed: Boolean(bootstrapRows[0])
     };
   } catch (error) {
     const syncError = error instanceof AcademySyncError

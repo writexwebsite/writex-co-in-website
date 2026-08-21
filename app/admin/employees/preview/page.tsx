@@ -45,6 +45,17 @@ export default async function EmployeePreviewPage({
           employees={params.state === "empty" ? [] : filteredEmployees}
           teams={employeePreviewTeams}
           lifecycle={lifecycle}
+          bootstrap={{
+            status: params.state === "empty" ? "READY" : "CONSUMED",
+            candidateEmployeeId: null,
+            consumedByEmployeeId: params.state === "empty" ? null : employeePreviewItems[0]?.id || null,
+            readyAt: params.state === "empty" ? new Date().toISOString() : null,
+            consumedAt: params.state === "empty" ? null : new Date().toISOString(),
+            backupReference: null,
+            employeeCount: params.state === "empty" ? 0 : filteredEmployees.length,
+            primarySuperAdminEmployeeId: params.state === "empty" ? null : employeePreviewItems[0]?.id || null,
+            requiresConfirmation: params.state === "empty"
+          }}
         />
       )}
     </AdminShell>

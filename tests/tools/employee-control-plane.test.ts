@@ -96,14 +96,16 @@ test("permanent purge eligibility is limited to clearly temporary identities", (
   }), false);
 });
 
-test("deletion assessment blocks Academy and meaningful operational history", async () => {
+test("deletion assessment distinguishes protected relationships from authorisable governed history", async () => {
   const repository = await read("lib/employees/repository.ts");
-  assert.match(repository, /ACADEMY_HISTORY/);
   assert.match(repository, /REPORTING_LINE/);
   assert.match(repository, /PRIMARY_SUPERADMIN/);
   assert.match(repository, /AI_USAGE/);
   assert.match(repository, /AUDIT_HISTORY/);
-  assert.match(repository, /Archive the employee instead/);
+  assert.match(repository, /previewAcademyEmployeePurge/);
+  assert.match(repository, /fullPurgeAllowed/);
+  assert.match(repository, /zeroHistoryAllowed/);
+  assert.match(repository, /permanentlyPurgeAcademyEmployee/);
 });
 
 test("Website Admin exposes one-time Academy credentials and signed password reset", async () => {
@@ -138,7 +140,49 @@ test("Website Admin enforces the Manager TL to Trainer to Employee hierarchy", a
   assert.match(repository, /when a\.application_role='EMPLOYEE' then supervisor\.manager_employee_id/);
   assert.match(ui, /Assigned Trainer/);
   assert.match(ui, /Reports To Manager \/ TL/);
-  assert.match(ui, /The Manager \/ TL is derived through this Trainer/);
+  assert.match(ui, /The Manager \/ TL resolves automatically through the selected Trainer/);
+});
+
+test("hierarchy lifecycle actions validate a complete proposed state before sync", async () => {
+  const repository = await read("lib/employees/repository.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  assert.match(validation, /managerEmployeeId: optionalUuid\.optional\(\)/);
+  assert.match(repository, /await validateRelationships\(query, \{/);
+  assert.match(repository, /const removesSupervisor/);
+  assert.match(ui, /Academy setup incomplete/i);
+  assert.match(ui, /Save & Retry Academy Sync/);
+  assert.match(ui, /No active Academy/);
+});
+
+test("employee purge uses exact impact, strong confirmation and non-sensitive tombstones", async () => {
+  const domain = await read("lib/employees/domain.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  const migration = await read("database/migrations/20260821_employee_hierarchy_purge_bootstrap.sql");
+  assert.match(domain, /recommendedMode: "ZERO_HISTORY" \| "FULL_PURGE" \| "ARCHIVE"/);
+  assert.match(validation, /acknowledged: z\.literal\(true\)/);
+  assert.match(repository, /DELETE \$\{employee\.employeeCode\}/);
+  assert.match(repository, /employee_deletion_tombstones/);
+  assert.match(ui, /Delete impact/);
+  assert.match(ui, /Permanently Purge Employee/);
+  assert.match(migration, /dependency_counts jsonb/);
+  assert.doesNotMatch(migration, /password|secret/i);
+});
+
+test("one-time first real employee bootstrap is explicit and cannot re-arm from an empty directory", async () => {
+  const repository = await read("lib/employees/repository.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  const migration = await read("database/migrations/20260821_employee_hierarchy_purge_bootstrap.sql");
+  assert.match(migration, /status in \('DISABLED','READY','RESERVED','CONSUMED'\)/);
+  assert.match(migration, /default 'DISABLED'/);
+  assert.match(repository, /initialBootstrapConfirmed/);
+  assert.match(repository, /isClearlyTemporaryEmployee\(input\)/);
+  assert.match(repository, /status='CONSUMED'/);
+  assert.match(ui, /Create Primary SuperAdmin/);
+  assert.match(ui, /not a test, UAT, demo or temporary identity/);
+  assert.doesNotMatch(repository, /update academy_initial_admin_bootstrap\s+set status='READY'/);
 });
 
 test("Website Admin treats Senior BDE as an audited employee segment rather than an RBAC role", async () => {

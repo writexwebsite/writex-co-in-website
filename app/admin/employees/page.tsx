@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { EmployeeDirectoryControl } from "@/components/admin/EmployeeControlPlane";
 import { canManageEmployees } from "@/lib/admin/permissions";
 import { requireAdminSession } from "@/lib/admin/session";
-import { listEmployees, listEmployeeTeams } from "@/lib/employees/repository";
+import { getAcademyInitialAdminBootstrap, listEmployees, listEmployeeTeams } from "@/lib/employees/repository";
 import { employeeLifecycleFilters, type EmployeeLifecycleFilter } from "@/lib/employees/domain";
 
 export const metadata: Metadata = {
@@ -26,9 +26,10 @@ export default async function EmployeesPage({
   const lifecycle = employeeLifecycleFilters.includes(requestedLifecycle as EmployeeLifecycleFilter)
     ? requestedLifecycle as EmployeeLifecycleFilter
     : "active";
-  const [employees, teams] = await Promise.all([
+  const [employees, teams, bootstrap] = await Promise.all([
     listEmployees({ search: params.search, sync: params.sync, lifecycle }),
-    listEmployeeTeams()
+    listEmployeeTeams(),
+    getAcademyInitialAdminBootstrap()
   ]);
   const failedCount = employees.filter((employee) => employee.syncStatus === "FAILED").length;
 
@@ -50,6 +51,7 @@ export default async function EmployeesPage({
         initialSearch={params.search || ""}
         attentionOnly={params.sync === "attention"}
         lifecycle={lifecycle}
+        bootstrap={bootstrap}
       />
     </AdminShell>
   );

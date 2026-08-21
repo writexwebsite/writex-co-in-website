@@ -46,6 +46,21 @@ export type AcademyCredentialResult = {
   sessionsRevoked: number;
 };
 
+export type AcademyEmployeePurgePreview = {
+  exists: boolean;
+  hasMeaningfulHistory: boolean;
+  totalRows: number;
+  categories: Array<{ code: string; label: string; count: number }>;
+  tables: Array<{ table: string; count: number }>;
+};
+
+export type AcademyEmployeePurgeResult = {
+  deleted: boolean;
+  alreadyAbsent: boolean;
+  removedRows: number;
+  counts: Record<string, number>;
+};
+
 export class AcademySyncError extends Error {
   constructor(
     message: string,
@@ -358,4 +373,36 @@ export async function resetAcademyEmployeePassword(
     });
     throw safeError;
   }
+}
+
+export async function previewAcademyEmployeePurge(
+  employeeId: string,
+  requestedBy: { adminId: string; email: string }
+) {
+  const requestId = randomUUID();
+  const pathname = `/api/internal/employees/${encodeURIComponent(employeeId)}/purge`;
+  const result = await signedAcademyRequest<AcademyEmployeePurgePreview>({
+    pathname,
+    method: "POST",
+    body: JSON.stringify({ requestId, action: "PREVIEW", requestedBy })
+  });
+  return { requestId, ...result };
+}
+
+export async function permanentlyPurgeAcademyEmployee(
+  employeeId: string,
+  input: {
+    mode: "ZERO_HISTORY" | "FULL_PURGE";
+    reason: string;
+    requestedBy: { adminId: string; email: string };
+  }
+) {
+  const requestId = randomUUID();
+  const pathname = `/api/internal/employees/${encodeURIComponent(employeeId)}/purge`;
+  const result = await signedAcademyRequest<AcademyEmployeePurgeResult>({
+    pathname,
+    method: "POST",
+    body: JSON.stringify({ requestId, action: "PURGE", ...input })
+  });
+  return { requestId, ...result };
 }
