@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EmployeeDetailControl, EmployeeDirectoryControl } from "@/components/admin/EmployeeControlPlane";
 import { employeePreviewItems, employeePreviewTeams } from "@/lib/employees/preview-data";
-import type { EmployeeLifecycleFilter } from "@/lib/employees/domain";
+import type { EmployeeDeletionAssessment, EmployeeLifecycleFilter } from "@/lib/employees/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,37 @@ const previewSession = {
   email: "founder.preview@example.test",
   role: "super_admin",
   mustChangePassword: false
+};
+
+const deletionAssessments: Record<string, EmployeeDeletionAssessment> = {
+  "20000000-0000-4000-8000-000000000001": {
+    allowed: true,
+    zeroHistoryAllowed: false,
+    fullPurgeAllowed: true,
+    recommendedMode: "FULL_PURGE",
+    temporaryIdentity: false,
+    blockers: [],
+    dependencies: [
+      { code: "ACADEMY_IDENTITY", label: "Academy identity and login", count: 1 },
+      { code: "LESSON_PROGRESS", label: "Lesson progress", count: 18 },
+      { code: "PRACTICE_HISTORY", label: "Customer Practice and journey history", count: 7 }
+    ],
+    academyAvailable: true,
+    academyHasMeaningfulHistory: true,
+    totalDependencyCount: 26
+  },
+  "20000000-0000-4000-8000-000000000002": {
+    allowed: true,
+    zeroHistoryAllowed: true,
+    fullPurgeAllowed: true,
+    recommendedMode: "ZERO_HISTORY",
+    temporaryIdentity: true,
+    blockers: [],
+    dependencies: [{ code: "ACADEMY_IDENTITY", label: "Academy identity and login", count: 1 }],
+    academyAvailable: true,
+    academyHasMeaningfulHistory: false,
+    totalDependencyCount: 1
+  }
 };
 
 export default async function EmployeePreviewPage({
@@ -45,6 +76,7 @@ export default async function EmployeePreviewPage({
           employees={params.state === "empty" ? [] : filteredEmployees}
           teams={employeePreviewTeams}
           lifecycle={lifecycle}
+          deletionAssessments={deletionAssessments}
           bootstrap={{
             status: params.state === "empty" ? "READY" : "CONSUMED",
             candidateEmployeeId: null,

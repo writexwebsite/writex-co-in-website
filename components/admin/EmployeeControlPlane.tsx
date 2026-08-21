@@ -55,7 +55,8 @@ export function EmployeeDirectoryControl({
   initialSearch = "",
   attentionOnly = false,
   lifecycle = "active",
-  bootstrap
+  bootstrap,
+  deletionAssessments
 }: {
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
@@ -63,6 +64,7 @@ export function EmployeeDirectoryControl({
   attentionOnly?: boolean;
   lifecycle?: EmployeeLifecycleFilter;
   bootstrap: AcademyInitialAdminBootstrap;
+  deletionAssessments?: Record<string, EmployeeDeletionAssessment>;
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -210,7 +212,7 @@ export function EmployeeDirectoryControl({
                       Academy {employee.academyEnabled ? "On" : "Off"}
                     </AdminStatusBadge>
                     <AdminStatusBadge tone={syncTone(employee.syncStatus)}>{employee.syncStatus}</AdminStatusBadge>
-                    <EmployeeLifecycleMenu employee={employee} employees={employees} />
+                    <EmployeeLifecycleMenu employee={employee} employees={employees} previewAssessment={deletionAssessments?.[employee.id]} />
                   </div>
                 </div>
               ))}
@@ -291,7 +293,15 @@ type LifecycleDialog =
   | "RESET_PASSWORD"
   | "DELETE";
 
-function EmployeeLifecycleMenu({ employee, employees }: { employee: EmployeeDirectoryItem; employees: EmployeeDirectoryItem[] }) {
+function EmployeeLifecycleMenu({
+  employee,
+  employees,
+  previewAssessment
+}: {
+  employee: EmployeeDirectoryItem;
+  employees: EmployeeDirectoryItem[];
+  previewAssessment?: EmployeeDeletionAssessment;
+}) {
   const router = useRouter();
   const [dialog, setDialog] = useState<LifecycleDialog | null>(null);
   const [reason, setReason] = useState("");
@@ -307,6 +317,7 @@ function EmployeeLifecycleMenu({ employee, employees }: { employee: EmployeeDire
 
   useEffect(() => {
     if (dialog !== "DELETE") return;
+    if (previewAssessment) return;
     let active = true;
     fetch(`/api/admin/employees/${employee.id}/lifecycle`, { cache: "no-store" })
       .then(async (response) => {
@@ -326,7 +337,7 @@ function EmployeeLifecycleMenu({ employee, employees }: { employee: EmployeeDire
         if (active) setError(loadError instanceof Error ? loadError.message : "Deletion eligibility could not be checked.");
       });
     return () => { active = false; };
-  }, [dialog, employee.id]);
+  }, [dialog, employee.id, previewAssessment]);
 
   function openDialog(next: LifecycleDialog) {
     setDialog(next);
@@ -335,7 +346,12 @@ function EmployeeLifecycleMenu({ employee, employees }: { employee: EmployeeDire
     setAcknowledged(false);
     setManagerEmployeeId(employee.managerEmployeeId || "");
     setError("");
-    if (next === "DELETE") setAssessment(null);
+    if (next === "DELETE") {
+      setAssessment(previewAssessment || null);
+      if (previewAssessment) {
+        setDeletionMode(previewAssessment.recommendedMode === "FULL_PURGE" ? "FULL_PURGE" : "ZERO_HISTORY");
+      }
+    }
   }
 
   async function submitLifecycle() {
