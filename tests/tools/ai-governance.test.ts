@@ -81,18 +81,26 @@ test("training capacity planner distinguishes messages, paid events and visible 
   assert.match(ui, /confidence estimate/);
 });
 
-test("primary Academy Super Admin is assigned only through the central audited workflow", async () => {
+test("multiple SuperAdmins are assignable while the unique Primary uses the central audited workflow", async () => {
   const repository = await read("lib/ai-governance/repository.ts");
   const employeeUi = await read("components/admin/EmployeeControlPlane.tsx");
   assert.match(repository, /application_role='SUPER_ADMIN'/);
   assert.match(repository, /academy_primary_superadmin_assigned/);
-  assert.match(employeeUi, /controlled from AI Usage &amp; Budgets/);
-  assert.doesNotMatch(employeeUi, /<option value="SUPER_ADMIN">/);
+  assert.match(repository, /academy_primary_superadmin_transferred/);
+  assert.doesNotMatch(repository, /set application_role='EMPLOYEE'.*oldId/);
+  assert.match(employeeUi, /<option value="SUPER_ADMIN">SuperAdmin<\/option>/);
+  assert.match(employeeUi, /Multiple SuperAdmins are allowed/);
+  assert.match(employeeUi, /Primary SuperAdmin/);
 });
 
 test("primary Academy administrator change requires an explicit confirmation", async () => {
   const ui = await read("components/admin/AiGovernanceControlPlane.tsx");
-  assert.match(ui, /Confirm primary administrator change/);
+  const route = await read("app/api/admin/ai-governance/primary-superadmin/route.ts");
+  assert.match(ui, /PRIMARY SUPERADMIN ALREADY ASSIGNED/);
+  assert.match(ui, /Transfer Primary SuperAdmin/);
+  assert.match(ui, /old Primary remains a SuperAdmin/);
+  assert.match(route, /confirmTransfer/);
+  assert.match(route, /reason/);
   assert.match(ui, /Confirm change/);
   assert.match(ui, /Cancel/);
 });

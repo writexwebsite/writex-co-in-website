@@ -582,7 +582,11 @@ export async function updateAiTrainingCapacity(input: CapacitySettingsInput, act
   await logAuditEvent({ actorType:"admin",actorId:actor.adminUserId,actorEmail:actor.email,entityType:"ai_training_capacity",entityId:salesAcademyProductKey,action:"ai_training_capacity_updated",metadata:{ before:previous,after:input } });
 }
 
-export async function setPrimaryAcademySuperAdmin(employeeId: string | null, actor: AdminSession) {
+export async function setPrimaryAcademySuperAdmin(
+  employeeId: string | null,
+  actor: AdminSession,
+  options: { confirmTransfer: boolean; reason: string }
+) {
   const change = await withDbTransaction(async (query) => {
     const product = await query<{ id: string; primary_superadmin_employee_id: string | null }>(
       "select id,primary_superadmin_employee_id from ai_governance_products where product_key=$1 for update",
@@ -595,6 +599,9 @@ export async function setPrimaryAcademySuperAdmin(employeeId: string | null, act
       if (!eligible[0]) throw new ApiError(400, "BAD_REQUEST", "Choose an active employee who already has Sales Academy access.");
     }
     const oldId = product[0].primary_superadmin_employee_id;
+    if (oldId && employeeId && oldId !== employeeId && !options.confirmTransfer) {
+      throw new ApiError(409, "BAD_REQUEST", "PRIMARY SUPERADMIN ALREADY ASSIGNED. Confirm Transfer Primary SuperAdmin to continue.");
+    }
     const affectedIds = [...new Set([oldId, employeeId].filter((value): value is string => Boolean(value)))];
     const currentAccess = affectedIds.length
       ? await query<{ employee_id: string; application_role: "EMPLOYEE" | "TRAINER" | "MANAGER_TL" | "SUPER_ADMIN" }>(
@@ -603,16 +610,13 @@ export async function setPrimaryAcademySuperAdmin(employeeId: string | null, act
         )
       : [];
     const rolesBefore = Object.fromEntries(currentAccess.map((row) => [row.employee_id, row.application_role]));
-    if (oldId && oldId !== employeeId) {
-      await query("update employee_application_access set application_role='EMPLOYEE',sync_status='PENDING',sync_version=sync_version+1 where employee_id=$1 and application_key='SALES_ACADEMY'", [oldId]);
-    }
     if (employeeId) {
       await query("update employee_application_access set application_role='SUPER_ADMIN',sync_status='PENDING',sync_version=sync_version+1 where employee_id=$1 and application_key='SALES_ACADEMY'", [employeeId]);
     }
     await query("update ai_governance_products set primary_superadmin_employee_id=$2,updated_by_admin_id=$3 where product_key=$1", [salesAcademyProductKey, employeeId, actor.adminUserId]);
     return { previousPrimaryId: oldId, rolesBefore };
   });
-  const toSync = [...new Set([change.previousPrimaryId, employeeId].filter((value): value is string => Boolean(value)))];
+  const toSync = employeeId ? [employeeId] : [];
   try {
     for (const id of toSync) {
       const result = await attemptEmployeeAcademySync(id, actor);
@@ -645,5 +649,24 @@ export async function setPrimaryAcademySuperAdmin(employeeId: string | null, act
     });
     throw error;
   }
-  await logAuditEvent({ actorType: "admin", actorId: actor.adminUserId, actorEmail: actor.email, entityType: "ai_governance_product", entityId: salesAcademyProductKey, action: employeeId ? "academy_primary_superadmin_assigned" : "academy_primary_superadmin_revoked", metadata: { previousEmployeeId: change.previousPrimaryId, employeeId } });
+  const transferred = Boolean(change.previousPrimaryId && employeeId && change.previousPrimaryId !== employeeId);
+  await logAuditEvent({
+    actorType: "admin",
+    actorId: actor.adminUserId,
+    actorEmail: actor.email,
+    entityType: "ai_governance_product",
+    entityId: salesAcademyProductKey,
+    action: transferred
+      ? "academy_primary_superadmin_transferred"
+      : employeeId
+        ? "academy_primary_superadmin_assigned"
+        : "academy_primary_superadmin_revoked",
+    metadata: {
+      previousEmployeeId: change.previousPrimaryId,
+      employeeId,
+      oldPrimaryRolePreserved: transferred,
+      reason: options.reason,
+      actionSource: "WEBSITE_ADMIN_AI_GOVERNANCE"
+    }
+  });
 }

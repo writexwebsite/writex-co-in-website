@@ -29,6 +29,7 @@ export function AiGovernanceControlPlane({ initial }: { initial: AiGovernanceSna
   const [error, setError] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(productId(initial));
   const [pendingEmployeeId, setPendingEmployeeId] = useState<string | null | undefined>(undefined);
+  const [primaryChangeReason, setPrimaryChangeReason] = useState("");
   const product = data.product;
   const totals = data.totals;
   const capacity = data.capacity;
@@ -92,8 +93,13 @@ export function AiGovernanceControlPlane({ initial }: { initial: AiGovernanceSna
   }
 
   async function confirmPrimary() {
-    await action({ employeeId: pendingEmployeeId ?? null }, "primary", "/api/admin/ai-governance/primary-superadmin");
+    await action({
+      employeeId: pendingEmployeeId ?? null,
+      confirmTransfer: true,
+      reason: primaryChangeReason
+    }, "primary", "/api/admin/ai-governance/primary-superadmin");
     setPendingEmployeeId(undefined);
+    setPrimaryChangeReason("");
   }
 
   return (
@@ -179,12 +185,12 @@ export function AiGovernanceControlPlane({ initial }: { initial: AiGovernanceSna
         <form onSubmit={saveCapacity} className="mt-5 grid gap-3 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 sm:grid-cols-2 xl:grid-cols-6"><Field label="Planned BDEs"><input name="plannedBdes" type="number" min="1" defaultValue={capacity.settings.plannedBdes} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><Field label="Days / month"><input name="trainingDaysPerMonth" type="number" min="1" max="31" defaultValue={capacity.settings.trainingDaysPerMonth} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><Field label="Training months"><input name="plannedTrainingMonths" type="number" min="1" defaultValue={capacity.settings.plannedTrainingMonths} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><Field label="Session min"><input name="sessionMinutesMin" type="number" min="5" defaultValue={capacity.settings.sessionMinutesMin} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><Field label="Session max"><input name="sessionMinutesMax" type="number" min="5" defaultValue={capacity.settings.sessionMinutesMax} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><Field label="Change reason"><input name="changeReason" minLength={8} defaultValue="Founder-approved pilot planning assumptions." className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-3"/></Field><div className="sm:col-span-2 xl:col-span-6"><button disabled={Boolean(busy)} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-5 text-sm font-semibold text-wxIndigo800 disabled:opacity-60">{busy === "capacity" ? "Synchronising..." : "Update planning assumptions"}</button></div></form>
       </section>
 
-      <section className="rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6">
+      <section id="primary-superadmin" className="scroll-mt-24 rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6">
         <div className="flex items-center gap-2"><UserCog className="h-5 w-5 text-wxViolet700" /><h2 className="text-lg font-semibold text-wxIndigo900">Primary Academy Super Admin</h2></div>
         <p className="mt-1 text-sm leading-6 text-wxIndigo500">Provision exactly one existing company employee identity. Assignment and revocation are signed, session-aware and audited.</p>
         <form onSubmit={assignPrimary} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="grid flex-1 gap-1.5 text-sm font-semibold text-wxIndigo800">Existing employee
-            <select name="employeeId" value={selectedEmployeeId} onChange={(event) => { setSelectedEmployeeId(event.target.value); setPendingEmployeeId(undefined); }} className="min-h-11 rounded-md border border-wxBorder bg-wxSurfaceSoft px-3 font-normal text-wxIndigo900">
+            <select name="employeeId" value={selectedEmployeeId} onChange={(event) => { setSelectedEmployeeId(event.target.value); setPendingEmployeeId(undefined); setPrimaryChangeReason(""); }} className="min-h-11 rounded-md border border-wxBorder bg-wxSurfaceSoft px-3 font-normal text-wxIndigo900">
               <option value="">No primary Academy Super Admin</option>
               {data.candidates.map((employee) => <option key={employee.id} value={employee.id}>{employee.displayName} · {employee.employeeCode}</option>)}
             </select>
@@ -192,14 +198,17 @@ export function AiGovernanceControlPlane({ initial }: { initial: AiGovernanceSna
           <button disabled={Boolean(busy)} className="wx-gradient-action inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold text-white disabled:opacity-60"><UserCog className="h-4 w-4" />Review administrator change</button>
         </form>
         {pendingEmployeeId !== undefined ? <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-          <p className="font-semibold">Confirm primary administrator change</p>
-          <p className="mt-1 leading-6">{pendingEmployeeId ? `Assign ${data.candidates.find((candidate) => candidate.id === pendingEmployeeId)?.displayName || "the selected employee"} as the one primary Sales Academy Super Admin?` : "Revoke the current primary Sales Academy Super Admin?"}</p>
+          <p className="font-semibold">{product.primarySuperadminEmployeeId && pendingEmployeeId && product.primarySuperadminEmployeeId !== pendingEmployeeId ? "PRIMARY SUPERADMIN ALREADY ASSIGNED" : "Confirm primary administrator change"}</p>
+          <p className="mt-1 leading-6">{pendingEmployeeId ? `${product.primarySuperadminName ? `Current: ${product.primarySuperadminName}. ` : ""}${product.primarySuperadminEmployeeId && product.primarySuperadminEmployeeId !== pendingEmployeeId ? "Action: TRANSFER PRIMARY SUPERADMIN to " : "Assign "}${data.candidates.find((candidate) => candidate.id === pendingEmployeeId)?.displayName || "the selected employee"}. The old Primary remains a SuperAdmin.` : "Revoke the current Primary flag. The employee remains a SuperAdmin."}</p>
+          <label className="mt-3 grid gap-1.5 font-semibold">Authorised reason
+            <textarea value={primaryChangeReason} onChange={(event) => setPrimaryChangeReason(event.target.value)} rows={3} maxLength={500} className="rounded-md border border-amber-400 bg-white px-3 py-2 font-normal" placeholder="Record why this Primary assignment or transfer is required" />
+          </label>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={confirmPrimary} disabled={Boolean(busy)} className="wx-gradient-action min-h-10 rounded-md px-4 font-semibold text-white disabled:opacity-60">{busy === "primary" ? "Synchronising..." : "Confirm change"}</button>
+            <button type="button" onClick={confirmPrimary} disabled={Boolean(busy) || primaryChangeReason.trim().length < 3} className="wx-gradient-action min-h-10 rounded-md px-4 font-semibold text-white disabled:opacity-60">{busy === "primary" ? "Synchronising..." : product.primarySuperadminEmployeeId && pendingEmployeeId && product.primarySuperadminEmployeeId !== pendingEmployeeId ? "Transfer Primary SuperAdmin" : "Confirm change"}</button>
             <button type="button" onClick={() => setPendingEmployeeId(undefined)} disabled={Boolean(busy)} className="min-h-10 rounded-md border border-amber-400 bg-white px-4 font-semibold">Cancel</button>
           </div>
         </div> : null}
-        <p className="mt-3 text-xs text-wxIndigo500">Current: {product.primarySuperadminName || "Not assigned"}. Normal employee screens cannot grant this role.</p>
+        <p className="mt-3 text-xs text-wxIndigo500">Current Primary: {product.primarySuperadminName || "Not assigned"}. SuperAdmin role assignment is available separately from this unique Primary flag.</p>
       </section>
 
       {data.anomalies.length ? <section className="rounded-lg border border-amber-300 bg-amber-50 p-5"><h2 className="font-semibold text-amber-950">Anomaly attention</h2><ul className="mt-3 space-y-2 text-sm text-amber-900">{data.anomalies.map((item) => <li key={item} className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{item}</li>)}</ul></section> : null}

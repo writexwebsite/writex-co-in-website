@@ -281,9 +281,7 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
   const [dialog, setDialog] = useState<LifecycleDialog | null>(null);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const [role, setRole] = useState<Exclude<AcademyRole, "SUPER_ADMIN">>(
-    employee.academyRole === "SUPER_ADMIN" ? "EMPLOYEE" : employee.academyRole
-  );
+  const [role, setRole] = useState<AcademyRole>(employee.academyRole);
   const [assessment, setAssessment] = useState<EmployeeDeletionAssessment | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -334,7 +332,7 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
     } else if (dialog === "ACCESS") {
       body = { action: "SET_ACADEMY_ACCESS", enabled: !employee.academyEnabled };
     } else if (dialog === "ROLE") {
-      body = { action: "SET_ACADEMY_ROLE", role };
+      body = { action: "SET_ACADEMY_ROLE", role, reason };
     } else {
       body = { action: dialog, reason };
     }
@@ -393,7 +391,7 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
     : dialog === "RESET_PASSWORD" ? "Reset Academy password"
     : "Permanently delete employee";
 
-  const needsReason = dialog === "DEACTIVATE" || dialog === "ARCHIVE" || dialog === "RESTORE" || dialog === "DELETE";
+  const needsReason = dialog === "DEACTIVATE" || dialog === "ARCHIVE" || dialog === "RESTORE" || dialog === "DELETE" || dialog === "ROLE";
   const deleteReady = dialog !== "DELETE" || (
     assessment?.allowed
     && reason.trim().length >= 10
@@ -417,7 +415,7 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
           <button type="button" disabled={Boolean(employee.archivedAt)} onClick={() => openDialog("ACCESS")} className={menuItemClass}>
             <GraduationCap className="h-4 w-4" /> Academy Access {employee.academyEnabled ? "Off" : "On"}
           </button>
-          <button type="button" disabled={Boolean(employee.archivedAt) || employee.academyRole === "SUPER_ADMIN"} onClick={() => openDialog("ROLE")} className={menuItemClass}>
+          <button type="button" disabled={Boolean(employee.archivedAt)} onClick={() => openDialog("ROLE")} className={menuItemClass}>
             <ShieldCheck className="h-4 w-4" /> Change Academy Role
           </button>
           <button
@@ -469,11 +467,13 @@ function EmployeeLifecycleMenu({ employee }: { employee: EmployeeDirectoryItem }
             {dialog === "ROLE" ? (
               <label className="mt-5 grid gap-1.5 text-sm font-semibold text-wxIndigo800">
                 Academy role
-                <select value={role} onChange={(event) => setRole(event.target.value as Exclude<AcademyRole, "SUPER_ADMIN">)} className={inputClass}>
-                  <option value="EMPLOYEE">Employee</option>
+                <select value={role} onChange={(event) => setRole(event.target.value as AcademyRole)} className={inputClass}>
+                  <option value="EMPLOYEE">Employee / BDE</option>
                   <option value="TRAINER">Trainer</option>
                   <option value="MANAGER_TL">Manager / TL</option>
+                  <option value="SUPER_ADMIN">SuperAdmin</option>
                 </select>
+                <span className="text-xs font-normal text-wxIndigo500">Role changes are explicit, audited, and do not alter the employee segment or learning history.</span>
               </label>
             ) : null}
             {dialog === "DELETE" ? (
@@ -544,9 +544,8 @@ function EmployeeEditor({
   const [error, setError] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const [academyEnabled, setAcademyEnabled] = useState(employee?.academyEnabled ?? false);
-  const [academyRole, setAcademyRole] = useState<Exclude<AcademyRole, "SUPER_ADMIN">>(
-    employee?.academyRole === "SUPER_ADMIN" ? "EMPLOYEE" : employee?.academyRole || "EMPLOYEE"
-  );
+  const [academyRole, setAcademyRole] = useState<AcademyRole>(employee?.academyRole || "EMPLOYEE");
+  const [academyRoleChangeReason, setAcademyRoleChangeReason] = useState("");
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? "");
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
@@ -598,6 +597,7 @@ function EmployeeEditor({
       ...values,
       academyEnabled,
       employeeSegment,
+      academyRoleChangeReason,
       primaryTeamId: values.primaryTeamId || null,
       managerEmployeeId: values.managerEmployeeId || null
     };
@@ -675,7 +675,9 @@ function EmployeeEditor({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? "Enabled" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} />
-          <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} />
+          <StatusTile label="Academy role" value={employee.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : employee.academyRole === "MANAGER_TL" ? "Manager / TL" : employee.academyRole === "TRAINER" ? "Trainer" : "Employee / BDE"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
+          {employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
           <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Sync status" value={employee.syncStatus} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" ? "danger" : undefined} />
@@ -764,19 +766,34 @@ function EmployeeEditor({
               <input type="checkbox" checked={academyEnabled} onChange={(event) => setAcademyEnabled(event.target.checked)} className="h-5 w-5 accent-violet-700" />
             </label>
             <Field label="Academy role">
-              {employee?.academyRole === "SUPER_ADMIN" ? <input type="hidden" name="academyRole" value="EMPLOYEE" /> : null}
-              <select name={employee?.academyRole === "SUPER_ADMIN" ? undefined : "academyRole"} value={academyRole} onChange={(event) => setAcademyRole(event.target.value as Exclude<AcademyRole, "SUPER_ADMIN">)} disabled={employee?.academyRole === "SUPER_ADMIN"} className={inputClass}>
-                <option value="EMPLOYEE">Employee</option>
+              <select name="academyRole" value={academyRole} onChange={(event) => setAcademyRole(event.target.value as AcademyRole)} className={inputClass}>
+                <option value="EMPLOYEE">Employee / BDE</option>
                 <option value="TRAINER">Trainer</option>
                 <option value="MANAGER_TL">Manager / TL</option>
+                <option value="SUPER_ADMIN">SuperAdmin</option>
               </select>
-              {employee?.academyRole === "SUPER_ADMIN" ? <span className="text-xs font-normal text-wxIndigo500">Primary Academy Super Admin access is controlled from AI Usage &amp; Budgets.</span> : null}
+              <span className="text-xs font-normal text-wxIndigo500">Role, employee segment, and reporting hierarchy are separate controls.</span>
             </Field>
           </div>
+          {employee && academyRole !== employee.academyRole ? (
+            <div className="mt-4 max-w-xl">
+              <Field label="Role change reason">
+                <textarea value={academyRoleChangeReason} onChange={(event) => setAcademyRoleChangeReason(event.target.value)} required minLength={3} maxLength={500} rows={3} className={`${inputClass} py-3`} placeholder="Record the authorised reason for this Academy role change" />
+              </Field>
+            </div>
+          ) : null}
           {academyRole === "EMPLOYEE" ? <div className="mt-4 max-w-xl"><Field label="Employee segment"><select name="employeeSegment" value={employeeSegment} onChange={(event) => setEmployeeSegment(event.target.value as EmployeeSegment)} className={inputClass}><option value="NEW_BDE">New BDE · Foundation journey</option><option value="SENIOR_BDE">Senior BDE · Diagnostic and focused development</option></select><span className="text-xs font-normal text-wxIndigo500">This is a training segment, not an Academy role. Changing it preserves the employee identity and all history.</span></Field></div> : <input type="hidden" name="employeeSegment" value="SENIOR_BDE" />}
-          {academyRole !== "MANAGER_TL" && employee?.academyRole !== "SUPER_ADMIN" ? <div className="mt-4 max-w-xl"><Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? "The Manager / TL is derived through this Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field></div> : <input type="hidden" name="managerEmployeeId" value="" />}
+          {academyRole === "EMPLOYEE" || academyRole === "TRAINER" ? <div className="mt-4 max-w-xl"><Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} defaultValue={employee?.managerEmployeeId || ""} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? "The Manager / TL is derived through this Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field></div> : <input type="hidden" name="managerEmployeeId" value="" />}
 
-          {employee ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
+          {academyRole === "SUPER_ADMIN" ? (
+            <div className="mt-4 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo700">
+              <p><span className="font-semibold">Primary SuperAdmin:</span> {employee?.primarySuperAdmin ? "YES" : "NO"}</p>
+              <p className="mt-1 leading-6">Multiple SuperAdmins are allowed. Exactly one Primary is managed through the separate governance transfer control.</p>
+              <Link href="/admin/ai-governance#primary-superadmin" className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-wxBorder bg-wxSurface px-4 font-semibold text-wxViolet700">Manage Primary SuperAdmin</Link>
+            </div>
+          ) : null}
+
+          {employee && academyRole !== "SUPER_ADMIN" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
             <StatusTile label="Manager / TL" value={displayedManager?.displayName || (employee.academyRole === "MANAGER_TL" ? employee.displayName : "Reassignment required")} icon={<UsersRound className="h-4 w-4" />} tone={displayedManager ? undefined : "danger"}/>
             <StatusTile label="Trainer" value={displayedTrainer?.displayName || (employee.academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={employee.academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
             <StatusTile label="Employee" value={employee.displayName} icon={<UserRound className="h-4 w-4" />}/>

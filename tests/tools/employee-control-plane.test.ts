@@ -159,3 +159,21 @@ test("Website Admin treats Senior BDE as an audited employee segment rather than
   assert.match(route, /identityPreserved: true/);
   assert.match(migration, /check \(employee_segment in \('NEW_BDE','SENIOR_BDE'\)\)/);
 });
+
+test("Website Admin keeps Academy role, segment, hierarchy and Primary status independent", async () => {
+  const domain = await read("lib/employees/domain.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  const route = await read("app/api/admin/employees/[employeeId]/route.ts");
+  assert.match(domain, /assignableAcademyRoles = academyRoles/);
+  assert.match(domain, /primarySuperAdmin: boolean/);
+  assert.match(validation, /academyRoleChangeReason/);
+  assert.match(repository, /const academyRole = input\.academyRole/);
+  assert.match(repository, /current\[0\]\.primary_superadmin/);
+  assert.match(repository, /role: row\.application_role/);
+  assert.match(ui, /<option value="SUPER_ADMIN">SuperAdmin<\/option>/);
+  assert.match(ui, /Role, employee segment, and reporting hierarchy are separate controls/);
+  assert.match(ui, /Primary SuperAdmin/);
+  assert.match(route, /actionSource: "WEBSITE_ADMIN_EMPLOYEE_EDIT"/);
+});

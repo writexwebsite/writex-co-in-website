@@ -52,6 +52,9 @@ export async function PATCH(
     ]);
     const before = await getEmployee(employeeId);
     if (!before) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
+    if (before.academyRole !== input.academyRole && !input.academyRoleChangeReason?.trim()) {
+      throw new ApiError(400, "BAD_REQUEST", "Record a reason for this explicit Academy role change.");
+    }
     await updateEmployee(employeeId, input, admin);
     await auditEmployeeMutation({
       actor: admin,
@@ -77,7 +80,18 @@ export async function PATCH(
       await auditEmployeeMutation({ actor: admin, employeeId, action: input.academyEnabled ? "academy_access_granted" : "academy_access_revoked", metadata: { role: input.academyRole }, request });
     }
     if (before.academyRole !== input.academyRole) {
-      await auditEmployeeMutation({ actor: admin, employeeId, action: "academy_role_changed", metadata: { before: before.academyRole, after: input.academyRole }, request });
+      await auditEmployeeMutation({
+        actor: admin,
+        employeeId,
+        action: "academy_role_changed",
+        metadata: {
+          before: before.academyRole,
+          after: input.academyRole,
+          reason: input.academyRoleChangeReason,
+          actionSource: "WEBSITE_ADMIN_EMPLOYEE_EDIT"
+        },
+        request
+      });
     }
     if (before.employeeSegment !== input.employeeSegment) {
       await auditEmployeeMutation({ actor: admin, employeeId, action: "academy_employee_segment_changed", metadata: { before: before.employeeSegment, after: input.employeeSegment, identityPreserved: true }, request });

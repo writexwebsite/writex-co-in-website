@@ -1,7 +1,7 @@
 export const academyApplicationKey = "SALES_ACADEMY" as const;
 export const employeeStatuses = ["ACTIVE", "INACTIVE"] as const;
 export const academyRoles = ["EMPLOYEE", "TRAINER", "MANAGER_TL", "SUPER_ADMIN"] as const;
-export const assignableAcademyRoles = ["EMPLOYEE", "TRAINER", "MANAGER_TL"] as const;
+export const assignableAcademyRoles = academyRoles;
 export const employeeSyncStatuses = ["PENDING", "SYNCED", "FAILED"] as const;
 export const employeeSegments = ["NEW_BDE", "SENIOR_BDE"] as const;
 export const employeeLifecycleFilters = ["active", "inactive", "archived", "all"] as const;
@@ -34,6 +34,7 @@ export type EmployeeDirectoryItem = {
   managerName: string | null;
   academyEnabled: boolean;
   academyRole: AcademyRole;
+  primarySuperAdmin: boolean;
   employeeSegment: EmployeeSegment;
   syncStatus: EmployeeSyncStatus;
   lastSyncedAt: string | null;

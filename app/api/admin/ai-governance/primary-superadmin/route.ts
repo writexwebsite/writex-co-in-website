@@ -7,7 +7,11 @@ import { getAdminSessionFromRequest } from "@/lib/auth";
 import { getAiGovernanceSnapshot, setPrimaryAcademySuperAdmin } from "@/lib/ai-governance/repository";
 import { assertSameOrigin } from "@/lib/security";
 
-const schema = z.object({ employeeId: z.uuid().nullable() });
+const schema = z.object({
+  employeeId: z.uuid().nullable(),
+  confirmTransfer: z.boolean().default(false),
+  reason: z.string().trim().min(3).max(500)
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +20,10 @@ export async function POST(request: NextRequest) {
     assertCanManageAiGovernance(admin);
     await assertActiveAdminActor(admin.adminUserId);
     const input = schema.parse(await request.json());
-    await setPrimaryAcademySuperAdmin(input.employeeId, admin);
+    await setPrimaryAcademySuperAdmin(input.employeeId, admin, {
+      confirmTransfer: input.confirmTransfer,
+      reason: input.reason
+    });
     return apiOk(await getAiGovernanceSnapshot(), { headers: { "cache-control": "private, no-store" } });
   } catch (error) {
     if (error instanceof z.ZodError) return apiError(badRequest("Choose a valid existing employee identity."));

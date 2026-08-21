@@ -32,6 +32,7 @@ type EmployeeRow = {
   manager_name: string | null;
   academy_enabled: boolean;
   academy_role: AcademyRole;
+  primary_superadmin: boolean;
   employee_segment: EmployeeSegment;
   sync_status: "PENDING" | "SYNCED" | "FAILED";
   last_synced_at: Date | null;
@@ -50,6 +51,11 @@ const employeeSelect = `
   e.manager_employee_id, manager.display_name as manager_name,
   coalesce(a.enabled, false) as academy_enabled,
   coalesce(a.application_role, 'EMPLOYEE') as academy_role,
+  exists(
+    select 1 from ai_governance_products governance
+    where governance.product_key = 'SALES_ACADEMY'
+      and governance.primary_superadmin_employee_id = e.id
+  ) as primary_superadmin,
   coalesce(a.employee_segment, 'NEW_BDE') as employee_segment,
   coalesce(a.sync_status, 'SYNCED') as sync_status,
   a.last_synced_at, a.last_sync_error, a.external_application_user_id,
@@ -73,6 +79,7 @@ function mapEmployee(row: EmployeeRow): EmployeeDirectoryItem {
     managerName: row.manager_name,
     academyEnabled: row.academy_enabled,
     academyRole: row.academy_role,
+    primarySuperAdmin: row.primary_superadmin,
     employeeSegment: row.employee_segment,
     syncStatus: row.sync_status,
     lastSyncedAt: row.last_synced_at?.toISOString() ?? null,
@@ -163,6 +170,7 @@ export type EmployeeMutationInput = {
   academyEnabled: boolean;
   academyRole: AcademyRole;
   employeeSegment: EmployeeSegment;
+  academyRoleChangeReason?: string;
 };
 
 async function validateRelationships(
@@ -229,8 +237,8 @@ async function validateRelationships(
       throw new ApiError(400, "BAD_REQUEST", "Assign an active Manager / TL before enabling Academy access for this Trainer.");
     }
   }
-  if (input.academyRole === "MANAGER_TL" && input.managerEmployeeId) {
-    throw new ApiError(400, "BAD_REQUEST", "Manager / TL records cannot report to an Employee or Trainer in the Academy hierarchy.");
+  if (["MANAGER_TL", "SUPER_ADMIN"].includes(input.academyRole) && input.managerEmployeeId) {
+    throw new ApiError(400, "BAD_REQUEST", "Manager / TL and SuperAdmin records sit outside the Trainer-to-Employee reporting relationship.");
   }
 }
 
@@ -279,9 +287,11 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
       employee_segment: EmployeeSegment;
       external_application_user_id: string | null;
       archived_at: Date | null;
+      primary_superadmin: boolean;
     }>(
       `select e.employment_status, e.primary_team_id, e.manager_employee_id,
           e.archived_at, a.enabled, a.application_role, a.employee_segment, a.external_application_user_id
+          , exists(select 1 from ai_governance_products p where p.product_key=$2 and p.primary_superadmin_employee_id=e.id) primary_superadmin
        from employees e join employee_application_access a on a.employee_id = e.id
        where e.id = $1 and a.application_key = $2 for update`,
       [employeeId, academyApplicationKey]
@@ -307,9 +317,10 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
     }
     const effectiveAcademyEnabled = input.employmentStatus === "ACTIVE" && input.academyEnabled;
     const shouldSync = effectiveAcademyEnabled || Boolean(current[0].external_application_user_id);
-    const academyRole = current[0].application_role === "SUPER_ADMIN"
-      ? "SUPER_ADMIN"
-      : input.academyRole;
+    const academyRole = input.academyRole;
+    if (current[0].primary_superadmin && academyRole !== "SUPER_ADMIN") {
+      throw new ApiError(409, "BAD_REQUEST", "Transfer Primary SuperAdmin before explicitly changing this employee's Academy role.");
+    }
     if (current[0].application_role !== academyRole && ["TRAINER", "MANAGER_TL"].includes(current[0].application_role)) {
       const reports = await query<{ count: string }>(
         `select count(*)::text count from employees e
@@ -342,7 +353,7 @@ export type EmployeeLifecycleMutation =
   | { action: "ARCHIVE"; reason: string }
   | { action: "RESTORE"; reason: string }
   | { action: "SET_ACADEMY_ACCESS"; enabled: boolean }
-  | { action: "SET_ACADEMY_ROLE"; role: Exclude<AcademyRole, "SUPER_ADMIN"> };
+  | { action: "SET_ACADEMY_ROLE"; role: AcademyRole; reason: string };
 
 export async function applyEmployeeLifecycleMutation(
   employeeId: string,
@@ -359,10 +370,12 @@ export async function applyEmployeeLifecycleMutation(
       application_role: AcademyRole;
       external_application_user_id: string | null;
       lifecycle_version: number;
+      primary_superadmin: boolean;
     }>(
       `select e.employment_status, e.archived_at, e.archive_previous_employment_status,
           e.archive_previous_academy_enabled, e.lifecycle_version,
-          a.enabled, a.application_role, a.external_application_user_id
+          a.enabled, a.application_role, a.external_application_user_id,
+          exists(select 1 from ai_governance_products p where p.product_key=$2 and p.primary_superadmin_employee_id=e.id) primary_superadmin
        from employees e
        join employee_application_access a on a.employee_id = e.id and a.application_key = $2
        where e.id = $1 for update`,
@@ -371,7 +384,7 @@ export async function applyEmployeeLifecycleMutation(
     const current = rows[0];
     if (!current) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
 
-    const protectsPrimarySuperAdmin = current.application_role === "SUPER_ADMIN";
+    const protectsPrimarySuperAdmin = current.primary_superadmin;
     if (protectsPrimarySuperAdmin && (
       input.action === "DEACTIVATE"
       || input.action === "ARCHIVE"

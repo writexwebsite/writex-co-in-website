@@ -15,7 +15,8 @@ export const employeeMutationSchema = z.object({
   managerEmployeeId: optionalUuid,
   academyEnabled: z.boolean(),
   academyRole: z.enum(assignableAcademyRoles),
-  employeeSegment: z.enum(employeeSegments)
+  employeeSegment: z.enum(employeeSegments),
+  academyRoleChangeReason: z.string().trim().max(500).optional()
 });
 
 export const employeeTeamSchema = z.object({
@@ -29,7 +30,11 @@ export const employeeLifecycleMutationSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("ARCHIVE"), reason: z.string().trim().min(3).max(500) }),
   z.object({ action: z.literal("RESTORE"), reason: z.string().trim().min(3).max(500) }),
   z.object({ action: z.literal("SET_ACADEMY_ACCESS"), enabled: z.boolean() }),
-  z.object({ action: z.literal("SET_ACADEMY_ROLE"), role: z.enum(assignableAcademyRoles) })
+  z.object({
+    action: z.literal("SET_ACADEMY_ROLE"),
+    role: z.enum(assignableAcademyRoles),
+    reason: z.string().trim().min(3).max(500)
+  })
 ]);
 
 export const employeePermanentDeleteSchema = z.object({
