@@ -259,8 +259,12 @@ export function EmployeeDirectoryControl({
                 <div className="min-w-0">
                   <p className="font-semibold text-wxIndigo900">{team.name}</p>
                   <p className="mt-1 text-xs text-wxIndigo500">{team.teamCode} · {team.department}</p>
+                  <p className="mt-1 text-xs text-wxIndigo500">{team.employeeCount} assigned employee{team.employeeCount === 1 ? "" : "s"}</p>
                 </div>
-                <AdminStatusBadge tone={team.status === "ACTIVE" ? "success" : "neutral"}>{team.status}</AdminStatusBadge>
+                <div className="flex shrink-0 items-center gap-2">
+                  <AdminStatusBadge tone={team.status === "ACTIVE" ? "success" : "neutral"}>{team.status}</AdminStatusBadge>
+                  <EmployeeTeamMenu team={team} />
+                </div>
               </div>
             )) : (
               <p className="px-5 py-10 text-center text-sm text-wxIndigo500">No teams yet. Employees may remain unassigned.</p>
@@ -269,6 +273,170 @@ export function EmployeeDirectoryControl({
         </div>
       </section>
     </div>
+  );
+}
+
+type TeamDialog = "EDIT" | "STATUS" | "DELETE";
+
+function EmployeeTeamMenu({ team }: { team: EmployeeTeam }) {
+  const router = useRouter();
+  const [dialog, setDialog] = useState<TeamDialog | null>(null);
+  const [teamCode, setTeamCode] = useState(team.teamCode);
+  const [name, setName] = useState(team.name);
+  const [department, setDepartment] = useState(team.department);
+  const [confirmation, setConfirmation] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  function openDialog(next: TeamDialog) {
+    setTeamCode(team.teamCode);
+    setName(team.name);
+    setDepartment(team.department);
+    setConfirmation("");
+    setReason("");
+    setError("");
+    setMessage("");
+    setDialog(next);
+  }
+
+  async function submit() {
+    if (!dialog) return;
+    setBusy(true);
+    setError("");
+    const deleting = dialog === "DELETE";
+    const response = await fetch(`/api/admin/employee-teams/${team.id}`, {
+      method: deleting ? "DELETE" : "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(deleting
+        ? { confirmation, reason }
+        : {
+            teamCode: dialog === "EDIT" ? teamCode : team.teamCode,
+            name: dialog === "EDIT" ? name : team.name,
+            department: dialog === "EDIT" ? department : team.department,
+            status: dialog === "STATUS" ? (team.status === "ACTIVE" ? "INACTIVE" : "ACTIVE") : team.status
+          })
+    });
+    const payload = await response.json().catch(() => null) as {
+      data?: { academySync?: { attempted: number; failed: number } };
+      error?: { message?: string };
+    } | null;
+    setBusy(false);
+    if (!response.ok) {
+      setError(payload?.error?.message || "The team change could not be completed.");
+      return;
+    }
+    const failedSyncs = payload?.data?.academySync?.failed || 0;
+    setMessage(deleting
+      ? "Team permanently deleted."
+      : failedSyncs
+        ? `Team saved. ${failedSyncs} assigned employee Academy sync${failedSyncs === 1 ? "" : "s"} need attention.`
+        : "Team saved and assigned employee records are up to date.");
+    setDialog(null);
+    router.refresh();
+  }
+
+  const deleteBlocked = team.employeeCount > 0;
+  const deleteReady = !deleteBlocked
+    && reason.trim().length >= 10
+    && confirmation.trim().toUpperCase() === `DELETE ${team.teamCode}`.toUpperCase();
+  const editReady = teamCode.trim().length >= 2 && name.trim().length >= 2 && department.trim().length >= 2;
+
+  return (
+    <>
+      <details className="relative">
+        <summary
+          className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-wxBorder bg-wxSurface text-wxIndigo600 hover:border-wxViolet700 hover:text-wxViolet700"
+          aria-label={`Manage ${team.name}`}
+          title={`Manage ${team.name}`}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </summary>
+        <div className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-md border border-wxBorder bg-wxSurface py-1 shadow-lift">
+          <button type="button" onClick={() => openDialog("EDIT")} className={menuItemClass}>
+            <Pencil className="h-4 w-4" /> Edit team
+          </button>
+          <button type="button" onClick={() => openDialog("STATUS")} className={menuItemClass}>
+            {team.status === "ACTIVE" ? <UserX className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+            {team.status === "ACTIVE" ? "Deactivate team" : "Activate team"}
+          </button>
+          <button type="button" onClick={() => openDialog("DELETE")} className={`${menuItemClass} text-red-700 hover:text-red-800`}>
+            <Trash2 className="h-4 w-4" /> Permanently delete
+          </button>
+        </div>
+      </details>
+      {message ? <span role="status" className="sr-only">{message}</span> : null}
+
+      {dialog ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4" role="presentation">
+          <section role="dialog" aria-modal="true" aria-labelledby={`team-dialog-${team.id}`} className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-md border border-wxBorder bg-wxSurface p-5 shadow-lift md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id={`team-dialog-${team.id}`} className="text-lg font-semibold text-wxIndigo900">
+                  {dialog === "EDIT" ? "Edit team" : dialog === "STATUS" ? `${team.status === "ACTIVE" ? "Deactivate" : "Activate"} team` : "Permanently delete team"}
+                </h2>
+                <p className="mt-1 text-sm text-wxIndigo500">{team.name} · {team.teamCode}</p>
+              </div>
+              <button type="button" onClick={() => setDialog(null)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-wxBorder" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {dialog === "EDIT" ? (
+              <div className="mt-5 grid gap-4">
+                <Field label="Team code"><input value={teamCode} onChange={(event) => setTeamCode(event.target.value)} maxLength={40} className={inputClass} /></Field>
+                <Field label="Team name"><input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} className={inputClass} /></Field>
+                <Field label="Department"><input value={department} onChange={(event) => setDepartment(event.target.value)} maxLength={120} className={inputClass} /></Field>
+                <p className="text-sm leading-6 text-wxIndigo500">Assigned employee records stay linked. A department change is blocked if it conflicts with an assigned employee.</p>
+              </div>
+            ) : null}
+
+            {dialog === "STATUS" ? (
+              <div className="mt-5 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm leading-6 text-wxIndigo700">
+                {team.status === "ACTIVE"
+                  ? "The team will no longer appear as an active assignment option. Existing employee relationships and history remain intact."
+                  : "The team will become available for compatible employee assignments again."}
+              </div>
+            ) : null}
+
+            {dialog === "DELETE" ? (
+              <div className="mt-5 space-y-4">
+                <div className={`rounded-md border p-4 ${deleteBlocked ? "border-amber-300 bg-amber-50 text-amber-950" : "border-red-200 bg-red-50 text-red-900"}`}>
+                  <p className="font-semibold">{deleteBlocked ? "Permanent deletion is blocked" : "This action cannot be undone"}</p>
+                  <p className="mt-1 text-sm leading-6">
+                    {deleteBlocked
+                      ? `${team.employeeCount} employee${team.employeeCount === 1 ? " is" : "s are"} assigned to this team. Reassign them before deleting it.`
+                      : "No employee is assigned to this team. Deleting it removes only the organisational record."}
+                  </p>
+                </div>
+                <label className="grid gap-1.5 text-sm font-semibold text-wxIndigo800">
+                  Type DELETE {team.teamCode}
+                  <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className={inputClass} disabled={deleteBlocked} />
+                </label>
+                <label className="grid gap-1.5 text-sm font-semibold text-wxIndigo800">
+                  Reason
+                  <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} maxLength={500} className={`${inputClass} py-3`} disabled={deleteBlocked} placeholder="Record why this organisational record must be deleted" />
+                </label>
+              </div>
+            ) : null}
+
+            {error ? <div role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div> : null}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setDialog(null)} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700">Cancel</button>
+              <button
+                type="button"
+                disabled={busy || (dialog === "EDIT" && !editReady) || (dialog === "DELETE" && !deleteReady)}
+                onClick={submit}
+                className={`min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${dialog === "DELETE" ? "bg-red-700" : "wx-gradient-action"}`}
+              >
+                {busy ? "Working..." : dialog === "EDIT" ? "Save team" : dialog === "STATUS" ? `${team.status === "ACTIVE" ? "Deactivate" : "Activate"} team` : "Permanently delete team"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </>
   );
 }
 

@@ -26,6 +26,15 @@ export const employeeTeamSchema = z.object({
   department: z.string().trim().min(2).max(120)
 });
 
+export const employeeTeamUpdateSchema = employeeTeamSchema.extend({
+  status: z.enum(employeeStatuses)
+});
+
+export const employeeTeamDeleteSchema = z.object({
+  confirmation: z.string().trim().min(8).max(80),
+  reason: z.string().trim().min(10).max(500)
+});
+
 export const employeeLifecycleMutationSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("DEACTIVATE"), reason: z.string().trim().min(3).max(500) }),
   z.object({ action: z.literal("ARCHIVE"), reason: z.string().trim().min(3).max(500) }),

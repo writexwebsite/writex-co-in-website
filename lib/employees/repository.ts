@@ -106,16 +106,22 @@ export async function listEmployeeTeams() {
     name: string;
     department: string;
     status: EmployeeStatus;
+    employee_count: string;
   }>(
-    `select id, team_code, name, department, status
-     from employee_teams order by department, name`
+    `select t.id, t.team_code, t.name, t.department, t.status,
+        count(e.id)::text as employee_count
+     from employee_teams t
+     left join employees e on e.primary_team_id = t.id
+     group by t.id, t.team_code, t.name, t.department, t.status
+     order by t.department, t.name`
   );
   return result.rows.map((row) => ({
     id: row.id,
     teamCode: row.team_code,
     name: row.name,
     department: row.department,
-    status: row.status
+    status: row.status,
+    employeeCount: Number(row.employee_count)
   } satisfies EmployeeTeam));
 }
 
@@ -814,6 +820,101 @@ export async function createEmployeeTeam(
     }
     throw error;
   }
+}
+
+export async function getEmployeeTeam(teamId: string) {
+  const teams = await listEmployeeTeams();
+  return teams.find((team) => team.id === teamId) ?? null;
+}
+
+export async function updateEmployeeTeam(
+  teamId: string,
+  input: { teamCode: string; name: string; department: string; status: EmployeeStatus },
+  actor: AdminSession
+) {
+  try {
+    return await withDbTransaction(async (query) => {
+      const current = await query<{ id: string; department: string }>(
+        "select id, department from employee_teams where id = $1 for update",
+        [teamId]
+      );
+      if (!current[0]) throw new ApiError(404, "NOT_FOUND", "Team was not found.");
+
+      const incompatible = await query<{ employee_count: string }>(
+        `select count(*)::text as employee_count
+         from employees
+         where primary_team_id = $1 and lower(department) <> lower($2)`,
+        [teamId, input.department]
+      );
+      if (Number(incompatible[0]?.employee_count || 0) > 0) {
+        throw new ApiError(
+          409,
+          "BAD_REQUEST",
+          "This department change conflicts with assigned employees. Reassign those employees before changing the team department."
+        );
+      }
+
+      await query(
+        `update employee_teams
+         set team_code = $2, name = $3, department = $4, status = $5
+         where id = $1`,
+        [teamId, input.teamCode, input.name, input.department, input.status]
+      );
+      const assigned = await query<{ employee_id: string }>(
+        `select employee_id
+         from employee_application_access
+         where application_key = $2
+           and employee_id in (select id from employees where primary_team_id = $1)`,
+        [teamId, academyApplicationKey]
+      );
+      if (assigned.length) {
+        await query(
+          `update employee_application_access
+           set sync_status = 'PENDING', last_sync_error = null
+           where application_key = $2
+             and employee_id in (select id from employees where primary_team_id = $1)`,
+          [teamId, academyApplicationKey]
+        );
+      }
+      return { employeeIds: assigned.map((row) => row.employee_id), actorId: actor.adminUserId };
+    });
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") {
+      throw new ApiError(409, "BAD_REQUEST", "A team already uses this code or name in the department.");
+    }
+    throw error;
+  }
+}
+
+export async function permanentlyDeleteEmployeeTeam(
+  teamId: string,
+  input: { confirmation: string; reason: string }
+) {
+  return withDbTransaction(async (query) => {
+    const current = await query<{ id: string; team_code: string; name: string; department: string; status: EmployeeStatus }>(
+      "select id, team_code, name, department, status from employee_teams where id = $1 for update",
+      [teamId]
+    );
+    const team = current[0];
+    if (!team) throw new ApiError(404, "NOT_FOUND", "Team was not found.");
+    if (input.confirmation.toUpperCase() !== `DELETE ${team.team_code}`.toUpperCase()) {
+      throw new ApiError(400, "BAD_REQUEST", `Type DELETE ${team.team_code} to confirm permanent deletion.`);
+    }
+    const dependencies = await query<{ employee_count: string }>(
+      "select count(*)::text as employee_count from employees where primary_team_id = $1",
+      [teamId]
+    );
+    const employeeCount = Number(dependencies[0]?.employee_count || 0);
+    if (employeeCount > 0) {
+      throw new ApiError(
+        409,
+        "BAD_REQUEST",
+        `This team is assigned to ${employeeCount} employee${employeeCount === 1 ? "" : "s"}. Reassign them before deleting the team.`
+      );
+    }
+    await query("delete from employee_teams where id = $1", [teamId]);
+    return { ...team, reason: input.reason };
+  });
 }
 
 async function academySyncPayload(employeeId: string, actor: AdminSession, requestId: string) {

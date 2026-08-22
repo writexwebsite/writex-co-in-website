@@ -83,6 +83,30 @@ test("directory exposes filtered lifecycle management without row delete buttons
   assert.match(ui, /Checking Website and Academy dependencies/);
 });
 
+test("team directory exposes governed edit, status and dependency-protected deletion", async () => {
+  const domain = await read("lib/employees/domain.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const route = await read("app/api/admin/employee-teams/[teamId]/route.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  assert.match(domain, /employeeCount: number/);
+  assert.match(validation, /employeeTeamUpdateSchema/);
+  assert.match(validation, /employeeTeamDeleteSchema/);
+  assert.match(repository, /count\(e\.id\)::text as employee_count/);
+  assert.match(repository, /Reassign them before deleting the team/);
+  assert.match(repository, /This department change conflicts with assigned employees/);
+  assert.match(route, /employee_team_updated/);
+  assert.match(route, /employee_team_status_changed/);
+  assert.match(route, /employee_team_deleted/);
+  assert.match(route, /assertSameOrigin/);
+  assert.match(route, /assertCanManageEmployees/);
+  assert.match(ui, /Manage \$\{team\.name\}/);
+  assert.match(ui, /Edit team/);
+  assert.match(ui, /Deactivate team/);
+  assert.match(ui, /Activate team/);
+  assert.match(ui, /Permanent deletion is blocked/);
+});
+
 test("permanent purge eligibility is limited to clearly temporary identities", () => {
   assert.equal(isClearlyTemporaryEmployee({
     employeeCode: "WP-UAT-DELETE",

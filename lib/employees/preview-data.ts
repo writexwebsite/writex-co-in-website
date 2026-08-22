@@ -1,8 +1,9 @@
 import type { EmployeeDirectoryItem, EmployeeTeam } from "@/lib/employees/domain";
 
 export const employeePreviewTeams: EmployeeTeam[] = [
-  { id: "10000000-0000-4000-8000-000000000001", teamCode: "SALES-EAST", name: "Sales East", department: "Sales", status: "ACTIVE" },
-  { id: "10000000-0000-4000-8000-000000000002", teamCode: "OPS-DELIVERY", name: "Delivery Operations", department: "Operations", status: "ACTIVE" }
+  { id: "10000000-0000-4000-8000-000000000001", teamCode: "SALES-EAST", name: "Sales East", department: "Sales", status: "ACTIVE", employeeCount: 3 },
+  { id: "10000000-0000-4000-8000-000000000002", teamCode: "OPS-DELIVERY", name: "Delivery Operations", department: "Operations", status: "ACTIVE", employeeCount: 1 },
+  { id: "10000000-0000-4000-8000-000000000003", teamCode: "UAT-EMPTY", name: "Empty UAT Team", department: "Sales", status: "INACTIVE", employeeCount: 0 }
 ];
 
 export const employeePreviewItems: EmployeeDirectoryItem[] = [

@@ -18,6 +18,7 @@ export type EmployeeTeam = {
   name: string;
   department: string;
   status: EmployeeStatus;
+  employeeCount: number;
 };
 
 export type EmployeeDirectoryItem = {
