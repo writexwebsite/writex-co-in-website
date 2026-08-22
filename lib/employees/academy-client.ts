@@ -15,7 +15,7 @@ type AcademySyncPayload = {
     employmentStatus: "ACTIVE" | "INACTIVE";
     managerEmployeeId: string | null;
   };
-  access: { enabled: boolean; role: "EMPLOYEE" | "TRAINER" | "MANAGER_TL" | "SUPER_ADMIN"; employeeSegment: "NEW_BDE" | "SENIOR_BDE" };
+  access: { enabled: boolean; role: "EMPLOYEE" | "TRAINER" | "MANAGER_TL" | "SUPER_ADMIN"; employeeSegment: "NEW_BDE" | "SENIOR_BDE"; primarySuperAdmin: boolean };
   team: {
     id: string;
     code: string;

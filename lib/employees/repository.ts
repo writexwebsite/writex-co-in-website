@@ -930,6 +930,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
     enabled: boolean;
     application_role: AcademyRole;
     employee_segment: EmployeeSegment;
+    primary_superadmin: boolean;
     team_id: string | null;
     team_code: string | null;
     team_name: string | null;
@@ -939,6 +940,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
     `select e.id, e.employee_code, e.display_name, e.official_email, e.department,
         e.designation, e.employment_status, e.manager_employee_id,
         a.enabled, a.application_role, a.employee_segment,
+        exists(select 1 from ai_governance_products governance where governance.product_key=$3 and governance.primary_superadmin_employee_id=e.id) primary_superadmin,
         t.id as team_id, t.team_code, t.name as team_name, t.status as team_status,
         case
           when a.application_role='MANAGER_TL' then e.id
@@ -951,7 +953,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
      left join employee_teams t on t.id = e.primary_team_id
      left join employees supervisor on supervisor.id=e.manager_employee_id
      where e.id = $1`,
-    [employeeId, academyApplicationKey]
+    [employeeId, academyApplicationKey, academyApplicationKey]
   );
   const row = result.rows[0];
   if (!row) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
@@ -967,7 +969,7 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
       employmentStatus: row.employment_status,
       managerEmployeeId: row.manager_employee_id
     },
-    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.employee_segment },
+    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.employee_segment, primarySuperAdmin: row.primary_superadmin },
     team: row.team_id ? {
       id: row.team_id,
       code: row.team_code!,

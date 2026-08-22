@@ -614,9 +614,9 @@ export async function setPrimaryAcademySuperAdmin(
       await query("update employee_application_access set application_role='SUPER_ADMIN',sync_status='PENDING',sync_version=sync_version+1 where employee_id=$1 and application_key='SALES_ACADEMY'", [employeeId]);
     }
     await query("update ai_governance_products set primary_superadmin_employee_id=$2,updated_by_admin_id=$3 where product_key=$1", [salesAcademyProductKey, employeeId, actor.adminUserId]);
-    return { previousPrimaryId: oldId, rolesBefore };
+    return { previousPrimaryId: oldId, rolesBefore, affectedIds };
   });
-  const toSync = employeeId ? [employeeId] : [];
+  const toSync = change.affectedIds;
   try {
     for (const id of toSync) {
       const result = await attemptEmployeeAcademySync(id, actor);

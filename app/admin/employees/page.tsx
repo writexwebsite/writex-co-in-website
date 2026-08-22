@@ -26,10 +26,11 @@ export default async function EmployeesPage({
   const lifecycle = employeeLifecycleFilters.includes(requestedLifecycle as EmployeeLifecycleFilter)
     ? requestedLifecycle as EmployeeLifecycleFilter
     : "active";
-  const [employees, teams, bootstrap] = await Promise.all([
+  const [employees, teams, bootstrap, setupEmployees] = await Promise.all([
     listEmployees({ search: params.search, sync: params.sync, lifecycle }),
     listEmployeeTeams(),
-    getAcademyInitialAdminBootstrap()
+    getAcademyInitialAdminBootstrap(),
+    listEmployees({ lifecycle: "active" })
   ]);
   const failedCount = employees.filter((employee) => employee.syncStatus === "FAILED").length;
 
@@ -52,6 +53,7 @@ export default async function EmployeesPage({
         attentionOnly={params.sync === "attention"}
         lifecycle={lifecycle}
         bootstrap={bootstrap}
+        setupEmployees={setupEmployees}
       />
     </AdminShell>
   );

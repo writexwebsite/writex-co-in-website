@@ -33,6 +33,7 @@ import type {
   EmployeeSegment,
   EmployeeTeam
 } from "@/lib/employees/domain";
+import { evaluateAcademySetupJourney, type AcademySetupJourney } from "@/lib/employees/guided-setup";
 
 type ApiFailure = { error?: { message?: string } };
 
@@ -56,7 +57,8 @@ export function EmployeeDirectoryControl({
   attentionOnly = false,
   lifecycle = "active",
   bootstrap,
-  deletionAssessments
+  deletionAssessments,
+  setupEmployees = employees
 }: {
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
@@ -65,9 +67,11 @@ export function EmployeeDirectoryControl({
   lifecycle?: EmployeeLifecycleFilter;
   bootstrap: AcademyInitialAdminBootstrap;
   deletionAssessments?: Record<string, EmployeeDeletionAssessment>;
+  setupEmployees?: EmployeeDirectoryItem[];
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  const [suggestedRole, setSuggestedRole] = useState<AcademyRole | null>(null);
   const [provisionedAccess, setProvisionedAccess] = useState<{
     employeeName: string;
     loginEmail: string;
@@ -75,6 +79,15 @@ export function EmployeeDirectoryControl({
   } | null>(null);
   const [teamMessage, setTeamMessage] = useState("");
   const [teamBusy, setTeamBusy] = useState(false);
+  const setupJourney = useMemo(
+    () => evaluateAcademySetupJourney(setupEmployees, bootstrap),
+    [bootstrap, setupEmployees]
+  );
+
+  function beginCreate(role: AcademyRole | null = null) {
+    setSuggestedRole(role);
+    setCreating(true);
+  }
 
   async function createTeam(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,6 +113,7 @@ export function EmployeeDirectoryControl({
 
   return (
     <div className="space-y-6">
+      <WebsiteAcademySetupJourney journey={setupJourney} onCreate={beginCreate} />
       <section className="rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -110,7 +124,14 @@ export function EmployeeDirectoryControl({
           </div>
           <button
             type="button"
-            onClick={() => setCreating((current) => !current)}
+            onClick={() => {
+              if (creating) {
+                setCreating(false);
+                setSuggestedRole(null);
+              } else {
+                beginCreate();
+              }
+            }}
             className="wx-gradient-action inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white"
             aria-expanded={creating}
           >
@@ -122,11 +143,13 @@ export function EmployeeDirectoryControl({
         {creating ? (
           <div className="mt-6 border-t border-wxBorder pt-6">
             <EmployeeEditor
-              employees={employees}
+              employees={setupEmployees}
               teams={teams}
               bootstrap={bootstrap}
+              suggestedRole={suggestedRole}
               onCreated={(result) => {
                 setCreating(false);
+                setSuggestedRole(null);
                 if (result.initialPassword) setProvisionedAccess(result as AcademyAccessCredentials);
               }}
             />
@@ -226,7 +249,7 @@ export function EmployeeDirectoryControl({
                 <div className="mx-auto mt-5 max-w-md rounded-md border border-violet-200 bg-violet-50 p-4 text-left text-sm text-violet-950">
                   <p><span className="font-semibold">Primary SuperAdmin:</span> Not yet assigned</p>
                   <p className="mt-1"><span className="font-semibold">Bootstrap:</span> Ready</p>
-                  <button type="button" onClick={() => setCreating(true)} className="wx-gradient-action mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 font-semibold text-white">
+                  <button type="button" onClick={() => beginCreate("SUPER_ADMIN")} className="wx-gradient-action mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 font-semibold text-white">
                     <Plus className="h-4 w-4" /> Create First Employee
                   </button>
                 </div>
@@ -273,6 +296,48 @@ export function EmployeeDirectoryControl({
         </div>
       </section>
     </div>
+  );
+}
+
+function WebsiteAcademySetupJourney({
+  journey,
+  onCreate
+}: {
+  journey: AcademySetupJourney;
+  onCreate: (role: AcademyRole | null) => void;
+}) {
+  return (
+    <section className={`rounded-lg border p-5 shadow-soft md:p-6 ${journey.complete ? "border-emerald-200 bg-emerald-50/70" : "border-violet-200 bg-wxSurface"}`} aria-labelledby="academy-setup-title">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <p className={`text-xs font-semibold uppercase ${journey.complete ? "text-emerald-700" : "text-violet-700"}`}>Website Admin · Academy setup</p>
+          <h2 id="academy-setup-title" className="mt-2 break-words text-lg font-semibold text-wxIndigo900">{journey.complete ? "Academy operating structure is ready" : "Complete the Academy operating structure"}</h2>
+          <p className="mt-1 text-sm leading-6 text-wxIndigo600">{journey.summary}</p>
+        </div>
+        {journey.action?.kind === "OPEN_GOVERNANCE" ? (
+          <Link href={journey.action.href || "/admin/ai-governance#primary-superadmin"} className="wx-gradient-action inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white lg:w-auto lg:shrink-0">
+            {journey.action.label}
+          </Link>
+        ) : journey.action?.kind === "CREATE_EMPLOYEE" ? (
+          <button type="button" onClick={() => onCreate(journey.action?.academyRole || null)} className="wx-gradient-action inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white lg:w-auto lg:shrink-0">
+            <Plus className="h-4 w-4" /> {journey.action.label}
+          </button>
+        ) : null}
+      </div>
+      <ol className="mt-5 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {journey.stages.map((stage, index) => (
+          <li key={stage.key} className={`min-w-0 rounded-md border p-3 ${stage.status === "COMPLETE" ? "border-emerald-200 bg-white/80" : stage.status === "CURRENT" ? "border-violet-300 bg-violet-50" : "border-wxBorder bg-wxSurfaceSoft"}`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 break-words text-xs font-semibold text-wxIndigo500">{index + 1}. {stage.label}</span>
+              <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold uppercase ${stage.status === "COMPLETE" ? "bg-emerald-100 text-emerald-800" : stage.status === "CURRENT" ? "bg-violet-100 text-violet-800" : "bg-slate-100 text-slate-600"}`}>{stage.status}</span>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-wxIndigo900">{stage.completedBy || (stage.status === "CURRENT" ? "Required now" : "Waiting for prior stage")}</p>
+            <p className="mt-1 text-xs leading-5 text-wxIndigo500">{stage.explanation}</p>
+          </li>
+        ))}
+      </ol>
+      {!journey.complete && journey.action ? <p className="mt-4 border-t border-wxBorder pt-3 text-xs leading-5 text-wxIndigo600"><span className="font-semibold">Why this is next:</span> {journey.action.explanation} The next stage unlocks only after the Website record and Academy sync are both confirmed.</p> : null}
+    </section>
   );
 }
 
@@ -798,7 +863,8 @@ function EmployeeEditor({
   employees,
   teams,
   onCreated,
-  bootstrap
+  bootstrap,
+  suggestedRole
 }: {
   employee?: EmployeeDirectoryItem;
   employees: EmployeeDirectoryItem[];
@@ -811,6 +877,7 @@ function EmployeeEditor({
     primarySuperAdmin?: boolean;
   }) => void;
   bootstrap?: AcademyInitialAdminBootstrap;
+  suggestedRole?: AcademyRole | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -819,8 +886,8 @@ function EmployeeEditor({
   const [error, setError] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const initialBootstrap = !employee && Boolean(bootstrap?.requiresConfirmation);
-  const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || (employee?.academyEnabled ?? false));
-  const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || "EMPLOYEE"));
+  const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || Boolean(suggestedRole) || (employee?.academyEnabled ?? false));
+  const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || suggestedRole || "EMPLOYEE"));
   const [academyRoleChangeReason, setAcademyRoleChangeReason] = useState("");
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? "");

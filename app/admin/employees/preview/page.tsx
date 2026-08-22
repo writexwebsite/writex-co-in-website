@@ -74,6 +74,7 @@ export default async function EmployeePreviewPage({
       ) : (
         <EmployeeDirectoryControl
           employees={params.state === "empty" ? [] : filteredEmployees}
+          setupEmployees={params.state === "empty" ? [] : employeePreviewItems}
           teams={employeePreviewTeams}
           lifecycle={lifecycle}
           deletionAssessments={deletionAssessments}
