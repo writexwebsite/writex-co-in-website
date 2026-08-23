@@ -15,7 +15,19 @@ type AcademySyncPayload = {
     employmentStatus: "ACTIVE" | "INACTIVE";
     managerEmployeeId: string | null;
   };
-  access: { enabled: boolean; role: "EMPLOYEE" | "TRAINER" | "MANAGER_TL" | "SUPER_ADMIN"; employeeSegment: "NEW_BDE" | "SENIOR_BDE"; primarySuperAdmin: boolean };
+  access: {
+    enabled: boolean;
+    role: "EMPLOYEE" | "TRAINER" | "MANAGER_TL" | "SUPER_ADMIN";
+    employeeSegment: "NEW_BDE" | "SENIOR_BDE";
+    primarySuperAdmin: boolean;
+    area: "SALES" | "DEVELOPMENT_OPERATIONS" | "ACADEMY_WIDE";
+  };
+  delivery: {
+    departmentCode: "DEVELOPMENT_OPERATIONS";
+    operationalRole: "MANAGER" | "TEAM_LEADER" | "SENIOR_SME" | "JUNIOR_SME" | null;
+    reportingParentEmployeeId: string | null;
+    trainerEmployeeId: string | null;
+  } | null;
   team: {
     id: string;
     code: string;

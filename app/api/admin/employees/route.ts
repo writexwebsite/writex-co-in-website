@@ -61,7 +61,9 @@ export async function POST(request: NextRequest) {
         department: input.department,
         academyAccess: createdEmployee.academyEnabled,
         academyRole: createdEmployee.academyRole,
-        employeeSegment: createdEmployee.employeeSegment
+        employeeSegment: createdEmployee.employeeSegment,
+        academyArea: createdEmployee.academyArea,
+        deliveryOperationalRole: createdEmployee.deliveryOperationalRole
       },
       request
     });

@@ -26,7 +26,9 @@ import {
 import { AdminStatusBadge } from "@/components/admin/AdminPrimitives";
 import type {
   AcademyInitialAdminBootstrap,
+  AcademyArea,
   AcademyRole,
+  DeliveryOperationalRole,
   EmployeeDeletionAssessment,
   EmployeeDirectoryItem,
   EmployeeLifecycleFilter,
@@ -45,6 +47,8 @@ type AcademyAccessCredentials = {
   academyRole?: AcademyRole;
   primarySuperAdmin?: boolean;
 };
+
+type DeliveryResponsibility = DeliveryOperationalRole | "TRAINER";
 
 function syncTone(status: EmployeeDirectoryItem["syncStatus"]) {
   return status === "SYNCED" ? "success" : status === "FAILED" ? "danger" : "warning";
@@ -705,7 +709,7 @@ function EmployeeLifecycleMenu({
           <button type="button" disabled={Boolean(employee.archivedAt)} onClick={() => openDialog("ACCESS")} className={menuItemClass}>
             <GraduationCap className="h-4 w-4" /> Academy Access {employee.academyEnabled ? "Off" : "On"}
           </button>
-          <button type="button" disabled={Boolean(employee.archivedAt)} onClick={() => openDialog("ROLE")} className={menuItemClass}>
+          <button type="button" disabled={Boolean(employee.archivedAt) || employee.academyArea !== "SALES"} onClick={() => openDialog("ROLE")} className={menuItemClass} title={employee.academyArea !== "SALES" ? "Use View / Edit for Delivery or Academy-wide responsibility changes" : undefined}>
             <ShieldCheck className="h-4 w-4" /> Change Academy Role
           </button>
           <button
@@ -888,10 +892,18 @@ function EmployeeEditor({
   const initialBootstrap = !employee && Boolean(bootstrap?.requiresConfirmation);
   const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || Boolean(suggestedRole) || (employee?.academyEnabled ?? false));
   const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || suggestedRole || "EMPLOYEE"));
+  const [academyArea, setAcademyArea] = useState<AcademyArea>(initialBootstrap ? "ACADEMY_WIDE" : (employee?.academyArea || "SALES"));
+  const [deliveryResponsibility, setDeliveryResponsibility] = useState<DeliveryResponsibility>(
+    employee?.academyArea === "DEVELOPMENT_OPERATIONS" && employee.academyRole === "TRAINER"
+      ? "TRAINER"
+      : employee?.deliveryOperationalRole || "MANAGER"
+  );
   const [academyRoleChangeReason, setAcademyRoleChangeReason] = useState("");
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? "");
   const [managerEmployeeId, setManagerEmployeeId] = useState(employee?.managerEmployeeId || "");
+  const [deliveryReportingParentEmployeeId, setDeliveryReportingParentEmployeeId] = useState(employee?.deliveryReportingParentEmployeeId || "");
+  const [deliveryTrainerEmployeeId, setDeliveryTrainerEmployeeId] = useState(employee?.deliveryTrainerEmployeeId || "");
   const [bootstrapConfirmed, setBootstrapConfirmed] = useState(false);
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
   const [confirmingSegment, setConfirmingSegment] = useState(false);
@@ -929,17 +941,45 @@ function EmployeeEditor({
     : academyRole === "TRAINER"
       ? directSupervisor
       : employees.find((item) => item.id === displayedTrainer?.managerEmployeeId) || null;
-  const hierarchyRequired = academyEnabled && (academyRole === "EMPLOYEE" || academyRole === "TRAINER");
-  const hierarchyValid = !hierarchyRequired || Boolean(managerEmployeeId && supervisorOptions.some((item) => item.id === managerEmployeeId));
+  const activeDeliveryEmployees = employees.filter((item) => item.id !== employee?.id
+    && !item.archivedAt
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && item.academyArea === "DEVELOPMENT_OPERATIONS");
+  const expectedDeliveryParentRole: Partial<Record<DeliveryOperationalRole, DeliveryOperationalRole>> = {
+    TEAM_LEADER: "MANAGER",
+    SENIOR_SME: "TEAM_LEADER",
+    JUNIOR_SME: "SENIOR_SME"
+  };
+  const selectedOperationalRole = deliveryResponsibility === "TRAINER" ? null : deliveryResponsibility;
+  const requiredDeliveryParentRole = selectedOperationalRole ? expectedDeliveryParentRole[selectedOperationalRole] : undefined;
+  const deliveryParentOptions = activeDeliveryEmployees.filter((item) => item.deliveryOperationalRole === requiredDeliveryParentRole);
+  const deliveryTrainerOptions = activeDeliveryEmployees.filter((item) => item.academyRole === "TRAINER" && !item.deliveryOperationalRole);
+  const deliveryTrainerRequired = selectedOperationalRole === "SENIOR_SME" || selectedOperationalRole === "JUNIOR_SME";
+  const salesHierarchyRequired = academyArea === "SALES" && academyEnabled && (academyRole === "EMPLOYEE" || academyRole === "TRAINER");
+  const deliveryHierarchyValid = academyArea !== "DEVELOPMENT_OPERATIONS" || !academyEnabled || deliveryResponsibility === "TRAINER" || (
+    Boolean(selectedOperationalRole)
+    && (!requiredDeliveryParentRole || deliveryParentOptions.some((item) => item.id === deliveryReportingParentEmployeeId))
+    && (!deliveryTrainerRequired || deliveryTrainerOptions.some((item) => item.id === deliveryTrainerEmployeeId))
+  );
+  const hierarchyValid = (!salesHierarchyRequired || Boolean(managerEmployeeId && supervisorOptions.some((item) => item.id === managerEmployeeId)))
+    && deliveryHierarchyValid;
   const storedSupervisor = employee ? employees.find((item) => item.id === employee.managerEmployeeId) || null : null;
   const storedHierarchyValid = !employee?.academyEnabled
-    || !["EMPLOYEE", "TRAINER"].includes(employee.academyRole)
-    || Boolean(storedSupervisor
-      && storedSupervisor.employmentStatus === "ACTIVE"
-      && storedSupervisor.academyEnabled
-      && (employee.academyRole === "EMPLOYEE"
-        ? storedSupervisor.academyRole === "TRAINER" && Boolean(storedSupervisor.managerEmployeeId && validManagerIds.has(storedSupervisor.managerEmployeeId))
-        : storedSupervisor.academyRole === "MANAGER_TL"));
+    || employee.academyArea === "ACADEMY_WIDE"
+    || (employee.academyArea === "DEVELOPMENT_OPERATIONS"
+      ? employee.academyRole === "TRAINER" || Boolean(
+        employee.deliveryOperationalRole
+        && (!expectedDeliveryParentRole[employee.deliveryOperationalRole] || employee.deliveryReportingParentEmployeeId)
+        && (!(employee.deliveryOperationalRole === "SENIOR_SME" || employee.deliveryOperationalRole === "JUNIOR_SME") || employee.deliveryTrainerEmployeeId)
+      )
+      : !["EMPLOYEE", "TRAINER"].includes(employee.academyRole)
+        || Boolean(storedSupervisor
+          && storedSupervisor.employmentStatus === "ACTIVE"
+          && storedSupervisor.academyEnabled
+          && (employee.academyRole === "EMPLOYEE"
+            ? storedSupervisor.academyRole === "TRAINER" && Boolean(storedSupervisor.managerEmployeeId && validManagerIds.has(storedSupervisor.managerEmployeeId))
+            : storedSupervisor.academyRole === "MANAGER_TL")));
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -968,12 +1008,16 @@ function EmployeeEditor({
     const input = {
       ...values,
       academyEnabled,
-      academyRole,
+      academyRole: academyArea === "ACADEMY_WIDE" ? "SUPER_ADMIN" : academyArea === "DEVELOPMENT_OPERATIONS" ? (deliveryResponsibility === "TRAINER" ? "TRAINER" : "EMPLOYEE") : academyRole,
       employeeSegment,
+      academyArea,
+      deliveryOperationalRole: academyArea === "DEVELOPMENT_OPERATIONS" && deliveryResponsibility !== "TRAINER" ? deliveryResponsibility : null,
+      deliveryReportingParentEmployeeId: academyArea === "DEVELOPMENT_OPERATIONS" ? deliveryReportingParentEmployeeId || null : null,
+      deliveryTrainerEmployeeId: academyArea === "DEVELOPMENT_OPERATIONS" ? deliveryTrainerEmployeeId || null : null,
       academyRoleChangeReason,
       initialBootstrapConfirmed: initialBootstrap ? bootstrapConfirmed : undefined,
       primaryTeamId: values.primaryTeamId || null,
-      managerEmployeeId: managerEmployeeId || null
+      managerEmployeeId: academyArea === "SALES" ? managerEmployeeId || null : null
     };
     const response = await fetch(employee ? `/api/admin/employees/${employee.id}` : "/api/admin/employees", {
       method: employee ? "PATCH" : "POST",
@@ -1051,9 +1095,10 @@ function EmployeeEditor({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Setup Incomplete" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
-          <StatusTile label="Academy role" value={employee.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : employee.academyRole === "MANAGER_TL" ? "Manager / TL" : employee.academyRole === "TRAINER" ? "Trainer" : "Employee / BDE"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Delivery Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy role" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? employee.academyRole === "TRAINER" ? "Delivery Trainer" : (employee.deliveryOperationalRole || "Unmapped").replaceAll("_", " ") : employee.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : employee.academyRole === "MANAGER_TL" ? "Manager / TL" : employee.academyRole === "TRAINER" ? "Trainer" : "Employee / BDE"} icon={<ShieldCheck className="h-4 w-4" />} />
           <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
-          {employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
+          {employee.academyArea === "SALES" && employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
           <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Sync status" value={!storedHierarchyValid ? "Requires Action" : employee.syncStatus === "FAILED" ? "Runtime Failure" : employee.syncStatus === "PENDING" ? "Requires Action" : "Healthy"} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" || !storedHierarchyValid ? "danger" : undefined} />
@@ -1099,7 +1144,7 @@ function EmployeeEditor({
         <div role="alertdialog" aria-labelledby="deactivation-title" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <h2 id="deactivation-title" className="font-semibold">Confirm employee access change</h2>
           <p className="mt-1 text-sm leading-6">
-            This will disable the selected access and revoke active Sales Academy sessions after the Website record is saved.
+            This will disable the selected access and revoke active Learning Academy sessions after the Website record is saved.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -1168,39 +1213,91 @@ function EmployeeEditor({
           <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,.75fr)]">
             <label className="flex min-h-[76px] cursor-pointer items-center justify-between gap-4 rounded-md border border-wxBorder bg-wxSurfaceSoft px-4 py-3">
               <span>
-                <span className="block font-semibold text-wxIndigo900">Sales Academy access</span>
+                <span className="block font-semibold text-wxIndigo900">Learning Academy access</span>
                 <span className="mt-1 block text-sm text-wxIndigo500">Turning this off revokes active Academy sessions.</span>
               </span>
               <input type="checkbox" checked={academyEnabled} onChange={(event) => setAcademyEnabled(event.target.checked)} disabled={initialBootstrap} className="h-5 w-5 accent-violet-700 disabled:opacity-60" />
             </label>
-            <Field label="Academy role">
-              <select name="academyRole" value={academyRole} onChange={(event) => { setAcademyRole(event.target.value as AcademyRole); setManagerEmployeeId(""); }} disabled={initialBootstrap} className={inputClass}>
+            <Field label="Academy area">
+              <select name="academyArea" value={academyArea} onChange={(event) => {
+                const next = event.target.value as AcademyArea;
+                setAcademyArea(next);
+                setManagerEmployeeId("");
+                setDeliveryReportingParentEmployeeId("");
+                setDeliveryTrainerEmployeeId("");
+                if (next === "DEVELOPMENT_OPERATIONS") setDepartment("Development / Operations");
+                if (next === "ACADEMY_WIDE") setAcademyRole("SUPER_ADMIN");
+              }} disabled={initialBootstrap} className={inputClass}>
+                <option value="SALES">Sales Academy</option>
+                <option value="DEVELOPMENT_OPERATIONS">Delivery Academy · Development / Operations</option>
+                <option value="ACADEMY_WIDE">Academy-wide SuperAdmin</option>
+              </select>
+              <span className="text-xs font-normal text-wxIndigo500">Department access is explicit. Delivery and Sales mappings remain isolated.</span>
+            </Field>
+          </div>
+
+          {academyArea === "SALES" ? <>
+            <div className="mt-4 max-w-xl"><Field label="Academy role">
+              <select name="academyRole" value={academyRole} onChange={(event) => { setAcademyRole(event.target.value as AcademyRole); setManagerEmployeeId(""); }} className={inputClass}>
                 <option value="EMPLOYEE">Employee / BDE</option>
                 <option value="TRAINER">Trainer</option>
                 <option value="MANAGER_TL">Manager / TL</option>
                 <option value="SUPER_ADMIN">SuperAdmin</option>
               </select>
-              <span className="text-xs font-normal text-wxIndigo500">Role, employee segment, and reporting hierarchy are separate controls.</span>
-            </Field>
-          </div>
-          {employee && academyRole !== employee.academyRole ? (
+              <span className="text-xs font-normal text-wxIndigo500">Role, employee segment, and Sales reporting hierarchy are separate controls.</span>
+            </Field></div>
+          </> : <input type="hidden" name="academyRole" value={academyArea === "ACADEMY_WIDE" ? "SUPER_ADMIN" : deliveryResponsibility === "TRAINER" ? "TRAINER" : "EMPLOYEE"} />}
+
+          {employee && (academyRole !== employee.academyRole || academyArea !== employee.academyArea) ? (
             <div className="mt-4 max-w-xl">
               <Field label="Role change reason">
                 <textarea value={academyRoleChangeReason} onChange={(event) => setAcademyRoleChangeReason(event.target.value)} required minLength={3} maxLength={500} rows={3} className={`${inputClass} py-3`} placeholder="Record the authorised reason for this Academy role change" />
               </Field>
             </div>
           ) : null}
-          {academyRole === "EMPLOYEE" ? <div className="mt-4 max-w-xl"><Field label="Employee segment"><select name="employeeSegment" value={employeeSegment} onChange={(event) => setEmployeeSegment(event.target.value as EmployeeSegment)} className={inputClass}><option value="NEW_BDE">New BDE · Foundation journey</option><option value="SENIOR_BDE">Senior BDE · Diagnostic and focused development</option></select><span className="text-xs font-normal text-wxIndigo500">This is a training segment, not an Academy role. Changing it preserves the employee identity and all history.</span></Field></div> : <input type="hidden" name="employeeSegment" value="SENIOR_BDE" />}
-          {academyRole === "EMPLOYEE" || academyRole === "TRAINER" ? <div id="academy-hierarchy" className="mt-4 max-w-xl">{supervisorOptions.length ? <Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? displayedManager ? `Manager / TL: ${displayedManager.displayName}` : "The Manager / TL resolves automatically through the selected Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field> : <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950"><p className="font-semibold">No active Academy {academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} available</p><p className="mt-1 text-sm leading-6">Create/enable a {academyRole === "EMPLOYEE" ? "Trainer or repair an existing Trainer" : "Manager / TL"} before assigning this employee.</p></div>}</div> : <input type="hidden" name="managerEmployeeId" value="" />}
 
-          {hierarchyRequired && !hierarchyValid ? (
+          {academyArea === "SALES" && academyRole === "EMPLOYEE" ? <div className="mt-4 max-w-xl"><Field label="Employee segment"><select name="employeeSegment" value={employeeSegment} onChange={(event) => setEmployeeSegment(event.target.value as EmployeeSegment)} className={inputClass}><option value="NEW_BDE">New BDE · Foundation journey</option><option value="SENIOR_BDE">Senior BDE · Diagnostic and focused development</option></select><span className="text-xs font-normal text-wxIndigo500">This is a training segment, not an Academy role. Changing it preserves the employee identity and all history.</span></Field></div> : <input type="hidden" name="employeeSegment" value="SENIOR_BDE" />}
+          {academyArea === "SALES" && (academyRole === "EMPLOYEE" || academyRole === "TRAINER") ? <div id="academy-hierarchy" className="mt-4 max-w-xl">{supervisorOptions.length ? <Field label={academyRole === "EMPLOYEE" ? "Assigned Trainer" : "Reports To Manager / TL"}><select name="managerEmployeeId" required={academyEnabled} value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)} className={inputClass}><option value="">{academyRole === "EMPLOYEE" ? "Select Trainer" : "Select Manager / TL"}</option>{supervisorOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}</select><span className="text-xs font-normal text-wxIndigo500">{academyRole === "EMPLOYEE" ? displayedManager ? `Manager / TL: ${displayedManager.displayName}` : "The Manager / TL resolves automatically through the selected Trainer." : "Only active authorised Manager / TL employees are available."}</span></Field> : <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950"><p className="font-semibold">No active Academy {academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} available</p><p className="mt-1 text-sm leading-6">Create/enable a {academyRole === "EMPLOYEE" ? "Trainer or repair an existing Trainer" : "Manager / TL"} before assigning this employee.</p></div>}</div> : <input type="hidden" name="managerEmployeeId" value="" />}
+
+          {academyArea === "DEVELOPMENT_OPERATIONS" ? <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <Field label="Delivery responsibility">
+              <select value={deliveryResponsibility} onChange={(event) => {
+                setDeliveryResponsibility(event.target.value as DeliveryResponsibility);
+                setDeliveryReportingParentEmployeeId("");
+                setDeliveryTrainerEmployeeId("");
+              }} className={inputClass}>
+                <option value="MANAGER">Delivery Manager</option>
+                <option value="TEAM_LEADER">Team Leader</option>
+                <option value="TRAINER">Delivery Trainer</option>
+                <option value="SENIOR_SME">Senior SME</option>
+                <option value="JUNIOR_SME">Junior SME</option>
+              </select>
+              <span className="text-xs font-normal text-wxIndigo500">Operational responsibility is separate from the Academy permission role.</span>
+            </Field>
+            {requiredDeliveryParentRole ? <Field label="Operational reporting parent">
+              <select value={deliveryReportingParentEmployeeId} onChange={(event) => setDeliveryReportingParentEmployeeId(event.target.value)} required={academyEnabled} className={inputClass}>
+                <option value="">Select {requiredDeliveryParentRole.replaceAll("_", " ").toLowerCase()}</option>
+                {deliveryParentOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
+              </select>
+              <span className="text-xs font-normal text-wxIndigo500">Manager → Team Leader → Senior SME → Junior SME.</span>
+            </Field> : <div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo600"><span className="font-semibold text-wxIndigo900">Operational parent</span><p className="mt-1">{deliveryResponsibility === "TRAINER" ? "Not applicable. Trainer is a separate relationship." : "Root of the Delivery hierarchy."}</p></div>}
+            {deliveryTrainerRequired ? <Field label="Assigned Delivery Trainer">
+              <select value={deliveryTrainerEmployeeId} onChange={(event) => setDeliveryTrainerEmployeeId(event.target.value)} required={academyEnabled && deliveryTrainerRequired} className={inputClass}>
+                <option value="">Select Delivery Trainer</option>
+                {deliveryTrainerOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
+              </select>
+              <span className="text-xs font-normal text-wxIndigo500">Trainer assignment never changes the operational reporting line.</span>
+            </Field> : null}
+          </div> : null}
+
+          {!hierarchyValid ? (
             <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
               <p className="font-semibold">Academy setup incomplete</p>
-              <p className="mt-1 text-sm leading-6">Assign an active {academyRole === "EMPLOYEE" ? "Trainer" : "Manager / TL"} before enabling Academy access for this employee.</p>
+              <p className="mt-1 text-sm leading-6">Complete the required reporting parent and Trainer assignment before enabling Academy access.</p>
             </div>
           ) : null}
 
-          {academyRole === "SUPER_ADMIN" ? (
+          {academyArea === "ACADEMY_WIDE" || academyRole === "SUPER_ADMIN" ? (
             <div className="mt-4 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo700">
               <p><span className="font-semibold">Primary SuperAdmin:</span> {initialBootstrap ? "Will be assigned after successful credential creation" : employee?.primarySuperAdmin ? "YES" : "NO"}</p>
               <p className="mt-1 leading-6">{initialBootstrap
@@ -1210,10 +1307,15 @@ function EmployeeEditor({
             </div>
           ) : null}
 
-          {employee && academyRole !== "SUPER_ADMIN" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
+          {employee && academyArea === "SALES" && academyRole !== "SUPER_ADMIN" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Academy reporting chain">
             <StatusTile label="Manager / TL" value={displayedManager?.displayName || (academyRole === "MANAGER_TL" ? employee.displayName : "Reassignment required")} icon={<UsersRound className="h-4 w-4" />} tone={displayedManager ? undefined : "danger"}/>
             <StatusTile label="Trainer" value={displayedTrainer?.displayName || (academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
             <StatusTile label="Employee" value={employee.displayName} icon={<UserRound className="h-4 w-4" />}/>
+          </div> : null}
+          {employee && academyArea === "DEVELOPMENT_OPERATIONS" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Delivery Academy mapping">
+            <StatusTile label="Operational role" value={deliveryResponsibility === "TRAINER" ? "Delivery Trainer" : deliveryResponsibility.replaceAll("_", " ")} icon={<UsersRound className="h-4 w-4" />}/>
+            <StatusTile label="Reports to" value={employee.deliveryReportingParentName || (deliveryResponsibility === "MANAGER" || deliveryResponsibility === "TRAINER" ? "Not applicable" : "Reassignment required")} icon={<UserRound className="h-4 w-4" />} tone={requiredDeliveryParentRole && !employee.deliveryReportingParentName ? "danger" : undefined}/>
+            <StatusTile label="Trainer" value={employee.deliveryTrainerName || (deliveryTrainerRequired ? "Reassignment required" : "Not assigned")} icon={<GraduationCap className="h-4 w-4" />} tone={deliveryTrainerRequired && !employee.deliveryTrainerName ? "danger" : undefined}/>
           </div> : null}
         </section>
 
@@ -1245,7 +1347,7 @@ function AcademyAccessReadyModal({
       ? credentials.loginEmail
       : kind === "password"
         ? password
-        : `WriteX Sales Academy\n${academyUrl}\n\nEmail: ${credentials.loginEmail}\nPassword: ${password}`;
+        : `WriteX Learning Academy\n${academyUrl}\n\nEmail: ${credentials.loginEmail}\nPassword: ${password}`;
     await navigator.clipboard.writeText(value);
     setCopied(kind);
   }
@@ -1258,8 +1360,8 @@ function AcademyAccessReadyModal({
             <KeyRound className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-xs font-semibold uppercase text-emerald-700">Sales Academy</p>
-            <h2 id="academy-access-ready-title" className="mt-1 text-xl font-semibold text-wxIndigo900">Sales Academy Access Ready</h2>
+            <p className="text-xs font-semibold uppercase text-emerald-700">Learning Academy</p>
+            <h2 id="academy-access-ready-title" className="mt-1 text-xl font-semibold text-wxIndigo900">Learning Academy Access Ready</h2>
             <p className="mt-1 text-sm leading-6 text-wxIndigo500">Share these login details privately. This password is shown only now.</p>
           </div>
         </div>

@@ -13,11 +13,13 @@ import {
 } from "@/lib/employees/academy-client";
 import {
   academyApplicationKey,
+  type AcademyArea,
   type AcademyRole,
   type AcademyInitialAdminBootstrap,
   type EmployeeDeletionAssessment,
   type EmployeeDirectoryItem,
   type EmployeeLifecycleFilter,
+  type DeliveryOperationalRole,
   type EmployeeSegment,
   type EmployeeStatus,
   type EmployeeTeam,
@@ -40,6 +42,12 @@ type EmployeeRow = {
   academy_role: AcademyRole;
   primary_superadmin: boolean;
   employee_segment: EmployeeSegment;
+  academy_area: AcademyArea;
+  delivery_operational_role: DeliveryOperationalRole | null;
+  delivery_reporting_parent_employee_id: string | null;
+  delivery_reporting_parent_name: string | null;
+  delivery_trainer_employee_id: string | null;
+  delivery_trainer_name: string | null;
   sync_status: "PENDING" | "SYNCED" | "FAILED";
   last_synced_at: Date | null;
   last_sync_error: string | null;
@@ -63,6 +71,12 @@ const employeeSelect = `
       and governance.primary_superadmin_employee_id = e.id
   ) as primary_superadmin,
   coalesce(a.employee_segment, 'NEW_BDE') as employee_segment,
+  coalesce(a.academy_area, case when a.application_role='SUPER_ADMIN' then 'ACADEMY_WIDE' else 'SALES' end) as academy_area,
+  a.delivery_operational_role,
+  a.delivery_reporting_parent_employee_id,
+  delivery_parent.display_name as delivery_reporting_parent_name,
+  a.delivery_trainer_employee_id,
+  delivery_trainer.display_name as delivery_trainer_name,
   coalesce(a.sync_status, 'SYNCED') as sync_status,
   a.last_synced_at, a.last_sync_error, a.external_application_user_id,
   e.archived_at, e.archive_previous_employment_status,
@@ -87,6 +101,12 @@ function mapEmployee(row: EmployeeRow): EmployeeDirectoryItem {
     academyRole: row.academy_role,
     primarySuperAdmin: row.primary_superadmin,
     employeeSegment: row.employee_segment,
+    academyArea: row.academy_area,
+    deliveryOperationalRole: row.delivery_operational_role,
+    deliveryReportingParentEmployeeId: row.delivery_reporting_parent_employee_id,
+    deliveryReportingParentName: row.delivery_reporting_parent_name,
+    deliveryTrainerEmployeeId: row.delivery_trainer_employee_id,
+    deliveryTrainerName: row.delivery_trainer_name,
     syncStatus: row.sync_status,
     lastSyncedAt: row.last_synced_at?.toISOString() ?? null,
     lastSyncError: row.last_sync_error,
@@ -141,7 +161,9 @@ export async function listEmployees({
      left join employee_teams t on t.id = e.primary_team_id
      left join employees manager on manager.id = e.manager_employee_id
      left join employee_application_access a
-       on a.employee_id = e.id and a.application_key = $1
+        on a.employee_id = e.id and a.application_key = $1
+     left join employees delivery_parent on delivery_parent.id = a.delivery_reporting_parent_employee_id
+     left join employees delivery_trainer on delivery_trainer.id = a.delivery_trainer_employee_id
      where ($2 = '' or concat_ws(' ', e.employee_code, e.display_name, e.official_email, e.department, e.designation, t.name) ilike '%' || $2 || '%')
        and ($3 <> 'attention' or a.sync_status in ('PENDING', 'FAILED'))
        and (
@@ -163,7 +185,9 @@ export async function getEmployee(employeeId: string) {
      left join employee_teams t on t.id = e.primary_team_id
      left join employees manager on manager.id = e.manager_employee_id
      left join employee_application_access a
-       on a.employee_id = e.id and a.application_key = $1
+        on a.employee_id = e.id and a.application_key = $1
+     left join employees delivery_parent on delivery_parent.id = a.delivery_reporting_parent_employee_id
+     left join employees delivery_trainer on delivery_trainer.id = a.delivery_trainer_employee_id
      where e.id = $2 limit 1`,
     [academyApplicationKey, employeeId]
   );
@@ -182,6 +206,10 @@ export type EmployeeMutationInput = {
   academyEnabled: boolean;
   academyRole: AcademyRole;
   employeeSegment: EmployeeSegment;
+  academyArea: AcademyArea;
+  deliveryOperationalRole: DeliveryOperationalRole | null;
+  deliveryReportingParentEmployeeId: string | null;
+  deliveryTrainerEmployeeId: string | null;
   academyRoleChangeReason?: string;
   initialBootstrapConfirmed?: boolean;
 };
@@ -252,6 +280,108 @@ async function validateRelationships(
       throw new ApiError(400, "BAD_REQUEST", "The selected team must belong to the employee department.");
     }
   }
+  if (input.academyArea === "ACADEMY_WIDE") {
+    if (input.academyRole !== "SUPER_ADMIN") {
+      throw new ApiError(400, "BAD_REQUEST", "Academy-wide access is reserved for a SuperAdmin.");
+    }
+    if (input.managerEmployeeId || input.deliveryOperationalRole || input.deliveryReportingParentEmployeeId || input.deliveryTrainerEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", "Academy-wide SuperAdmins do not use department reporting or Trainer assignments.");
+    }
+    return;
+  }
+
+  if (input.academyArea === "DEVELOPMENT_OPERATIONS") {
+    if (input.department.trim().toLowerCase() !== "development / operations") {
+      throw new ApiError(400, "BAD_REQUEST", "Delivery Academy employees must use the Development / Operations department.");
+    }
+    if (input.managerEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", "Delivery uses a separate operational reporting parent and Trainer assignment.");
+    }
+    const deliveryTrainer = input.academyRole === "TRAINER";
+    if (deliveryTrainer && input.deliveryOperationalRole) {
+      throw new ApiError(400, "BAD_REQUEST", "Delivery Trainers are separate from the operational hierarchy.");
+    }
+    if (!deliveryTrainer && input.academyRole !== "EMPLOYEE") {
+      throw new ApiError(400, "BAD_REQUEST", "Delivery operational roles use the employee identity permission; their responsibility is mapped separately.");
+    }
+    if (!deliveryTrainer && !input.deliveryOperationalRole) {
+      throw new ApiError(400, "BAD_REQUEST", "Select the employee's Delivery operational role.");
+    }
+    if (deliveryTrainer && (input.deliveryReportingParentEmployeeId || input.deliveryTrainerEmployeeId)) {
+      throw new ApiError(400, "BAD_REQUEST", "A Delivery Trainer does not sit inside the operational reporting chain.");
+    }
+
+    const expectedParentRole: Partial<Record<DeliveryOperationalRole, DeliveryOperationalRole>> = {
+      TEAM_LEADER: "MANAGER",
+      SENIOR_SME: "TEAM_LEADER",
+      JUNIOR_SME: "SENIOR_SME"
+    };
+    const expectedParent = input.deliveryOperationalRole ? expectedParentRole[input.deliveryOperationalRole] : undefined;
+    if (input.academyEnabled && input.employmentStatus === "ACTIVE" && expectedParent && !input.deliveryReportingParentEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", `Assign an active Delivery ${expectedParent.replaceAll("_", " ").toLowerCase()} as reporting parent.`);
+    }
+    if (input.deliveryOperationalRole === "MANAGER" && input.deliveryReportingParentEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", "A Delivery Manager is the root of the operational hierarchy and cannot have a Delivery reporting parent.");
+    }
+    if (input.deliveryReportingParentEmployeeId) {
+      if (input.deliveryReportingParentEmployeeId === employeeId) {
+        throw new ApiError(400, "BAD_REQUEST", "An employee cannot report to themselves.");
+      }
+      const parent = await query<{ employment_status: EmployeeStatus; enabled: boolean; academy_area: AcademyArea; delivery_operational_role: DeliveryOperationalRole | null }>(
+        `select e.employment_status,coalesce(a.enabled,false) enabled,
+           coalesce(a.academy_area,'SALES') academy_area,a.delivery_operational_role
+         from employees e join employee_application_access a on a.employee_id=e.id and a.application_key=$2
+         where e.id=$1`,
+        [input.deliveryReportingParentEmployeeId, academyApplicationKey]
+      );
+      if (!parent[0] || parent[0].employment_status !== "ACTIVE" || !parent[0].enabled || parent[0].academy_area !== "DEVELOPMENT_OPERATIONS" || parent[0].delivery_operational_role !== expectedParent) {
+        throw new ApiError(400, "BAD_REQUEST", `Select an active Delivery ${String(expectedParent || "parent").replaceAll("_", " ").toLowerCase()} from Development / Operations.`);
+      }
+      if (employeeId) {
+        const circular = await query<{ employee_id: string }>(
+          `with recursive chain as (
+             select employee_id,delivery_reporting_parent_employee_id
+             from employee_application_access where employee_id=$1 and application_key=$3
+             union all
+             select a.employee_id,a.delivery_reporting_parent_employee_id
+             from employee_application_access a join chain c on a.employee_id=c.delivery_reporting_parent_employee_id
+             where a.application_key=$3
+           ) select employee_id from chain where employee_id=$2 limit 1`,
+          [input.deliveryReportingParentEmployeeId, employeeId, academyApplicationKey]
+        );
+        if (circular[0]) throw new ApiError(409, "BAD_REQUEST", "This change would create a circular Delivery reporting relationship.");
+      }
+    }
+
+    const trainerRequired = input.deliveryOperationalRole === "SENIOR_SME" || input.deliveryOperationalRole === "JUNIOR_SME";
+    if (input.academyEnabled && input.employmentStatus === "ACTIVE" && trainerRequired && !input.deliveryTrainerEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", "Assign an active Delivery Trainer before enabling this SME.");
+    }
+    if (!trainerRequired && input.deliveryTrainerEmployeeId) {
+      throw new ApiError(400, "BAD_REQUEST", "Trainer assignment is available only for Delivery Senior SME and Junior SME records.");
+    }
+    if (input.deliveryTrainerEmployeeId) {
+      if (input.deliveryTrainerEmployeeId === employeeId) {
+        throw new ApiError(400, "BAD_REQUEST", "An employee cannot be their own Trainer.");
+      }
+      const trainer = await query<{ employment_status: EmployeeStatus; enabled: boolean; application_role: AcademyRole; academy_area: AcademyArea }>(
+        `select e.employment_status,coalesce(a.enabled,false) enabled,a.application_role,
+           coalesce(a.academy_area,'SALES') academy_area
+         from employees e join employee_application_access a on a.employee_id=e.id and a.application_key=$2
+         where e.id=$1`,
+        [input.deliveryTrainerEmployeeId, academyApplicationKey]
+      );
+      if (!trainer[0] || trainer[0].employment_status !== "ACTIVE" || !trainer[0].enabled || trainer[0].application_role !== "TRAINER" || trainer[0].academy_area !== "DEVELOPMENT_OPERATIONS") {
+        throw new ApiError(400, "BAD_REQUEST", "Select an active Delivery Trainer from Development / Operations. Sales Trainers cannot be assigned to Delivery employees.");
+      }
+    }
+    return;
+  }
+
+  if (input.deliveryOperationalRole || input.deliveryReportingParentEmployeeId || input.deliveryTrainerEmployeeId) {
+    throw new ApiError(400, "BAD_REQUEST", "Delivery hierarchy fields can be used only for Development / Operations Academy access.");
+  }
+
   if (input.managerEmployeeId) {
     if (input.managerEmployeeId === employeeId) {
       throw new ApiError(400, "BAD_REQUEST", "An employee cannot be their own manager.");
@@ -323,7 +453,11 @@ export async function createEmployee(input: EmployeeMutationInput, actor: AdminS
       employmentStatus: "ACTIVE",
       academyEnabled: true,
       academyRole: "SUPER_ADMIN",
-      managerEmployeeId: null
+      academyArea: "ACADEMY_WIDE",
+      managerEmployeeId: null,
+      deliveryOperationalRole: null,
+      deliveryReportingParentEmployeeId: null,
+      deliveryTrainerEmployeeId: null
     } : input;
     await validateRelationships(query, effectiveInput);
     let employeeId: string;
@@ -346,11 +480,14 @@ export async function createEmployee(input: EmployeeMutationInput, actor: AdminS
     }
     await query(
       `insert into employee_application_access
-        (employee_id, application_key, enabled, application_role, employee_segment, granted_by_admin_id,
-         granted_at, sync_status, sync_version)
-       values ($1, $2, $3, $4, $5, $6, case when $3 then now() else null end,
-         case when $3 then 'PENDING' else 'SYNCED' end, case when $3 then 1 else 0 end)`,
-      [employeeId, academyApplicationKey, effectiveInput.academyEnabled, effectiveInput.academyRole, effectiveInput.employeeSegment, actor.adminUserId]
+        (employee_id, application_key, enabled, application_role, employee_segment, academy_area,
+         delivery_operational_role, delivery_reporting_parent_employee_id, delivery_trainer_employee_id, granted_by_admin_id,
+          granted_at, sync_status, sync_version)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, case when $3 then now() else null end,
+          case when $3 then 'PENDING' else 'SYNCED' end, case when $3 then 1 else 0 end)`,
+      [employeeId, academyApplicationKey, effectiveInput.academyEnabled, effectiveInput.academyRole, effectiveInput.employeeSegment,
+        effectiveInput.academyArea, effectiveInput.deliveryOperationalRole, effectiveInput.deliveryReportingParentEmployeeId,
+        effectiveInput.deliveryTrainerEmployeeId, actor.adminUserId]
     );
     if (initialBootstrap) {
       await query(
@@ -374,12 +511,17 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
       enabled: boolean;
       application_role: AcademyRole;
       employee_segment: EmployeeSegment;
+      academy_area: AcademyArea;
+      delivery_operational_role: DeliveryOperationalRole | null;
+      delivery_reporting_parent_employee_id: string | null;
+      delivery_trainer_employee_id: string | null;
       external_application_user_id: string | null;
       archived_at: Date | null;
       primary_superadmin: boolean;
     }>(
       `select e.employment_status, e.primary_team_id, e.manager_employee_id,
-          e.archived_at, a.enabled, a.application_role, a.employee_segment, a.external_application_user_id
+          e.archived_at, a.enabled, a.application_role, a.employee_segment, a.academy_area,
+          a.delivery_operational_role,a.delivery_reporting_parent_employee_id,a.delivery_trainer_employee_id,a.external_application_user_id
           , exists(select 1 from ai_governance_products p where p.product_key=$2 and p.primary_superadmin_employee_id=e.id) primary_superadmin
        from employees e join employee_application_access a on a.employee_id = e.id
        where e.id = $1 and a.application_key = $2 for update`,
@@ -424,7 +566,8 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
     await query(
       `update employee_application_access
        set enabled = $3, application_role = $4, granted_by_admin_id = $5,
-           employee_segment = $7,
+            employee_segment = $7, academy_area=$8, delivery_operational_role=$9,
+            delivery_reporting_parent_employee_id=$10, delivery_trainer_employee_id=$11,
            granted_at = case when $3 and not enabled then now() else granted_at end,
            revoked_at = case when not $3 and enabled then now() when $3 then null else revoked_at end,
            sync_status = case when $6 then 'PENDING' else 'SYNCED' end,
@@ -432,7 +575,8 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
            sync_version = sync_version + case when $6 then 1 else 0 end
        where employee_id = $1 and application_key = $2`,
       [employeeId, academyApplicationKey, effectiveAcademyEnabled, academyRole,
-        actor.adminUserId, shouldSync, input.employeeSegment]
+        actor.adminUserId, shouldSync, input.employeeSegment, input.academyArea, input.deliveryOperationalRole,
+        input.deliveryReportingParentEmployeeId, input.deliveryTrainerEmployeeId]
     );
   });
 }
@@ -468,11 +612,16 @@ export async function applyEmployeeLifecycleMutation(
       primary_team_id: string | null;
       manager_employee_id: string | null;
       employee_segment: EmployeeSegment;
+      academy_area: AcademyArea;
+      delivery_operational_role: DeliveryOperationalRole | null;
+      delivery_reporting_parent_employee_id: string | null;
+      delivery_trainer_employee_id: string | null;
     }>(
        `select e.employee_code,e.display_name,e.official_email,e.department,e.designation,
            e.primary_team_id,e.manager_employee_id,e.employment_status, e.archived_at, e.archive_previous_employment_status,
            e.archive_previous_academy_enabled, e.lifecycle_version,
-           a.enabled, a.application_role,a.employee_segment,a.external_application_user_id,
+           a.enabled, a.application_role,a.employee_segment,a.academy_area,a.delivery_operational_role,
+           a.delivery_reporting_parent_employee_id,a.delivery_trainer_employee_id,a.external_application_user_id,
           exists(select 1 from ai_governance_products p where p.product_key=$2 and p.primary_superadmin_employee_id=e.id) primary_superadmin
        from employees e
        join employee_application_access a on a.employee_id = e.id and a.application_key = $2
@@ -509,6 +658,22 @@ export async function applyEmployeeLifecycleMutation(
       );
       if (Number(reports[0]?.count || 0) > 0) {
         throw new ApiError(409, "BAD_REQUEST", "Reassign active Academy reports before deactivating or archiving this employee.");
+      }
+    }
+    if (removesSupervisor && current.academy_area === "DEVELOPMENT_OPERATIONS") {
+      const dependencies = await query<{ operational_reports: string; training_assignments: string }>(
+        `select
+           (select count(*)::text from employee_application_access a join employees e on e.id=a.employee_id
+             where a.delivery_reporting_parent_employee_id=$1 and a.application_key=$2 and a.enabled and e.employment_status='ACTIVE') operational_reports,
+           (select count(*)::text from employee_application_access a join employees e on e.id=a.employee_id
+             where a.delivery_trainer_employee_id=$1 and a.application_key=$2 and a.enabled and e.employment_status='ACTIVE') training_assignments`,
+        [employeeId, academyApplicationKey]
+      );
+      if (Number(dependencies[0]?.operational_reports || 0) > 0) {
+        throw new ApiError(409, "BAD_REQUEST", "Reassign active Delivery reports before deactivating or archiving this employee.");
+      }
+      if (Number(dependencies[0]?.training_assignments || 0) > 0) {
+        throw new ApiError(409, "BAD_REQUEST", "Reassign active Delivery learners before deactivating or archiving this Trainer.");
       }
     }
 
@@ -568,7 +733,11 @@ export async function applyEmployeeLifecycleMutation(
         managerEmployeeId: current.manager_employee_id,
         academyEnabled: restoredAccess,
         academyRole: current.application_role,
-        employeeSegment: current.employee_segment
+        employeeSegment: current.employee_segment,
+        academyArea: current.academy_area,
+        deliveryOperationalRole: current.delivery_operational_role,
+        deliveryReportingParentEmployeeId: current.delivery_reporting_parent_employee_id,
+        deliveryTrainerEmployeeId: current.delivery_trainer_employee_id
       }, employeeId);
       await query(
         `update employees
@@ -609,7 +778,11 @@ export async function applyEmployeeLifecycleMutation(
         managerEmployeeId,
         academyEnabled: input.enabled,
         academyRole: current.application_role,
-        employeeSegment: current.employee_segment
+        employeeSegment: current.employee_segment,
+        academyArea: current.academy_area,
+        deliveryOperationalRole: current.delivery_operational_role,
+        deliveryReportingParentEmployeeId: current.delivery_reporting_parent_employee_id,
+        deliveryTrainerEmployeeId: current.delivery_trainer_employee_id
       }, employeeId);
       await query("update employees set manager_employee_id=$2 where id=$1", [employeeId, managerEmployeeId]);
       const shouldSync = input.enabled || Boolean(current.external_application_user_id);
@@ -625,6 +798,9 @@ export async function applyEmployeeLifecycleMutation(
         [employeeId, academyApplicationKey, input.enabled, actor.adminUserId, shouldSync]
       );
     } else {
+      if (current.academy_area !== "SALES") {
+        throw new ApiError(409, "BAD_REQUEST", "Use View / Edit to change a Delivery or Academy-wide responsibility safely.");
+      }
       if (current.archived_at) {
         throw new ApiError(409, "BAD_REQUEST", "Restore the employee before changing the Academy role.");
       }
@@ -642,7 +818,11 @@ export async function applyEmployeeLifecycleMutation(
         managerEmployeeId,
         academyEnabled: current.enabled,
         academyRole: input.role,
-        employeeSegment: current.employee_segment
+        employeeSegment: current.employee_segment,
+        academyArea: current.academy_area,
+        deliveryOperationalRole: current.delivery_operational_role,
+        deliveryReportingParentEmployeeId: current.delivery_reporting_parent_employee_id,
+        deliveryTrainerEmployeeId: current.delivery_trainer_employee_id
       }, employeeId);
       await query("update employees set manager_employee_id=$2 where id=$1", [employeeId, managerEmployeeId]);
       const shouldSync = current.enabled || Boolean(current.external_application_user_id);
@@ -930,6 +1110,10 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
     enabled: boolean;
     application_role: AcademyRole;
     employee_segment: EmployeeSegment;
+    academy_area: AcademyArea;
+    delivery_operational_role: DeliveryOperationalRole | null;
+    delivery_reporting_parent_employee_id: string | null;
+    delivery_trainer_employee_id: string | null;
     primary_superadmin: boolean;
     team_id: string | null;
     team_code: string | null;
@@ -939,7 +1123,8 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
   }>(
     `select e.id, e.employee_code, e.display_name, e.official_email, e.department,
         e.designation, e.employment_status, e.manager_employee_id,
-        a.enabled, a.application_role, a.employee_segment,
+        a.enabled, a.application_role, a.employee_segment,a.academy_area,
+        a.delivery_operational_role,a.delivery_reporting_parent_employee_id,a.delivery_trainer_employee_id,
         exists(select 1 from ai_governance_products governance where governance.product_key=$3 and governance.primary_superadmin_employee_id=e.id) primary_superadmin,
         t.id as team_id, t.team_code, t.name as team_name, t.status as team_status,
         case
@@ -969,7 +1154,19 @@ async function academySyncPayload(employeeId: string, actor: AdminSession, reque
       employmentStatus: row.employment_status,
       managerEmployeeId: row.manager_employee_id
     },
-    access: { enabled: row.enabled, role: row.application_role, employeeSegment: row.employee_segment, primarySuperAdmin: row.primary_superadmin },
+    access: {
+      enabled: row.enabled,
+      role: row.application_role,
+      employeeSegment: row.employee_segment,
+      primarySuperAdmin: row.primary_superadmin,
+      area: row.academy_area
+    },
+    delivery: row.academy_area === "DEVELOPMENT_OPERATIONS" ? {
+      departmentCode: "DEVELOPMENT_OPERATIONS" as const,
+      operationalRole: row.delivery_operational_role,
+      reportingParentEmployeeId: row.delivery_reporting_parent_employee_id,
+      trainerEmployeeId: row.delivery_trainer_employee_id
+    } : null,
     team: row.team_id ? {
       id: row.team_id,
       code: row.team_code!,

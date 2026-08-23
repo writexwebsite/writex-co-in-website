@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { assignableAcademyRoles, employeeSegments, employeeStatuses } from "@/lib/employees/domain";
+import {
+  academyAreas,
+  assignableAcademyRoles,
+  deliveryOperationalRoles,
+  employeeSegments,
+  employeeStatuses
+} from "@/lib/employees/domain";
 
 const optionalUuid = z.union([z.uuid(), z.literal(""), z.null()])
   .transform((value) => value || null);
@@ -16,6 +22,10 @@ export const employeeMutationSchema = z.object({
   academyEnabled: z.boolean(),
   academyRole: z.enum(assignableAcademyRoles),
   employeeSegment: z.enum(employeeSegments),
+  academyArea: z.enum(academyAreas),
+  deliveryOperationalRole: z.union([z.enum(deliveryOperationalRoles), z.literal(""), z.null()]).transform((value) => value || null),
+  deliveryReportingParentEmployeeId: optionalUuid,
+  deliveryTrainerEmployeeId: optionalUuid,
   academyRoleChangeReason: z.string().trim().max(500).optional(),
   initialBootstrapConfirmed: z.boolean().optional()
 });

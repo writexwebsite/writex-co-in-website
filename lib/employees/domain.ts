@@ -4,12 +4,16 @@ export const academyRoles = ["EMPLOYEE", "TRAINER", "MANAGER_TL", "SUPER_ADMIN"]
 export const assignableAcademyRoles = academyRoles;
 export const employeeSyncStatuses = ["PENDING", "SYNCED", "FAILED"] as const;
 export const employeeSegments = ["NEW_BDE", "SENIOR_BDE"] as const;
+export const academyAreas = ["SALES", "DEVELOPMENT_OPERATIONS", "ACADEMY_WIDE"] as const;
+export const deliveryOperationalRoles = ["MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"] as const;
 export const employeeLifecycleFilters = ["active", "inactive", "archived", "all"] as const;
 
 export type EmployeeStatus = (typeof employeeStatuses)[number];
 export type AcademyRole = (typeof academyRoles)[number];
 export type EmployeeSyncStatus = (typeof employeeSyncStatuses)[number];
 export type EmployeeSegment = (typeof employeeSegments)[number];
+export type AcademyArea = (typeof academyAreas)[number];
+export type DeliveryOperationalRole = (typeof deliveryOperationalRoles)[number];
 export type EmployeeLifecycleFilter = (typeof employeeLifecycleFilters)[number];
 
 export type EmployeeTeam = {
@@ -37,6 +41,12 @@ export type EmployeeDirectoryItem = {
   academyRole: AcademyRole;
   primarySuperAdmin: boolean;
   employeeSegment: EmployeeSegment;
+  academyArea: AcademyArea;
+  deliveryOperationalRole: DeliveryOperationalRole | null;
+  deliveryReportingParentEmployeeId: string | null;
+  deliveryReportingParentName: string | null;
+  deliveryTrainerEmployeeId: string | null;
+  deliveryTrainerName: string | null;
   syncStatus: EmployeeSyncStatus;
   lastSyncedAt: string | null;
   lastSyncError: string | null;

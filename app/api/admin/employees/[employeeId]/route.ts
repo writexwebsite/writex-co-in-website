@@ -65,6 +65,10 @@ export async function PATCH(
         academyAccess: { before: before.academyEnabled, after: input.academyEnabled },
         academyRole: { before: before.academyRole, after: input.academyRole },
         employeeSegment: { before: before.employeeSegment, after: input.employeeSegment },
+        academyArea: { before: before.academyArea, after: input.academyArea },
+        deliveryOperationalRole: { before: before.deliveryOperationalRole, after: input.deliveryOperationalRole },
+        deliveryReportingParentChanged: before.deliveryReportingParentEmployeeId !== input.deliveryReportingParentEmployeeId,
+        deliveryTrainerChanged: before.deliveryTrainerEmployeeId !== input.deliveryTrainerEmployeeId,
         teamChanged: before.primaryTeamId !== input.primaryTeamId,
         managerChanged: before.managerEmployeeId !== input.managerEmployeeId
       },

@@ -137,7 +137,7 @@ test("Website Admin exposes one-time Academy credentials and signed password res
   const client = await read("lib/employees/academy-client.ts");
   const route = await read("app/api/admin/employees/[employeeId]/academy-password/route.ts");
   const lifecycleRoute = await read("app/api/admin/employees/[employeeId]/lifecycle/route.ts");
-  assert.match(ui, /Sales Academy Access Ready/);
+  assert.match(ui, /Learning Academy Access Ready/);
   assert.match(ui, /Copy Email/);
   assert.match(ui, /Copy Password/);
   assert.match(ui, /Copy Login Details/);
@@ -220,7 +220,8 @@ test("Website Admin treats Senior BDE as an audited employee segment rather than
   assert.doesNotMatch(domain, /academyRoles = \[[^\]]*SENIOR_BDE/);
   assert.match(validation, /employeeSegment: z\.enum\(employeeSegments\)/);
   assert.match(repository, /employeeSegment: row\.employee_segment/);
-  assert.match(repository, /access: \{ enabled: row\.enabled, role: row\.application_role, employeeSegment:/);
+  assert.match(repository, /employeeSegment: row\.employee_segment/);
+  assert.match(repository, /area: row\.academy_area/);
   assert.match(ui, /Employee segment/);
   assert.match(ui, /Changing it preserves the employee identity and all history/);
   assert.match(route, /academy_employee_segment_changed/);
@@ -241,7 +242,34 @@ test("Website Admin keeps Academy role, segment, hierarchy and Primary status in
   assert.match(repository, /current\[0\]\.primary_superadmin/);
   assert.match(repository, /role: row\.application_role/);
   assert.match(ui, /<option value="SUPER_ADMIN">SuperAdmin<\/option>/);
-  assert.match(ui, /Role, employee segment, and reporting hierarchy are separate controls/);
+  assert.match(ui, /Role, employee segment, and Sales reporting hierarchy are separate controls/);
   assert.match(ui, /Primary SuperAdmin/);
   assert.match(route, /actionSource: "WEBSITE_ADMIN_EMPLOYEE_EDIT"/);
+});
+
+test("Website Admin models Delivery area, operational hierarchy and Trainer assignment independently", async () => {
+  const domain = await read("lib/employees/domain.ts");
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const client = await read("lib/employees/academy-client.ts");
+  const ui = await read("components/admin/EmployeeControlPlane.tsx");
+  const migration = await read("database/migrations/20260824_delivery_academy_employee_mapping.sql");
+  assert.match(domain, /academyAreas = \["SALES", "DEVELOPMENT_OPERATIONS", "ACADEMY_WIDE"\]/);
+  assert.match(domain, /deliveryOperationalRoles = \["MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"\]/);
+  assert.match(validation, /deliveryReportingParentEmployeeId: optionalUuid/);
+  assert.match(validation, /deliveryTrainerEmployeeId: optionalUuid/);
+  assert.match(ui, /Manager → Team Leader → Senior SME → Junior SME/);
+  assert.match(repository, /Sales Trainers cannot be assigned to Delivery employees/);
+  assert.match(repository, /Trainer assignment is available only for Delivery Senior SME and Junior SME records/);
+  assert.match(repository, /This change would create a circular Delivery reporting relationship/);
+  assert.match(repository, /delivery:\s*row\.academy_area === "DEVELOPMENT_OPERATIONS"/);
+  assert.match(client, /departmentCode: "DEVELOPMENT_OPERATIONS"/);
+  assert.match(ui, /Delivery responsibility/);
+  assert.match(ui, /Operational reporting parent/);
+  assert.match(ui, /Assigned Delivery Trainer/);
+  assert.match(ui, /Trainer assignment never changes the operational reporting line/);
+  assert.match(ui, /employee\?\.deliveryOperationalRole \|\| "MANAGER"/);
+  assert.match(migration, /delivery_reporting_parent_employee_id uuid references employees\(id\) on delete set null/);
+  assert.match(migration, /delivery_trainer_employee_id uuid references employees\(id\) on delete set null/);
+  assert.doesNotMatch(migration, /delete from employees|drop table/i);
 });
