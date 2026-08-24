@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EmployeeDetailControl, EmployeeDirectoryControl } from "@/components/admin/EmployeeControlPlane";
-import { employeePreviewItems, employeePreviewTeams } from "@/lib/employees/preview-data";
-import type { EmployeeDeletionAssessment, EmployeeLifecycleFilter } from "@/lib/employees/domain";
+import { employeePreviewIds, employeePreviewItems, employeePreviewTeams } from "@/lib/employees/preview-data";
+import type { AcademyArea, EmployeeDeletionAssessment, EmployeeLifecycleFilter } from "@/lib/employees/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ const previewSession = {
 };
 
 const deletionAssessments: Record<string, EmployeeDeletionAssessment> = {
-  "20000000-0000-4000-8000-000000000001": {
+  [employeePreviewIds.salesManager]: {
     allowed: true,
     zeroHistoryAllowed: false,
     fullPurgeAllowed: true,
@@ -31,7 +31,7 @@ const deletionAssessments: Record<string, EmployeeDeletionAssessment> = {
     academyHasMeaningfulHistory: true,
     totalDependencyCount: 26
   },
-  "20000000-0000-4000-8000-000000000002": {
+  [employeePreviewIds.salesEmployee]: {
     allowed: true,
     zeroHistoryAllowed: true,
     fullPurgeAllowed: true,
@@ -48,18 +48,39 @@ const deletionAssessments: Record<string, EmployeeDeletionAssessment> = {
 export default async function EmployeePreviewPage({
   searchParams
 }: {
-  searchParams: Promise<{ view?: string; state?: string; lifecycle?: EmployeeLifecycleFilter }>;
+  searchParams: Promise<{ view?: string; state?: string; lifecycle?: EmployeeLifecycleFilter; area?: AcademyArea; responsibility?: string; access?: string; sync?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
   const params = await searchParams;
-  const employee = params.view === "detail"
-    ? employeePreviewItems.find((item) => item.id === "20000000-0000-4000-8000-000000000002")!
-    : null;
+  const employeeId = params.view === "superadmin"
+    ? employeePreviewIds.superAdmin
+    : params.view === "delivery"
+      ? employeePreviewIds.juniorSme
+      : params.view === "detail"
+        ? employeePreviewIds.salesEmployee
+        : null;
+  const employee = employeeId ? employeePreviewItems.find((item) => item.id === employeeId)! : null;
   const lifecycle = params.lifecycle || "active";
-  const filteredEmployees = employeePreviewItems.filter((item) => lifecycle === "all"
+  const setupEmployees = params.state === "empty"
+    ? []
+    : params.state === "delivery-incomplete"
+      ? employeePreviewItems.filter((item) => item.id !== employeePreviewIds.juniorSme)
+      : employeePreviewItems;
+  const filteredEmployees = employeePreviewItems.filter((item) => (lifecycle === "all"
     || (lifecycle === "archived" && Boolean(item.archivedAt))
     || (lifecycle === "active" && !item.archivedAt && item.employmentStatus === "ACTIVE")
-    || (lifecycle === "inactive" && !item.archivedAt && item.employmentStatus === "INACTIVE"));
+    || (lifecycle === "inactive" && !item.archivedAt && item.employmentStatus === "INACTIVE"))
+    && (!params.area || item.academyArea === params.area)
+    && (!params.access || (params.access === "enabled" ? item.academyEnabled : !item.academyEnabled))
+    && (!params.sync || (params.sync === "attention" ? item.syncStatus !== "SYNCED" : item.syncStatus === params.sync))
+    && (!params.responsibility || (
+      params.responsibility === "SUPER_ADMIN" ? item.academyRole === "SUPER_ADMIN"
+        : params.responsibility === "SALES_MANAGER_TL" ? item.academyArea === "SALES" && item.academyRole === "MANAGER_TL"
+          : params.responsibility === "SALES_TRAINER" ? item.academyArea === "SALES" && item.academyRole === "TRAINER"
+            : params.responsibility === "SALES_EMPLOYEE" ? item.academyArea === "SALES" && item.academyRole === "EMPLOYEE"
+              : params.responsibility === "DELIVERY_TRAINER" ? item.academyArea === "DEVELOPMENT_OPERATIONS" && item.academyRole === "TRAINER"
+                : item.deliveryOperationalRole === params.responsibility
+    )));
   return (
     <AdminShell
       session={previewSession}
@@ -74,19 +95,23 @@ export default async function EmployeePreviewPage({
       ) : (
         <EmployeeDirectoryControl
           employees={params.state === "empty" ? [] : filteredEmployees}
-          setupEmployees={params.state === "empty" ? [] : employeePreviewItems}
+          setupEmployees={setupEmployees}
           teams={employeePreviewTeams}
           lifecycle={lifecycle}
+          syncFilter={params.sync || ""}
+          academyAreaFilter={params.area || ""}
+          responsibilityFilter={params.responsibility || ""}
+          academyAccessFilter={params.access || ""}
           deletionAssessments={deletionAssessments}
           bootstrap={{
             status: params.state === "empty" ? "READY" : "CONSUMED",
             candidateEmployeeId: null,
-            consumedByEmployeeId: params.state === "empty" ? null : employeePreviewItems[0]?.id || null,
+            consumedByEmployeeId: params.state === "empty" ? null : employeePreviewIds.superAdmin,
             readyAt: params.state === "empty" ? new Date().toISOString() : null,
             consumedAt: params.state === "empty" ? null : new Date().toISOString(),
             backupReference: null,
             employeeCount: params.state === "empty" ? 0 : filteredEmployees.length,
-            primarySuperAdminEmployeeId: params.state === "empty" ? null : employeePreviewItems[0]?.id || null,
+            primarySuperAdminEmployeeId: params.state === "empty" ? null : employeePreviewIds.superAdmin,
             requiresConfirmation: params.state === "empty"
           }}
         />

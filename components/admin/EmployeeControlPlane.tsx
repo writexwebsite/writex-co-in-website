@@ -35,7 +35,13 @@ import type {
   EmployeeSegment,
   EmployeeTeam
 } from "@/lib/employees/domain";
-import { evaluateAcademySetupJourney, type AcademySetupJourney } from "@/lib/employees/guided-setup";
+import {
+  evaluateAcademySetupJourney,
+  type AcademySetupAction,
+  type AcademySetupCreatePreset,
+  type AcademySetupJourney,
+  type AcademySetupStatus
+} from "@/lib/employees/guided-setup";
 
 type ApiFailure = { error?: { message?: string } };
 
@@ -54,11 +60,42 @@ function syncTone(status: EmployeeDirectoryItem["syncStatus"]) {
   return status === "SYNCED" ? "success" : status === "FAILED" ? "danger" : "warning";
 }
 
+function academyAreaLabel(area: AcademyArea) {
+  return area === "DEVELOPMENT_OPERATIONS" ? "Development / Operations" : area === "ACADEMY_WIDE" ? "Academy-wide" : "Sales";
+}
+
+function academyResponsibilityLabel(employee: EmployeeDirectoryItem) {
+  if (employee.academyArea === "ACADEMY_WIDE") return "Academy SuperAdmin";
+  if (employee.academyArea === "DEVELOPMENT_OPERATIONS") {
+    if (employee.academyRole === "TRAINER") return "Delivery Trainer";
+    return employee.deliveryOperationalRole === "TEAM_LEADER" ? "Team Leader"
+      : employee.deliveryOperationalRole === "SENIOR_SME" ? "Senior Subject Matter Expert"
+        : employee.deliveryOperationalRole === "JUNIOR_SME" ? "Junior Subject Matter Expert"
+          : employee.deliveryOperationalRole === "MANAGER" ? "Delivery Manager"
+            : "Delivery mapping incomplete";
+  }
+  return employee.academyRole === "MANAGER_TL" ? "Sales Manager / TL"
+    : employee.academyRole === "TRAINER" ? "Sales Trainer"
+      : employee.academyRole === "EMPLOYEE" ? "Sales employee"
+        : "Academy SuperAdmin";
+}
+
+function formatAdminTimestamp(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata"
+  }).format(new Date(value));
+}
+
 export function EmployeeDirectoryControl({
   employees,
   teams,
   initialSearch = "",
-  attentionOnly = false,
+  syncFilter = "",
+  academyAreaFilter = "",
+  responsibilityFilter = "",
+  academyAccessFilter = "",
   lifecycle = "active",
   bootstrap,
   deletionAssessments,
@@ -67,7 +104,10 @@ export function EmployeeDirectoryControl({
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
   initialSearch?: string;
-  attentionOnly?: boolean;
+  syncFilter?: string;
+  academyAreaFilter?: string;
+  responsibilityFilter?: string;
+  academyAccessFilter?: string;
   lifecycle?: EmployeeLifecycleFilter;
   bootstrap: AcademyInitialAdminBootstrap;
   deletionAssessments?: Record<string, EmployeeDeletionAssessment>;
@@ -75,7 +115,7 @@ export function EmployeeDirectoryControl({
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
-  const [suggestedRole, setSuggestedRole] = useState<AcademyRole | null>(null);
+  const [suggestedSetup, setSuggestedSetup] = useState<AcademySetupCreatePreset | null>(null);
   const [provisionedAccess, setProvisionedAccess] = useState<{
     employeeName: string;
     loginEmail: string;
@@ -88,8 +128,8 @@ export function EmployeeDirectoryControl({
     [bootstrap, setupEmployees]
   );
 
-  function beginCreate(role: AcademyRole | null = null) {
-    setSuggestedRole(role);
+  function beginCreate(preset: AcademySetupCreatePreset | null = null) {
+    setSuggestedSetup(preset);
     setCreating(true);
   }
 
@@ -131,7 +171,7 @@ export function EmployeeDirectoryControl({
             onClick={() => {
               if (creating) {
                 setCreating(false);
-                setSuggestedRole(null);
+                setSuggestedSetup(null);
               } else {
                 beginCreate();
               }
@@ -150,10 +190,10 @@ export function EmployeeDirectoryControl({
               employees={setupEmployees}
               teams={teams}
               bootstrap={bootstrap}
-              suggestedRole={suggestedRole}
+              suggestedSetup={suggestedSetup}
               onCreated={(result) => {
                 setCreating(false);
-                setSuggestedRole(null);
+                setSuggestedSetup(null);
                 if (result.initialPassword) setProvisionedAccess(result as AcademyAccessCredentials);
               }}
             />
@@ -162,7 +202,7 @@ export function EmployeeDirectoryControl({
 
         {provisionedAccess ? <AcademyAccessReadyModal credentials={provisionedAccess} onDone={() => setProvisionedAccess(null)} /> : null}
 
-        <form className="mt-6 flex flex-col gap-2 sm:flex-row" method="get">
+        <form className="mt-6 grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(140px,.75fr))_auto]" method="get">
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Search employees</span>
             <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-wxIndigo400" />
@@ -173,12 +213,53 @@ export function EmployeeDirectoryControl({
               className="min-h-11 w-full rounded-md border border-wxBorder bg-wxSurfaceSoft pl-10 pr-3 text-sm text-wxIndigo900 outline-none focus:border-wxViolet700"
             />
           </label>
-          {attentionOnly ? <input type="hidden" name="sync" value="attention" /> : null}
+          <label className="grid gap-1 text-xs font-semibold text-wxIndigo600">
+            Academy area
+            <select name="area" defaultValue={academyAreaFilter} className={inputClass}>
+              <option value="">All employees</option>
+              <option value="SALES">Sales</option>
+              <option value="DEVELOPMENT_OPERATIONS">Development / Operations</option>
+              <option value="ACADEMY_WIDE">Academy-wide</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-wxIndigo600">
+            Role / responsibility
+            <select name="responsibility" defaultValue={responsibilityFilter} className={inputClass}>
+              <option value="">All roles</option>
+              <option value="SUPER_ADMIN">Academy SuperAdmin</option>
+              <option value="SALES_MANAGER_TL">Sales Manager / TL</option>
+              <option value="SALES_TRAINER">Sales Trainer</option>
+              <option value="SALES_EMPLOYEE">Sales employee</option>
+              <option value="MANAGER">Delivery Manager</option>
+              <option value="TEAM_LEADER">Delivery Team Leader</option>
+              <option value="SENIOR_SME">Senior SME</option>
+              <option value="JUNIOR_SME">Junior SME</option>
+              <option value="DELIVERY_TRAINER">Delivery Trainer</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-wxIndigo600">
+            Academy access
+            <select name="access" defaultValue={academyAccessFilter} className={inputClass}>
+              <option value="">Enabled or disabled</option>
+              <option value="enabled">Academy enabled</option>
+              <option value="disabled">Academy disabled</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-wxIndigo600">
+            Sync
+            <select name="sync" defaultValue={syncFilter} className={inputClass}>
+              <option value="">All sync states</option>
+              <option value="attention">Needs sync attention</option>
+              <option value="SYNCED">Healthy</option>
+              <option value="PENDING">Pending</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </label>
           <input type="hidden" name="lifecycle" value={lifecycle} />
           <button className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700 hover:border-wxViolet700">
             Search
           </button>
-          {(initialSearch || attentionOnly) ? (
+          {(initialSearch || syncFilter || academyAreaFilter || responsibilityFilter || academyAccessFilter) ? (
             <Link href="/admin/employees" className="inline-flex min-h-11 items-center justify-center rounded-md px-4 text-sm font-semibold text-wxViolet700">
               Clear
             </Link>
@@ -190,7 +271,10 @@ export function EmployeeDirectoryControl({
             const query = new URLSearchParams();
             if (filter !== "active") query.set("lifecycle", filter);
             if (initialSearch) query.set("search", initialSearch);
-            if (attentionOnly) query.set("sync", "attention");
+            if (syncFilter) query.set("sync", syncFilter);
+            if (academyAreaFilter) query.set("area", academyAreaFilter);
+            if (responsibilityFilter) query.set("responsibility", responsibilityFilter);
+            if (academyAccessFilter) query.set("access", academyAccessFilter);
             const href = `/admin/employees${query.size ? `?${query}` : ""}`;
             return (
               <Link
@@ -233,6 +317,7 @@ export function EmployeeDirectoryControl({
                   <div className="text-sm text-wxIndigo600">
                     <p className="font-medium text-wxIndigo800">{employee.department} · {employee.designation}</p>
                     <p className="mt-1">{employee.teamName || "No team"} · {employee.managerName || "No manager"}</p>
+                    <p className="mt-1 text-xs text-wxIndigo500">{academyAreaLabel(employee.academyArea)} · {academyResponsibilityLabel(employee)}</p>
                   </div>
                   <div className="flex items-center gap-2 md:justify-end">
                     <AdminStatusBadge tone={employee.academyEnabled ? "info" : "neutral"}>
@@ -253,7 +338,7 @@ export function EmployeeDirectoryControl({
                 <div className="mx-auto mt-5 max-w-md rounded-md border border-violet-200 bg-violet-50 p-4 text-left text-sm text-violet-950">
                   <p><span className="font-semibold">Primary SuperAdmin:</span> Not yet assigned</p>
                   <p className="mt-1"><span className="font-semibold">Bootstrap:</span> Ready</p>
-                  <button type="button" onClick={() => beginCreate("SUPER_ADMIN")} className="wx-gradient-action mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 font-semibold text-white">
+                  <button type="button" onClick={() => beginCreate({ academyArea: "ACADEMY_WIDE", academyRole: "SUPER_ADMIN" })} className="wx-gradient-action mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 font-semibold text-white">
                     <Plus className="h-4 w-4" /> Create First Employee
                   </button>
                 </div>
@@ -308,39 +393,71 @@ function WebsiteAcademySetupJourney({
   onCreate
 }: {
   journey: AcademySetupJourney;
-  onCreate: (role: AcademyRole | null) => void;
+  onCreate: (preset: AcademySetupCreatePreset | null) => void;
 }) {
+  const statusClass: Record<AcademySetupStatus, string> = {
+    COMPLETE: "border-emerald-200 bg-white/90 text-emerald-800",
+    NEEDS_ACTION: "border-violet-300 bg-violet-50 text-violet-800",
+    BLOCKED: "border-amber-200 bg-amber-50 text-amber-900",
+    ERROR: "border-red-200 bg-red-50 text-red-800"
+  };
+  const actionControl = (action: AcademySetupAction | null) => action?.kind === "CREATE_EMPLOYEE" ? (
+    <button type="button" onClick={() => onCreate(action.preset || null)} className="wx-gradient-action inline-flex min-h-10 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white sm:w-auto">
+      <Plus className="h-4 w-4" /> {action.label}
+    </button>
+  ) : action ? (
+    <Link href={action.href || "/admin/employees?sync=attention"} className="inline-flex min-h-10 w-full items-center justify-center gap-2 whitespace-normal rounded-md border border-wxBorder bg-wxSurface px-4 text-center text-sm font-semibold text-wxViolet700 hover:border-wxViolet700 sm:w-auto">
+      {action.kind === "OPEN_SYNC" ? <RefreshCw className="h-4 w-4" /> : <Pencil className="h-4 w-4" />} {action.label}
+    </Link>
+  ) : null;
   return (
     <section className={`rounded-lg border p-5 shadow-soft md:p-6 ${journey.complete ? "border-emerald-200 bg-emerald-50/70" : "border-violet-200 bg-wxSurface"}`} aria-labelledby="academy-setup-title">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 max-w-3xl">
-          <p className={`text-xs font-semibold uppercase ${journey.complete ? "text-emerald-700" : "text-violet-700"}`}>Website Admin · Academy setup</p>
-          <h2 id="academy-setup-title" className="mt-2 break-words text-lg font-semibold text-wxIndigo900">{journey.complete ? "Academy operating structure is ready" : "Complete the Academy operating structure"}</h2>
-          <p className="mt-1 text-sm leading-6 text-wxIndigo600">{journey.summary}</p>
-        </div>
-        {journey.action?.kind === "OPEN_GOVERNANCE" ? (
-          <Link href={journey.action.href || "/admin/ai-governance#primary-superadmin"} className="wx-gradient-action inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white lg:w-auto lg:shrink-0">
-            {journey.action.label}
-          </Link>
-        ) : journey.action?.kind === "CREATE_EMPLOYEE" ? (
-          <button type="button" onClick={() => onCreate(journey.action?.academyRole || null)} className="wx-gradient-action inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white lg:w-auto lg:shrink-0">
-            <Plus className="h-4 w-4" /> {journey.action.label}
-          </button>
-        ) : null}
+      <div className="min-w-0 max-w-4xl">
+        <p className={`text-xs font-semibold uppercase ${journey.complete ? "text-emerald-700" : "text-violet-700"}`}>Website Admin · Academy setup</p>
+        <h2 id="academy-setup-title" className="mt-2 break-words text-lg font-semibold text-wxIndigo900">{journey.complete ? "Academy operating structure is ready" : "Complete the Academy operating structure"}</h2>
+        <p className="mt-1 text-sm leading-6 text-wxIndigo600">{journey.summary}</p>
       </div>
-      <ol className="mt-5 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-        {journey.stages.map((stage, index) => (
-          <li key={stage.key} className={`min-w-0 rounded-md border p-3 ${stage.status === "COMPLETE" ? "border-emerald-200 bg-white/80" : stage.status === "CURRENT" ? "border-violet-300 bg-violet-50" : "border-wxBorder bg-wxSurfaceSoft"}`}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 break-words text-xs font-semibold text-wxIndigo500">{index + 1}. {stage.label}</span>
-              <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold uppercase ${stage.status === "COMPLETE" ? "bg-emerald-100 text-emerald-800" : stage.status === "CURRENT" ? "bg-violet-100 text-violet-800" : "bg-slate-100 text-slate-600"}`}>{stage.status}</span>
+
+      <div className={`mt-5 rounded-md border p-4 ${statusClass[journey.superAdmin.status]}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase">Common governance</p>
+            <h3 className="mt-1 font-semibold text-wxIndigo900">1. {journey.superAdmin.label}</h3>
+            <p className="mt-1 text-sm text-wxIndigo700">{journey.superAdmin.completedBy || journey.superAdmin.issue}</p>
+            <p className="mt-1 text-xs leading-5 text-wxIndigo600">{journey.superAdmin.explanation}</p>
+          </div>
+          <span className="w-fit shrink-0 rounded bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase">{journey.superAdmin.status.replace("_", " ")}</span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        {journey.tracks.map((track) => (
+          <section key={track.key} className="min-w-0 rounded-md border border-wxBorder bg-white/75 p-4" aria-labelledby={`academy-track-${track.key}`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-wxViolet700">{track.label}</p>
+                <h3 id={`academy-track-${track.key}`} className="mt-1 font-semibold text-wxIndigo900">{track.complete ? "Track ready" : "Setup journey"}</h3>
+                <p className="mt-1 text-xs leading-5 text-wxIndigo600">{track.summary}</p>
+              </div>
+              {actionControl(track.action)}
             </div>
-            <p className="mt-2 text-sm font-semibold text-wxIndigo900">{stage.completedBy || (stage.status === "CURRENT" ? "Required now" : "Waiting for prior stage")}</p>
-            <p className="mt-1 text-xs leading-5 text-wxIndigo500">{stage.explanation}</p>
-          </li>
+            <ol className="mt-4 grid gap-2">
+              {track.stages.map((item, index) => (
+                <li key={item.key} className={`min-w-0 rounded-md border p-3 ${statusClass[item.status]}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold text-wxIndigo900">{index + 2}. {item.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-wxIndigo600">{item.completedBy || item.issue}</p>
+                    </div>
+                    <span className="shrink-0 rounded bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase">{item.status.replace("_", " ")}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {!track.complete && track.action ? <p className="mt-3 border-t border-wxBorder pt-3 text-xs leading-5 text-wxIndigo600"><span className="font-semibold">Required action:</span> {track.action.explanation}</p> : null}
+          </section>
         ))}
-      </ol>
-      {!journey.complete && journey.action ? <p className="mt-4 border-t border-wxBorder pt-3 text-xs leading-5 text-wxIndigo600"><span className="font-semibold">Why this is next:</span> {journey.action.explanation} The next stage unlocks only after the Website record and Academy sync are both confirmed.</p> : null}
+      </div>
     </section>
   );
 }
@@ -868,7 +985,7 @@ function EmployeeEditor({
   teams,
   onCreated,
   bootstrap,
-  suggestedRole
+  suggestedSetup
 }: {
   employee?: EmployeeDirectoryItem;
   employees: EmployeeDirectoryItem[];
@@ -881,7 +998,7 @@ function EmployeeEditor({
     primarySuperAdmin?: boolean;
   }) => void;
   bootstrap?: AcademyInitialAdminBootstrap;
-  suggestedRole?: AcademyRole | null;
+  suggestedSetup?: AcademySetupCreatePreset | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -890,17 +1007,17 @@ function EmployeeEditor({
   const [error, setError] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const initialBootstrap = !employee && Boolean(bootstrap?.requiresConfirmation);
-  const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || Boolean(suggestedRole) || (employee?.academyEnabled ?? false));
-  const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || suggestedRole || "EMPLOYEE"));
-  const [academyArea, setAcademyArea] = useState<AcademyArea>(initialBootstrap ? "ACADEMY_WIDE" : (employee?.academyArea || "SALES"));
+  const [academyEnabled, setAcademyEnabled] = useState(initialBootstrap || Boolean(suggestedSetup) || (employee?.academyEnabled ?? false));
+  const [academyRole, setAcademyRole] = useState<AcademyRole>(initialBootstrap ? "SUPER_ADMIN" : (employee?.academyRole || suggestedSetup?.academyRole || "EMPLOYEE"));
+  const [academyArea, setAcademyArea] = useState<AcademyArea>(initialBootstrap ? "ACADEMY_WIDE" : (employee?.academyArea || suggestedSetup?.academyArea || "SALES"));
   const [deliveryResponsibility, setDeliveryResponsibility] = useState<DeliveryResponsibility>(
     employee?.academyArea === "DEVELOPMENT_OPERATIONS" && employee.academyRole === "TRAINER"
       ? "TRAINER"
-      : employee?.deliveryOperationalRole || "MANAGER"
+      : employee?.deliveryOperationalRole || suggestedSetup?.deliveryResponsibility || "MANAGER"
   );
   const [academyRoleChangeReason, setAcademyRoleChangeReason] = useState("");
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
-  const [department, setDepartment] = useState(employee?.department ?? "");
+  const [department, setDepartment] = useState(employee?.department ?? (suggestedSetup?.academyArea === "DEVELOPMENT_OPERATIONS" ? "Development / Operations" : ""));
   const [managerEmployeeId, setManagerEmployeeId] = useState(employee?.managerEmployeeId || "");
   const [deliveryReportingParentEmployeeId, setDeliveryReportingParentEmployeeId] = useState(employee?.deliveryReportingParentEmployeeId || "");
   const [deliveryTrainerEmployeeId, setDeliveryTrainerEmployeeId] = useState(employee?.deliveryTrainerEmployeeId || "");
@@ -1096,13 +1213,14 @@ function EmployeeEditor({
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Setup Incomplete" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
           <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Delivery Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
-          <StatusTile label="Academy role" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? employee.academyRole === "TRAINER" ? "Delivery Trainer" : (employee.deliveryOperationalRole || "Unmapped").replaceAll("_", " ") : employee.academyRole === "SUPER_ADMIN" ? "SuperAdmin" : employee.academyRole === "MANAGER_TL" ? "Manager / TL" : employee.academyRole === "TRAINER" ? "Trainer" : "Employee / BDE"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy role" value={academyResponsibilityLabel(employee)} icon={<ShieldCheck className="h-4 w-4" />} />
+          {employee.academyArea === "ACADEMY_WIDE" ? <StatusTile label="Program access" value="Sales + Development / Operations" icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
           {employee.academyArea === "SALES" && employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Credential" value={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? "ACTIVE" : "SETUP REQUIRED"} icon={<KeyRound className="h-4 w-4" />} tone={employee.academyEnabled && employee.academyUserId && employee.syncStatus === "SYNCED" ? undefined : "danger"} />
           <StatusTile label="Login email" value={employee.officialEmail} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Sync status" value={!storedHierarchyValid ? "Requires Action" : employee.syncStatus === "FAILED" ? "Runtime Failure" : employee.syncStatus === "PENDING" ? "Requires Action" : "Healthy"} icon={<RefreshCw className="h-4 w-4" />} tone={employee.syncStatus === "FAILED" || !storedHierarchyValid ? "danger" : undefined} />
-          <StatusTile label="Last Academy sync" value={employee.lastSyncedAt ? new Date(employee.lastSyncedAt).toLocaleString() : "Not synced yet"} icon={<RefreshCw className="h-4 w-4" />} />
+          <StatusTile label="Last Academy sync" value={employee.lastSyncedAt ? formatAdminTimestamp(employee.lastSyncedAt) : "Not synced yet"} icon={<RefreshCw className="h-4 w-4" />} />
         </div>
       ) : null}
 

@@ -268,7 +268,14 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   assert.match(ui, /Operational reporting parent/);
   assert.match(ui, /Assigned Delivery Trainer/);
   assert.match(ui, /Trainer assignment never changes the operational reporting line/);
-  assert.match(ui, /employee\?\.deliveryOperationalRole \|\| "MANAGER"/);
+  assert.match(ui, /employee\?\.deliveryOperationalRole \|\| suggestedSetup\?\.deliveryResponsibility \|\| "MANAGER"/);
+  assert.match(ui, /Complete the Academy operating structure/);
+  assert.match(ui, /Common governance/);
+  assert.match(ui, /Development \/ Operations/);
+  assert.match(ui, /Role \/ responsibility/);
+  assert.match(ui, /Needs sync attention/);
+  assert.match(ui, /Program access/);
+  assert.match(ui, /Sales \+ Development \/ Operations/);
   assert.match(migration, /delivery_reporting_parent_employee_id uuid references employees\(id\) on delete set null/);
   assert.match(migration, /delivery_trainer_employee_id uuid references employees\(id\) on delete set null/);
   assert.doesNotMatch(migration, /delete from employees|drop table/i);

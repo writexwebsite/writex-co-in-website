@@ -12,7 +12,7 @@ import {
   listEmployees
 } from "@/lib/employees/repository";
 import { employeeMutationSchema } from "@/lib/employees/validation";
-import { employeeLifecycleFilters, type EmployeeLifecycleFilter } from "@/lib/employees/domain";
+import { academyAreas, employeeLifecycleFilters, type AcademyArea, type EmployeeLifecycleFilter } from "@/lib/employees/domain";
 import { assertRateLimit, assertSameOrigin, getRequestContext, parseJson } from "@/lib/security";
 
 export const runtime = "nodejs";
@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
     const lifecycle = employeeLifecycleFilters.includes(requestedLifecycle as EmployeeLifecycleFilter)
       ? requestedLifecycle as EmployeeLifecycleFilter
       : "active";
-    return apiOk({ employees: await listEmployees({ search, sync, lifecycle }) }, {
+    const requestedArea = request.nextUrl.searchParams.get("area") || "";
+    const academyArea = academyAreas.includes(requestedArea as AcademyArea) ? requestedArea as AcademyArea : "";
+    const responsibility = request.nextUrl.searchParams.get("responsibility") || "";
+    const access = request.nextUrl.searchParams.get("access") || "";
+    const academyAccess = access === "enabled" || access === "disabled" ? access : "";
+    return apiOk({ employees: await listEmployees({ search, sync, lifecycle, academyArea, responsibility, academyAccess }) }, {
       headers: { "cache-control": "private, no-store" }
     });
   } catch (error) {

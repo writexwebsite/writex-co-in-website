@@ -148,11 +148,17 @@ export async function listEmployeeTeams() {
 export async function listEmployees({
   search = "",
   sync = "",
-  lifecycle = "active"
+  lifecycle = "active",
+  academyArea = "",
+  responsibility = "",
+  academyAccess = ""
 }: {
   search?: string;
   sync?: string;
   lifecycle?: EmployeeLifecycleFilter;
+  academyArea?: "" | AcademyArea;
+  responsibility?: string;
+  academyAccess?: "" | "enabled" | "disabled";
 } = {}) {
   const normalized = search.trim();
   const result = await dbQuery<EmployeeRow>(
@@ -165,15 +171,30 @@ export async function listEmployees({
      left join employees delivery_parent on delivery_parent.id = a.delivery_reporting_parent_employee_id
      left join employees delivery_trainer on delivery_trainer.id = a.delivery_trainer_employee_id
      where ($2 = '' or concat_ws(' ', e.employee_code, e.display_name, e.official_email, e.department, e.designation, t.name) ilike '%' || $2 || '%')
-       and ($3 <> 'attention' or a.sync_status in ('PENDING', 'FAILED'))
+       and (
+         $3 = ''
+         or ($3 = 'attention' and a.sync_status in ('PENDING', 'FAILED'))
+         or ($3 in ('SYNCED','PENDING','FAILED') and a.sync_status = $3)
+       )
        and (
          $4 = 'all'
          or ($4 = 'active' and e.archived_at is null and e.employment_status = 'ACTIVE')
          or ($4 = 'inactive' and e.archived_at is null and e.employment_status = 'INACTIVE')
          or ($4 = 'archived' and e.archived_at is not null)
        )
+       and ($5 = '' or coalesce(a.academy_area, case when a.application_role='SUPER_ADMIN' then 'ACADEMY_WIDE' else 'SALES' end) = $5)
+       and (
+         $6 = ''
+         or ($6 = 'SUPER_ADMIN' and a.application_role = 'SUPER_ADMIN')
+         or ($6 = 'SALES_MANAGER_TL' and coalesce(a.academy_area,'SALES') = 'SALES' and a.application_role = 'MANAGER_TL')
+         or ($6 = 'SALES_TRAINER' and coalesce(a.academy_area,'SALES') = 'SALES' and a.application_role = 'TRAINER')
+         or ($6 = 'SALES_EMPLOYEE' and coalesce(a.academy_area,'SALES') = 'SALES' and a.application_role = 'EMPLOYEE')
+         or ($6 = 'DELIVERY_TRAINER' and a.academy_area = 'DEVELOPMENT_OPERATIONS' and a.application_role = 'TRAINER')
+         or ($6 in ('MANAGER','TEAM_LEADER','SENIOR_SME','JUNIOR_SME') and a.academy_area = 'DEVELOPMENT_OPERATIONS' and a.delivery_operational_role = $6)
+       )
+       and ($7 = '' or ($7 = 'enabled' and coalesce(a.enabled,false)) or ($7 = 'disabled' and not coalesce(a.enabled,false)))
      order by e.display_name, e.employee_code`,
-    [academyApplicationKey, normalized, sync, lifecycle]
+    [academyApplicationKey, normalized, sync, lifecycle, academyArea, responsibility, academyAccess]
   );
   return result.rows.map(mapEmployee);
 }
