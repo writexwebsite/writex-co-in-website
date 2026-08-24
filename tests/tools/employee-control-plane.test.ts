@@ -272,6 +272,8 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   assert.match(ui, /Complete the Academy operating structure/);
   assert.match(ui, /Common governance/);
   assert.match(ui, /Development \/ Operations/);
+  assert.match(ui, /color-mix\(in srgb, var\(--wx-orange\) 9%, var\(--wx-surface\)\)/);
+  assert.match(ui, /bg-wxSurfaceElevated/);
   assert.match(ui, /Role \/ responsibility/);
   assert.match(ui, /Needs sync attention/);
   assert.match(ui, /Program access/);

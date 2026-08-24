@@ -395,11 +395,27 @@ function WebsiteAcademySetupJourney({
   journey: AcademySetupJourney;
   onCreate: (preset: AcademySetupCreatePreset | null) => void;
 }) {
-  const statusClass: Record<AcademySetupStatus, string> = {
-    COMPLETE: "border-emerald-200 bg-white/90 text-emerald-800",
-    NEEDS_ACTION: "border-violet-300 bg-violet-50 text-violet-800",
-    BLOCKED: "border-amber-200 bg-amber-50 text-amber-900",
-    ERROR: "border-red-200 bg-red-50 text-red-800"
+  const statusTheme: Record<AcademySetupStatus, { accent: string; backgroundColor: string; borderColor: string }> = {
+    COMPLETE: {
+      accent: "var(--wx-green)",
+      backgroundColor: "color-mix(in srgb, var(--wx-green) 9%, var(--wx-surface))",
+      borderColor: "color-mix(in srgb, var(--wx-green) 42%, var(--wx-border))"
+    },
+    NEEDS_ACTION: {
+      accent: "var(--wx-violet-soft)",
+      backgroundColor: "color-mix(in srgb, var(--wx-violet) 10%, var(--wx-surface))",
+      borderColor: "color-mix(in srgb, var(--wx-violet-soft) 42%, var(--wx-border))"
+    },
+    BLOCKED: {
+      accent: "var(--wx-orange)",
+      backgroundColor: "color-mix(in srgb, var(--wx-orange) 9%, var(--wx-surface))",
+      borderColor: "color-mix(in srgb, var(--wx-orange) 40%, var(--wx-border))"
+    },
+    ERROR: {
+      accent: "var(--wx-red)",
+      backgroundColor: "color-mix(in srgb, var(--wx-red) 9%, var(--wx-surface))",
+      borderColor: "color-mix(in srgb, var(--wx-red) 42%, var(--wx-border))"
+    }
   };
   const actionControl = (action: AcademySetupAction | null) => action?.kind === "CREATE_EMPLOYEE" ? (
     <button type="button" onClick={() => onCreate(action.preset || null)} className="wx-gradient-action inline-flex min-h-10 w-full items-center justify-center gap-2 whitespace-normal rounded-md px-4 text-center text-sm font-semibold text-white sm:w-auto">
@@ -411,28 +427,28 @@ function WebsiteAcademySetupJourney({
     </Link>
   ) : null;
   return (
-    <section className={`rounded-lg border p-5 shadow-soft md:p-6 ${journey.complete ? "border-emerald-200 bg-emerald-50/70" : "border-violet-200 bg-wxSurface"}`} aria-labelledby="academy-setup-title">
+    <section className={`rounded-lg border p-5 shadow-soft md:p-6 ${journey.complete ? "border-emerald-200 bg-wxSurfaceSoft" : "border-wxBorder bg-wxSurface"}`} aria-labelledby="academy-setup-title">
       <div className="min-w-0 max-w-4xl">
         <p className={`text-xs font-semibold uppercase ${journey.complete ? "text-emerald-700" : "text-violet-700"}`}>Website Admin · Academy setup</p>
         <h2 id="academy-setup-title" className="mt-2 break-words text-lg font-semibold text-wxIndigo900">{journey.complete ? "Academy operating structure is ready" : "Complete the Academy operating structure"}</h2>
         <p className="mt-1 text-sm leading-6 text-wxIndigo600">{journey.summary}</p>
       </div>
 
-      <div className={`mt-5 rounded-md border p-4 ${statusClass[journey.superAdmin.status]}`}>
+      <div className="mt-5 rounded-md border p-4 text-wxIndigo900" style={{ backgroundColor: statusTheme[journey.superAdmin.status].backgroundColor, borderColor: statusTheme[journey.superAdmin.status].borderColor }}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase">Common governance</p>
+            <p className="text-xs font-semibold uppercase" style={{ color: statusTheme[journey.superAdmin.status].accent }}>Common governance</p>
             <h3 className="mt-1 font-semibold text-wxIndigo900">1. {journey.superAdmin.label}</h3>
             <p className="mt-1 text-sm text-wxIndigo700">{journey.superAdmin.completedBy || journey.superAdmin.issue}</p>
             <p className="mt-1 text-xs leading-5 text-wxIndigo600">{journey.superAdmin.explanation}</p>
           </div>
-          <span className="w-fit shrink-0 rounded bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase">{journey.superAdmin.status.replace("_", " ")}</span>
+          <span className="w-fit shrink-0 rounded border bg-wxSurfaceElevated px-2 py-1 text-[10px] font-semibold uppercase" style={{ borderColor: statusTheme[journey.superAdmin.status].borderColor, color: statusTheme[journey.superAdmin.status].accent }}>{journey.superAdmin.status.replace("_", " ")}</span>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         {journey.tracks.map((track) => (
-          <section key={track.key} className="min-w-0 rounded-md border border-wxBorder bg-white/75 p-4" aria-labelledby={`academy-track-${track.key}`}>
+          <section key={track.key} className="min-w-0 rounded-md border border-wxBorder bg-wxSurface p-4" aria-labelledby={`academy-track-${track.key}`}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-wxViolet700">{track.label}</p>
@@ -443,13 +459,13 @@ function WebsiteAcademySetupJourney({
             </div>
             <ol className="mt-4 grid gap-2">
               {track.stages.map((item, index) => (
-                <li key={item.key} className={`min-w-0 rounded-md border p-3 ${statusClass[item.status]}`}>
+                <li key={item.key} className="min-w-0 rounded-md border p-3 text-wxIndigo900" style={{ backgroundColor: statusTheme[item.status].backgroundColor, borderColor: statusTheme[item.status].borderColor }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-words text-sm font-semibold text-wxIndigo900">{index + 2}. {item.label}</p>
                       <p className="mt-1 text-xs leading-5 text-wxIndigo600">{item.completedBy || item.issue}</p>
                     </div>
-                    <span className="shrink-0 rounded bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase">{item.status.replace("_", " ")}</span>
+                    <span className="shrink-0 rounded border bg-wxSurfaceElevated px-2 py-1 text-[10px] font-semibold uppercase" style={{ borderColor: statusTheme[item.status].borderColor, color: statusTheme[item.status].accent }}>{item.status.replace("_", " ")}</span>
                   </div>
                 </li>
               ))}
