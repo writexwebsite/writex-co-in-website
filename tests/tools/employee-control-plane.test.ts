@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { canManageEmployees } from "@/lib/admin/permissions";
 import type { AdminSession } from "@/lib/auth";
-import { isClearlyTemporaryEmployee } from "@/lib/employees/domain";
+import { isClearlyTemporaryEmployee, isValidDeliveryReportingEdge } from "@/lib/employees/domain";
 
 const read = (path: string) => readFile(path, "utf8");
 const session = (role: AdminSession["role"]): AdminSession => ({
@@ -254,18 +254,25 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   const client = await read("lib/employees/academy-client.ts");
   const ui = await read("components/admin/EmployeeControlPlane.tsx");
   const migration = await read("database/migrations/20260824_delivery_academy_employee_mapping.sql");
+  const correction = await read("database/migrations/20260824_delivery_hierarchy_correction.sql");
   assert.match(domain, /academyAreas = \["SALES", "DEVELOPMENT_OPERATIONS", "ACADEMY_WIDE"\]/);
   assert.match(domain, /deliveryOperationalRoles = \["MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"\]/);
   assert.match(validation, /deliveryReportingParentEmployeeId: optionalUuid/);
   assert.match(validation, /deliveryTrainerEmployeeId: optionalUuid/);
-  assert.match(ui, /Manager → Team Leader → Senior SME → Junior SME/);
+  assert.equal(isValidDeliveryReportingEdge("SENIOR_SME", "TEAM_LEADER"), true);
+  assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "TEAM_LEADER"), true);
+  assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "SENIOR_SME"), false);
+  assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "MANAGER"), false);
+  assert.equal(isValidDeliveryReportingEdge("SENIOR_SME", "JUNIOR_SME"), false);
+  assert.match(ui, /Both Senior SME and Junior SME report directly to the Team Leader/);
+  assert.match(ui, /Senior SME and Junior SME are direct Team Leader reports/);
   assert.match(repository, /Sales Trainers cannot be assigned to Delivery employees/);
   assert.match(repository, /Trainer assignment is available only for Delivery Senior SME and Junior SME records/);
   assert.match(repository, /This change would create a circular Delivery reporting relationship/);
   assert.match(repository, /delivery:\s*row\.academy_area === "DEVELOPMENT_OPERATIONS"/);
   assert.match(client, /departmentCode: "DEVELOPMENT_OPERATIONS"/);
   assert.match(ui, /Delivery responsibility/);
-  assert.match(ui, /Operational reporting parent/);
+  assert.match(ui, /Field label="Reports To"/);
   assert.match(ui, /Assigned Delivery Trainer/);
   assert.match(ui, /Trainer assignment never changes the operational reporting line/);
   assert.match(ui, /employee\?\.deliveryOperationalRole \|\| suggestedSetup\?\.deliveryResponsibility \|\| "MANAGER"/);
@@ -281,4 +288,8 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   assert.match(migration, /delivery_reporting_parent_employee_id uuid references employees\(id\) on delete set null/);
   assert.match(migration, /delivery_trainer_employee_id uuid references employees\(id\) on delete set null/);
   assert.doesNotMatch(migration, /delete from employees|drop table/i);
+  assert.match(correction, /when 'JUNIOR_SME' then 'TEAM_LEADER'/);
+  assert.match(correction, /FOUNDER_DELIVERY_HIERARCHY_CORRECTION/);
+  assert.match(correction, /employee_application_access_delivery_parent_guard/);
+  assert.doesNotMatch(correction, /delete from employees|drop table/i);
 });

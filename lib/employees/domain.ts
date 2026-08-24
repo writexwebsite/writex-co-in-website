@@ -14,6 +14,17 @@ export type EmployeeSyncStatus = (typeof employeeSyncStatuses)[number];
 export type EmployeeSegment = (typeof employeeSegments)[number];
 export type AcademyArea = (typeof academyAreas)[number];
 export type DeliveryOperationalRole = (typeof deliveryOperationalRoles)[number];
+
+export const deliveryReportingParent: Record<Exclude<DeliveryOperationalRole, "MANAGER">, DeliveryOperationalRole> = {
+  TEAM_LEADER: "MANAGER",
+  SENIOR_SME: "TEAM_LEADER",
+  JUNIOR_SME: "TEAM_LEADER"
+};
+
+export function isValidDeliveryReportingEdge(subject: DeliveryOperationalRole, supervisor: DeliveryOperationalRole) {
+  if (subject === "MANAGER") return false;
+  return deliveryReportingParent[subject] === supervisor;
+}
 export type EmployeeLifecycleFilter = (typeof employeeLifecycleFilters)[number];
 
 export type EmployeeTeam = {

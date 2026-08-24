@@ -24,16 +24,17 @@ import {
   X
 } from "lucide-react";
 import { AdminStatusBadge } from "@/components/admin/AdminPrimitives";
-import type {
-  AcademyInitialAdminBootstrap,
-  AcademyArea,
-  AcademyRole,
-  DeliveryOperationalRole,
-  EmployeeDeletionAssessment,
-  EmployeeDirectoryItem,
-  EmployeeLifecycleFilter,
-  EmployeeSegment,
-  EmployeeTeam
+import {
+  deliveryReportingParent,
+  type AcademyInitialAdminBootstrap,
+  type AcademyArea,
+  type AcademyRole,
+  type DeliveryOperationalRole,
+  type EmployeeDeletionAssessment,
+  type EmployeeDirectoryItem,
+  type EmployeeLifecycleFilter,
+  type EmployeeSegment,
+  type EmployeeTeam
 } from "@/lib/employees/domain";
 import {
   evaluateAcademySetupJourney,
@@ -454,6 +455,7 @@ function WebsiteAcademySetupJourney({
                 <p className="text-xs font-semibold uppercase text-wxViolet700">{track.label}</p>
                 <h3 id={`academy-track-${track.key}`} className="mt-1 font-semibold text-wxIndigo900">{track.complete ? "Track ready" : "Setup journey"}</h3>
                 <p className="mt-1 text-xs leading-5 text-wxIndigo600">{track.summary}</p>
+                {track.key === "DEVELOPMENT_OPERATIONS" ? <p className="mt-2 text-xs leading-5 text-wxIndigo700">Manager → Team Leader; Senior SME and Junior SME are direct Team Leader reports. Trainer assignment remains separate.</p> : null}
               </div>
               {actionControl(track.action)}
             </div>
@@ -1079,11 +1081,7 @@ function EmployeeEditor({
     && item.employmentStatus === "ACTIVE"
     && item.academyEnabled
     && item.academyArea === "DEVELOPMENT_OPERATIONS");
-  const expectedDeliveryParentRole: Partial<Record<DeliveryOperationalRole, DeliveryOperationalRole>> = {
-    TEAM_LEADER: "MANAGER",
-    SENIOR_SME: "TEAM_LEADER",
-    JUNIOR_SME: "SENIOR_SME"
-  };
+  const expectedDeliveryParentRole: Partial<Record<DeliveryOperationalRole, DeliveryOperationalRole>> = deliveryReportingParent;
   const selectedOperationalRole = deliveryResponsibility === "TRAINER" ? null : deliveryResponsibility;
   const requiredDeliveryParentRole = selectedOperationalRole ? expectedDeliveryParentRole[selectedOperationalRole] : undefined;
   const deliveryParentOptions = activeDeliveryEmployees.filter((item) => item.deliveryOperationalRole === requiredDeliveryParentRole);
@@ -1098,12 +1096,18 @@ function EmployeeEditor({
   const hierarchyValid = (!salesHierarchyRequired || Boolean(managerEmployeeId && supervisorOptions.some((item) => item.id === managerEmployeeId)))
     && deliveryHierarchyValid;
   const storedSupervisor = employee ? employees.find((item) => item.id === employee.managerEmployeeId) || null : null;
+  const storedDeliveryParent = employee ? employees.find((item) => item.id === employee.deliveryReportingParentEmployeeId) || null : null;
   const storedHierarchyValid = !employee?.academyEnabled
     || employee.academyArea === "ACADEMY_WIDE"
     || (employee.academyArea === "DEVELOPMENT_OPERATIONS"
       ? employee.academyRole === "TRAINER" || Boolean(
         employee.deliveryOperationalRole
-        && (!expectedDeliveryParentRole[employee.deliveryOperationalRole] || employee.deliveryReportingParentEmployeeId)
+        && (!expectedDeliveryParentRole[employee.deliveryOperationalRole]
+          || Boolean(storedDeliveryParent
+            && storedDeliveryParent.academyArea === "DEVELOPMENT_OPERATIONS"
+            && storedDeliveryParent.academyEnabled
+            && storedDeliveryParent.employmentStatus === "ACTIVE"
+            && storedDeliveryParent.deliveryOperationalRole === expectedDeliveryParentRole[employee.deliveryOperationalRole]))
         && (!(employee.deliveryOperationalRole === "SENIOR_SME" || employee.deliveryOperationalRole === "JUNIOR_SME") || employee.deliveryTrainerEmployeeId)
       )
       : !["EMPLOYEE", "TRAINER"].includes(employee.academyRole)
@@ -1227,7 +1231,7 @@ function EmployeeEditor({
       {employee ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
-          <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Setup Incomplete" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
+          <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Needs Hierarchy Attention" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
           <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Delivery Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
           <StatusTile label="Academy role" value={academyResponsibilityLabel(employee)} icon={<ShieldCheck className="h-4 w-4" />} />
           {employee.academyArea === "ACADEMY_WIDE" ? <StatusTile label="Program access" value="Sales + Development / Operations" icon={<GraduationCap className="h-4 w-4" />} /> : null}
@@ -1244,7 +1248,7 @@ function EmployeeEditor({
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-4">
           <p className="font-semibold text-red-900">{storedHierarchyValid ? "Academy access is out of sync" : "Hierarchy required"}</p>
           <p className="mt-1 text-sm leading-6 text-red-800">{employee.lastSyncError || "The Academy did not accept the latest change."}</p>
-          {!storedHierarchyValid && (employee.academyRole === "EMPLOYEE" || employee.academyRole === "TRAINER") ? (
+          {!storedHierarchyValid && employee.academyArea === "SALES" && (employee.academyRole === "EMPLOYEE" || employee.academyRole === "TRAINER") ? (
             <div className="mt-4 max-w-xl">
               {supervisorOptions.length ? (
                 <label className="grid gap-1.5 text-sm font-semibold text-red-950">
@@ -1265,6 +1269,8 @@ function EmployeeEditor({
                 <RefreshCw className="h-4 w-4" /> Save & Retry Academy Sync
               </button>
             </div>
+          ) : !storedHierarchyValid && employee.academyArea === "DEVELOPMENT_OPERATIONS" ? (
+            <p className="mt-2 text-sm font-semibold text-red-900">Use the Delivery responsibility, Reports To, and Trainer controls below to assign the valid Team Leader and retry sync.</p>
           ) : !employee.academyEnabled || employee.employmentStatus === "INACTIVE" ? (
             <p className="mt-2 text-sm font-semibold text-red-900">Security attention: confirm deactivation by retrying until the status is SYNCED.</p>
           ) : null}
@@ -1408,12 +1414,12 @@ function EmployeeEditor({
               </select>
               <span className="text-xs font-normal text-wxIndigo500">Operational responsibility is separate from the Academy permission role.</span>
             </Field>
-            {requiredDeliveryParentRole ? <Field label="Operational reporting parent">
+            {requiredDeliveryParentRole ? <Field label="Reports To">
               <select value={deliveryReportingParentEmployeeId} onChange={(event) => setDeliveryReportingParentEmployeeId(event.target.value)} required={academyEnabled} className={inputClass}>
                 <option value="">Select {requiredDeliveryParentRole.replaceAll("_", " ").toLowerCase()}</option>
                 {deliveryParentOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
               </select>
-              <span className="text-xs font-normal text-wxIndigo500">Manager → Team Leader → Senior SME → Junior SME.</span>
+              <span className="text-xs font-normal text-wxIndigo500">Manager → Team Leader. Both Senior SME and Junior SME report directly to the Team Leader.</span>
             </Field> : <div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo600"><span className="font-semibold text-wxIndigo900">Operational parent</span><p className="mt-1">{deliveryResponsibility === "TRAINER" ? "Not applicable. Trainer is a separate relationship." : "Root of the Delivery hierarchy."}</p></div>}
             {deliveryTrainerRequired ? <Field label="Assigned Delivery Trainer">
               <select value={deliveryTrainerEmployeeId} onChange={(event) => setDeliveryTrainerEmployeeId(event.target.value)} required={academyEnabled && deliveryTrainerRequired} className={inputClass}>

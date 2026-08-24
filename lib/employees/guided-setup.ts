@@ -173,7 +173,7 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
   const seniorCandidate = senior || seniorCandidates[0] || null;
   const juniorCandidates = roleCandidates("JUNIOR_SME");
   const junior = juniorCandidates.find((employee) => synced(employee)
-    && Boolean(senior && employee.deliveryReportingParentEmployeeId === senior.id)
+    && Boolean(teamLeader && employee.deliveryReportingParentEmployeeId === teamLeader.id)
     && Boolean(trainer && employee.deliveryTrainerEmployeeId === trainer.id)) || null;
   const juniorCandidate = junior || juniorCandidates[0] || null;
   const learnerCandidate = seniorCandidate || juniorCandidate;
@@ -182,7 +182,7 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
     stage("DELIVERY_MANAGER", "Delivery Manager", "Creates the root of the Development / Operations reporting hierarchy.", managerCandidate, manager, !commonReady),
     stage("DELIVERY_TEAM_LEADER", "Team Leader", "Reports to the approved Delivery Manager.", tlCandidate, teamLeader, !manager, tlCandidate ? "Assign the correct active Delivery Manager and retry sync." : "Create the Delivery Manager first."),
     stage("DELIVERY_SENIOR_SME", "Senior SME", "Reports to the Team Leader and has a separate Delivery Trainer assignment.", seniorCandidate, senior, !teamLeader || !trainer, seniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !teamLeader ? "Create the Team Leader first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Senior SME under the Team Leader and assign the Delivery Trainer."),
-    stage("DELIVERY_JUNIOR_SME", "Junior SME", "Reports to the Senior SME and has a separate Delivery Trainer assignment.", juniorCandidate, junior, !senior || !trainer, juniorCandidate ? "Correct the Senior SME, Delivery Trainer, or sync state." : !senior ? "Create the Senior SME first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Junior SME under the Senior SME and assign the Delivery Trainer."),
+    stage("DELIVERY_JUNIOR_SME", "Junior SME", "Reports directly to the Team Leader and has a separate Delivery Trainer assignment.", juniorCandidate, junior, !teamLeader || !trainer, juniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !teamLeader ? "Create the Team Leader first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Junior SME under the Team Leader and assign the Delivery Trainer."),
     stage("DELIVERY_TRAINER", "Delivery Trainer", "Supports learning without becoming the operational hierarchy parent.", trainerCandidate, trainer, !commonReady),
     stage("DELIVERY_FIRST_LEARNER", "First learner ready", "Confirms identity, Delivery mapping, credentials, and Academy sync are healthy.", learnerCandidate, firstLearner, !senior && !junior, learnerCandidate ? "Open the learner record to complete credentials or resolve Academy sync." : "Create a Senior or Junior SME first.")
   ];

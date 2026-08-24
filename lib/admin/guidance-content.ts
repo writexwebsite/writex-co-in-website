@@ -66,7 +66,7 @@ export const adminHelpArticles: AdminHelpArticle[] = [
       "Keep the Active directory as the normal operational view",
       "Use Academy area and role filters to work from the same directory across Sales and Development / Operations",
       "For Delivery, create the Manager, Team Leader and Delivery Trainer before enabling Senior and Junior SME learners",
-      "Keep the Delivery Trainer assignment separate from the Manager → Team Leader → Senior SME → Junior SME reporting line",
+      "Keep the Delivery Trainer assignment separate: both Senior and Junior SMEs report directly to the Team Leader",
       "Verify credentials and a Healthy sync result before handing Academy access to the employee",
       "Open Manage for lifecycle and Academy access actions",
       "Deactivate to revoke Academy access while preserving history",

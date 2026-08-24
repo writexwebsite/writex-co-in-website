@@ -13,6 +13,7 @@ import {
 } from "@/lib/employees/academy-client";
 import {
   academyApplicationKey,
+  deliveryReportingParent,
   type AcademyArea,
   type AcademyRole,
   type AcademyInitialAdminBootstrap,
@@ -332,12 +333,9 @@ async function validateRelationships(
       throw new ApiError(400, "BAD_REQUEST", "A Delivery Trainer does not sit inside the operational reporting chain.");
     }
 
-    const expectedParentRole: Partial<Record<DeliveryOperationalRole, DeliveryOperationalRole>> = {
-      TEAM_LEADER: "MANAGER",
-      SENIOR_SME: "TEAM_LEADER",
-      JUNIOR_SME: "SENIOR_SME"
-    };
-    const expectedParent = input.deliveryOperationalRole ? expectedParentRole[input.deliveryOperationalRole] : undefined;
+    const expectedParent = input.deliveryOperationalRole && input.deliveryOperationalRole !== "MANAGER"
+      ? deliveryReportingParent[input.deliveryOperationalRole]
+      : undefined;
     if (input.academyEnabled && input.employmentStatus === "ACTIVE" && expectedParent && !input.deliveryReportingParentEmployeeId) {
       throw new ApiError(400, "BAD_REQUEST", `Assign an active Delivery ${expectedParent.replaceAll("_", " ").toLowerCase()} as reporting parent.`);
     }

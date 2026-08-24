@@ -72,7 +72,7 @@ function completeRecords() {
     employee("delivery-tl", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "TEAM_LEADER", deliveryParentId: "delivery-manager" }),
     employee("delivery-trainer", { role: "TRAINER", area: "DEVELOPMENT_OPERATIONS" }),
     employee("senior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "SENIOR_SME", deliveryParentId: "delivery-tl", deliveryTrainerId: "delivery-trainer" }),
-    employee("junior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "JUNIOR_SME", deliveryParentId: "senior-sme", deliveryTrainerId: "delivery-trainer" })
+    employee("junior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "JUNIOR_SME", deliveryParentId: "delivery-tl", deliveryTrainerId: "delivery-trainer" })
   ];
 }
 
@@ -104,6 +104,17 @@ test("Delivery hierarchy regression returns to error with an exact repair action
   assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_TEAM_LEADER")?.status, "ERROR");
   assert.equal(delivery.action?.kind, "OPEN_EMPLOYEE");
   assert.equal(delivery.action?.href, "/admin/employees/delivery-tl");
+});
+
+test("Junior SME must report directly to the Team Leader, not the Senior SME", () => {
+  const records = completeRecords();
+  const juniorIndex = records.findIndex((item) => item.id === "junior-sme");
+  records[juniorIndex] = { ...records[juniorIndex], deliveryReportingParentEmployeeId: "senior-sme" };
+  const state = evaluateAcademySetupJourney(records, bootstrap);
+  const delivery = state.tracks.find((track) => track.key === "DEVELOPMENT_OPERATIONS")!;
+  const juniorStage = delivery.stages.find((stage) => stage.key === "DELIVERY_JUNIOR_SME")!;
+  assert.equal(juniorStage.status, "ERROR");
+  assert.match(juniorStage.issue || "", /Team Leader/);
 });
 
 test("Delivery Trainer remains separate from the operational hierarchy", () => {
