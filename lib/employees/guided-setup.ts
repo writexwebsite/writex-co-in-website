@@ -219,7 +219,7 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
     stage("DELIVERY_SENIOR_SME", "Senior SME", "Reports to the Team Leader and has a separate Delivery Trainer assignment.", seniorCandidate, senior, !operationalTeamLeader || !trainer, seniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !operationalTeamLeader ? "Complete the Team Manager and Team Leader relationship first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Senior SME under the Team Leader and assign the Delivery Trainer."),
     stage("DELIVERY_JUNIOR_SME", "Junior SME", "Reports directly to the Team Leader and has a separate Delivery Trainer assignment.", juniorCandidate, junior, !operationalTeamLeader || !trainer, juniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !operationalTeamLeader ? "Complete the Team Manager and Team Leader relationship first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Junior SME under the Team Leader and assign the Delivery Trainer."),
     stage("DELIVERY_TRAINER", "Delivery Trainer", "Supports learning without becoming the operational hierarchy parent.", trainerCandidate, trainer, !commonReady),
-    stage("DELIVERY_FIRST_LEARNER", "First learner ready", "Confirms identity, hierarchy, Trainer, active learning assignment, credentials, and Academy sync are healthy.", learnerCandidate, firstLearner, !senior && !junior, learnerCandidate ? "Open the learner record and assign the Delivery Core Learning Path." : "Create a Senior or Junior SME first.")
+    stage("DELIVERY_FIRST_LEARNER", "First learner ready", "Confirms identity, hierarchy, Trainer, active learning assignment, credentials, and Academy sync are healthy.", learnerCandidate, firstLearner, !senior && !junior, learnerCandidate ? "Open the learner record and assign the Development Academy Core Learning Path." : "Create a Senior or Junior SME first.")
   ];
   let action: AcademySetupAction | null = null;
   if (!commonReady) action = { kind: "OPEN_GOVERNANCE", label: "Complete Academy SuperAdmin", explanation: "The shared Academy authority must be healthy first.", href: "/admin/ai-governance#primary-superadmin" };
@@ -244,7 +244,7 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
     ? errorAction(juniorCandidate, stages[4].issue || "Repair the Junior SME mapping.")
     : createAction("Add Junior SME", stages[4].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "JUNIOR_SME", deliveryReportingParentEmployeeId: operationalTeamLeader!.id });
   else if (!firstLearner) action = learnerCandidate
-    ? { kind: "OPEN_EMPLOYEE", label: "Assign Learning", explanation: stages[6].issue || "Assign the Delivery Core Learning Path.", href: `/admin/employees/${learnerCandidate.id}#delivery-learning-assignment` }
+    ? { kind: "OPEN_EMPLOYEE", label: "Assign learning", explanation: stages[6].issue || "Assign the Development Academy Core Learning Path.", href: `/admin/employees/${learnerCandidate.id}#delivery-learning-assignment` }
     : { kind: "OPEN_SYNC", label: "Open Academy Sync Attention", explanation: stages[6].explanation, href: "/admin/employees?sync=attention&area=DEVELOPMENT_OPERATIONS" };
   const complete = stages.every((item) => item.status === "COMPLETE");
   return {
@@ -254,8 +254,8 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
     stages,
     action,
     summary: complete
-      ? `Delivery is ready: ${manager?.displayName}, ${teamManager?.displayName}, ${teamLeader?.displayName}, ${senior?.displayName}, ${junior?.displayName}, and ${trainer?.displayName}.`
-      : `${stages.filter((item) => item.status === "COMPLETE").length} of ${stages.length} Delivery stages are complete.`
+      ? `Development Academy is ready: ${manager?.displayName}, ${teamManager?.displayName}, ${teamLeader?.displayName}, ${senior?.displayName}, ${junior?.displayName}, and ${trainer?.displayName}.`
+      : `${stages.filter((item) => item.status === "COMPLETE").length} of ${stages.length} Development stages are complete.`
   };
 }
 

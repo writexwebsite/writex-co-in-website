@@ -1442,7 +1442,7 @@ async function assertDeliveryLearningAssignmentTarget(employeeId: string) {
     throw new ApiError(409, "BAD_REQUEST", "Activate the employee and enable Academy access before assigning learning.");
   }
   if (employee.academyArea !== "DEVELOPMENT_OPERATIONS" || !employee.deliveryOperationalRole) {
-    throw new ApiError(409, "BAD_REQUEST", "Delivery Core can be assigned only to an active Development / Operations role.");
+    throw new ApiError(409, "BAD_REQUEST", "The Development Academy Core Learning Path can be assigned only to an active Development / Operations role.");
   }
   if (employee.syncStatus !== "SYNCED" || !employee.academyUserId) {
     throw new ApiError(409, "BAD_REQUEST", "Complete Academy sync before assigning learning.");
@@ -1495,7 +1495,7 @@ export async function transitionEmployeeDeliveryLearningAssignment(
 ) {
   const employee = await assertDeliveryLearningAssignmentTarget(employeeId);
   if (!employee.learningAssignmentId) {
-    throw new ApiError(409, "BAD_REQUEST", "Assign the Delivery Core Learning Path before changing its status.");
+    throw new ApiError(409, "BAD_REQUEST", "Assign the Development Academy Core Learning Path before changing its status.");
   }
   const result = await transitionAcademyDeliveryLearningAssignment(
     employee.id,

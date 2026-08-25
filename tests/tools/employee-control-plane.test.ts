@@ -54,7 +54,8 @@ test("employee UI separates employment and application access with confirmed rev
   const ui = await read("components/admin/EmployeeControlPlane.tsx");
   assert.match(ui, />Employment</);
   assert.match(ui, />Application access</);
-  assert.match(ui, /Stable employee ID/);
+  assert.doesNotMatch(ui, /Stable employee ID/);
+  assert.match(ui, /Employee code/);
   assert.match(ui, /Last Academy sync/);
   assert.match(ui, /Confirm and revoke access/);
 });

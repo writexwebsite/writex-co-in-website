@@ -58,6 +58,20 @@ type AcademyAccessCredentials = {
 
 type DeliveryResponsibility = DeliveryOperationalRole | "TRAINER";
 
+function deliveryResponsibilityLabel(role: DeliveryResponsibility | null | undefined) {
+  if (role === "MANAGER") return "Delivery Manager";
+  if (role === "TEAM_MANAGER") return "Team Manager";
+  if (role === "TEAM_LEADER") return "Team Leader";
+  if (role === "SENIOR_SME") return "Senior SME";
+  if (role === "JUNIOR_SME") return "Junior SME";
+  if (role === "TRAINER") return "Delivery Trainer";
+  return "Not assigned";
+}
+
+function developmentPathTitle(title: string | null | undefined) {
+  return title === "Delivery Core Learning Path" ? "Development Academy Core Learning Path" : title;
+}
+
 function syncTone(status: EmployeeDirectoryItem["syncStatus"]) {
   return status === "SYNCED" ? "success" : status === "FAILED" ? "danger" : "warning";
 }
@@ -1381,7 +1395,7 @@ function EmployeeEditor({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Needs Hierarchy Attention" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
-          <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Delivery Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Development Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
           <StatusTile label="Academy role" value={academyResponsibilityLabel(employee)} icon={<ShieldCheck className="h-4 w-4" />} />
           {employee.academyArea === "ACADEMY_WIDE" ? <StatusTile label="Program access" value="Sales + Development / Operations" icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
@@ -1481,7 +1495,6 @@ function EmployeeEditor({
             <UserRound className="h-5 w-5 text-wxViolet700" />
             <h2 className="text-lg font-semibold text-wxIndigo900">Employment</h2>
           </div>
-          {employee ? <p className="mt-2 break-all text-xs text-wxIndigo500">Stable employee ID: {employee.id}</p> : null}
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Field label="Employee code"><input name="employeeCode" required maxLength={80} defaultValue={employee?.employeeCode} className={inputClass} /></Field>
             <Field label="Full name"><input name="displayName" required maxLength={120} defaultValue={employee?.displayName} className={inputClass} /></Field>
@@ -1518,7 +1531,7 @@ function EmployeeEditor({
                 if (next === "ACADEMY_WIDE") setAcademyRole("SUPER_ADMIN");
               }} disabled={initialBootstrap} className={inputClass}>
                 <option value="SALES">Sales Academy</option>
-                <option value="DEVELOPMENT_OPERATIONS">Delivery Academy · Development / Operations</option>
+                <option value="DEVELOPMENT_OPERATIONS">Development Academy · Development / Operations</option>
                 <option value="ACADEMY_WIDE">Academy-wide SuperAdmin</option>
               </select>
               <span className="text-xs font-normal text-wxIndigo500">Department access is explicit. Delivery and Sales mappings remain isolated.</span>
@@ -1602,8 +1615,8 @@ function EmployeeEditor({
             <StatusTile label="Trainer" value={displayedTrainer?.displayName || (academyRole === "MANAGER_TL" ? "Not applicable" : "Reassignment required")} icon={<GraduationCap className="h-4 w-4" />} tone={academyRole !== "MANAGER_TL" && !displayedTrainer ? "danger" : undefined}/>
             <StatusTile label="Employee" value={employee.displayName} icon={<UserRound className="h-4 w-4" />}/>
           </div> : null}
-          {employee && academyArea === "DEVELOPMENT_OPERATIONS" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Delivery Academy mapping">
-            <StatusTile label="Operational role" value={deliveryResponsibility === "TRAINER" ? "Delivery Trainer" : deliveryResponsibility.replaceAll("_", " ")} icon={<UsersRound className="h-4 w-4" />}/>
+          {employee && academyArea === "DEVELOPMENT_OPERATIONS" ? <div className="mt-5 grid gap-3 md:grid-cols-3" aria-label="Development Academy mapping">
+            <StatusTile label="Operational role" value={deliveryResponsibilityLabel(deliveryResponsibility)} icon={<UsersRound className="h-4 w-4" />}/>
             <StatusTile label="Reports to" value={employee.deliveryReportingParentName || (deliveryResponsibility === "MANAGER" || deliveryResponsibility === "TRAINER" ? "Not applicable" : "Reassignment required")} icon={<UserRound className="h-4 w-4" />} tone={requiredDeliveryParentRole && !employee.deliveryReportingParentName ? "danger" : undefined}/>
             <StatusTile label="Trainer" value={employee.deliveryTrainerName || (deliveryTrainerRequired ? "Reassignment required" : "Not assigned")} icon={<GraduationCap className="h-4 w-4" />} tone={deliveryTrainerRequired && !employee.deliveryTrainerName ? "danger" : undefined}/>
           </div> : null}
@@ -1642,7 +1655,7 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  const [reason, setReason] = useState("Website Admin governed Delivery Core learning assignment");
+  const [reason, setReason] = useState("Website Admin governed Development Academy learning assignment");
   const [preview, setPreview] = useState<WebsiteAssignmentPreview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -1651,6 +1664,7 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
   const canPause = ["ASSIGNED", "ACTIVE"].includes(employee.learningAssignmentStatus);
   const canResume = employee.learningAssignmentStatus === "PAUSED";
   const canWithdraw = ["ASSIGNED", "ACTIVE", "PAUSED"].includes(employee.learningAssignmentStatus);
+  const pathTitle = developmentPathTitle(employee.learningPathTitle);
   const blocker = employee.deliveryHierarchyAttention
     ? "Complete the Team Manager reporting assignment first."
     : employee.syncStatus !== "SYNCED" || !employee.academyUserId
@@ -1723,7 +1737,7 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
           ? "Learning assignment withdrawn. Training progress and history were preserved."
           : active
             ? "The existing active learning assignment was preserved."
-            : "Delivery Core Learning Path assigned.");
+            : "Development Academy Core Learning Path assigned.");
     router.refresh();
   }
 
@@ -1732,11 +1746,11 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-wxViolet700">Learning assignment</p>
-          <h3 id="delivery-learning-assignment-title" className="mt-1 font-semibold text-wxIndigo900">{employee.learningPathTitle || "No learning path assigned"}</h3>
+          <h3 id="delivery-learning-assignment-title" className="mt-1 font-semibold text-wxIndigo900">{pathTitle || "No learning path assigned"}</h3>
           <p className="mt-1 text-sm leading-6 text-wxIndigo600">
             {active
               ? `${employee.learningAssignmentStatus.replaceAll("_", " ")} · ${employee.learningAssignedAt ? formatAdminTimestamp(employee.learningAssignedAt) : "assignment time pending"}`
-              : "Assign the approved 26-lesson, 266-sublesson Delivery Core Learning Path without bypassing lesson progression."}
+              : "Assign the 26-lesson, 266-sublesson Development Academy Core Learning Path without bypassing lesson progression."}
           </p>
           {employee.learningFirstLessonRoute ? <a href={`https://academy.writex.co.in${employee.learningFirstLessonRoute}`} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-wxViolet700 underline underline-offset-4"><BookOpen className="h-4 w-4" /> Open first lesson route</a> : null}
         </div>
@@ -1750,7 +1764,7 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
       {error ? <p role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</p> : null}
       {message ? <p role="status" className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{message}</p> : null}
       <button ref={triggerRef} type="button" disabled={busy || Boolean(blocker) || reason.trim().length < 8} onClick={() => requestAssignment("PREVIEW")} className="wx-gradient-action mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
-        <GraduationCap className="h-4 w-4" /> {busy ? "Checking..." : active ? "Review Assignment" : "Assign Learning"}
+        <GraduationCap className="h-4 w-4" /> {busy ? "Checking..." : active ? "Review assignment" : "Assign learning"}
       </button>
       {canPause || canResume || canWithdraw ? <div className="mt-3 flex flex-wrap gap-2" aria-label="Learning assignment lifecycle">
         {canPause ? <button type="button" disabled={busy || reason.trim().length < 8} onClick={() => requestAssignment("PAUSE")} className="min-h-10 rounded-md border border-wxBorder bg-wxSurface px-3 text-sm font-semibold text-wxIndigo700 disabled:opacity-50">Pause learning</button> : null}
@@ -1763,25 +1777,23 @@ function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDir
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase text-wxViolet700">Assignment preview</p>
-              <h2 id="assignment-confirmation-title" className="mt-1 text-xl font-semibold text-wxIndigo900">Confirm Delivery learning</h2>
+              <h2 id="assignment-confirmation-title" className="mt-1 text-xl font-semibold text-wxIndigo900">Confirm Development learning</h2>
               <p className="mt-1 text-sm text-wxIndigo600">Nothing is assigned until you confirm.</p>
             </div>
             <button type="button" onClick={closePreview} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-wxBorder" aria-label="Close assignment preview"><X className="h-4 w-4" /></button>
           </div>
           <dl className="mt-5 grid gap-3 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm sm:grid-cols-2">
-            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Path</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.path.title}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Effective version</dt><dd className="mt-1 font-semibold text-wxIndigo900">v{preview.path.effectiveVersion}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Path</dt><dd className="mt-1 font-semibold text-wxIndigo900">{developmentPathTitle(preview.path.title)}</dd></div>
             <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Target</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets[0]?.displayName} · {preview.targets[0]?.operationalRole.replaceAll("_", " ")}</dd></div>
             <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Target count</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets.length}</dd></div>
             <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Current state</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets[0]?.existingStatus.replaceAll("_", " ")}</dd></div>
             <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Effect</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.existingActiveAssignments ? "Preserve existing active assignment" : preview.reactivations ? "Reactivate historical assignment" : "Create one active assignment"}</dd></div>
             <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Curriculum</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.path.lessonCount} lessons · {preview.path.sublessonCount} sublessons</dd></div>
-            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Auto assignment</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.autoAssignmentStatus}</dd></div>
           </dl>
-          <p className="mt-4 text-sm leading-6 text-wxIndigo600">Assignment enrols this employee in the path. Frozen assessment and prerequisite progression still control later lessons.</p>
+          <p className="mt-4 text-sm leading-6 text-wxIndigo600">Assignment enrols this employee in the path. Assessment and prerequisite progression continue to control later lessons.</p>
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button type="button" onClick={closePreview} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700">Cancel</button>
-            <button type="button" disabled={busy} onClick={() => requestAssignment("ASSIGN")} className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Assigning..." : "Confirm Assignment"}</button>
+            <button type="button" disabled={busy} onClick={() => requestAssignment("ASSIGN")} className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Assigning..." : "Confirm assignment"}</button>
           </div>
         </section>
       </div> : null}
