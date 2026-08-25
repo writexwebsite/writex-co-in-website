@@ -7,8 +7,14 @@ const eslintConfig = [
   {
     ignores: [
       ".next/**",
+      ".next-build-stale/**",
+      ".next-stale-*/**",
+      ".next.stale-*/**",
       "node_modules/**",
       "out/**",
+      "artifacts/**",
+      "handoff/**",
+      "handoff-work/**",
       "next-env.d.ts"
     ]
   }

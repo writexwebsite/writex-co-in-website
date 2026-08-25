@@ -6,8 +6,11 @@ import { ApiError } from "@/lib/api/response";
 import { dbQuery, withDbTransaction } from "@/lib/db";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
 import {
+  assignAcademyDeliveryLearning,
   AcademySyncError,
   permanentlyPurgeAcademyEmployee,
+  previewAcademyDeliveryLearningAssignment,
+  transitionAcademyDeliveryLearningAssignment,
   previewAcademyEmployeePurge,
   syncEmployeeToAcademy
 } from "@/lib/employees/academy-client";
@@ -21,6 +24,7 @@ import {
   type EmployeeDirectoryItem,
   type EmployeeLifecycleFilter,
   type DeliveryOperationalRole,
+  type DeliveryLearningAssignmentStatus,
   type EmployeeSegment,
   type EmployeeStatus,
   type EmployeeTeam,
@@ -49,6 +53,13 @@ type EmployeeRow = {
   delivery_reporting_parent_name: string | null;
   delivery_trainer_employee_id: string | null;
   delivery_trainer_name: string | null;
+  delivery_hierarchy_attention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED" | null;
+  academy_learning_assignment_id: string | null;
+  academy_learning_path_key: string | null;
+  academy_learning_path_title: string | null;
+  academy_learning_assignment_status: DeliveryLearningAssignmentStatus;
+  academy_learning_assigned_at: Date | null;
+  academy_learning_first_lesson_route: string | null;
   sync_status: "PENDING" | "SYNCED" | "FAILED";
   last_synced_at: Date | null;
   last_sync_error: string | null;
@@ -78,6 +89,13 @@ const employeeSelect = `
   delivery_parent.display_name as delivery_reporting_parent_name,
   a.delivery_trainer_employee_id,
   delivery_trainer.display_name as delivery_trainer_name,
+  a.delivery_hierarchy_attention,
+  a.academy_learning_assignment_id,
+  a.academy_learning_path_key,
+  a.academy_learning_path_title,
+  coalesce(a.academy_learning_assignment_status,'NOT_ASSIGNED') academy_learning_assignment_status,
+  a.academy_learning_assigned_at,
+  a.academy_learning_first_lesson_route,
   coalesce(a.sync_status, 'SYNCED') as sync_status,
   a.last_synced_at, a.last_sync_error, a.external_application_user_id,
   e.archived_at, e.archive_previous_employment_status,
@@ -108,6 +126,13 @@ function mapEmployee(row: EmployeeRow): EmployeeDirectoryItem {
     deliveryReportingParentName: row.delivery_reporting_parent_name,
     deliveryTrainerEmployeeId: row.delivery_trainer_employee_id,
     deliveryTrainerName: row.delivery_trainer_name,
+    deliveryHierarchyAttention: row.delivery_hierarchy_attention,
+    learningAssignmentId: row.academy_learning_assignment_id,
+    learningPathKey: row.academy_learning_path_key,
+    learningPathTitle: row.academy_learning_path_title,
+    learningAssignmentStatus: row.academy_learning_assignment_status,
+    learningAssignedAt: row.academy_learning_assigned_at?.toISOString() ?? null,
+    learningFirstLessonRoute: row.academy_learning_first_lesson_route,
     syncStatus: row.sync_status,
     lastSyncedAt: row.last_synced_at?.toISOString() ?? null,
     lastSyncError: row.last_sync_error,
@@ -191,7 +216,7 @@ export async function listEmployees({
          or ($6 = 'SALES_TRAINER' and coalesce(a.academy_area,'SALES') = 'SALES' and a.application_role = 'TRAINER')
          or ($6 = 'SALES_EMPLOYEE' and coalesce(a.academy_area,'SALES') = 'SALES' and a.application_role = 'EMPLOYEE')
          or ($6 = 'DELIVERY_TRAINER' and a.academy_area = 'DEVELOPMENT_OPERATIONS' and a.application_role = 'TRAINER')
-         or ($6 in ('MANAGER','TEAM_LEADER','SENIOR_SME','JUNIOR_SME') and a.academy_area = 'DEVELOPMENT_OPERATIONS' and a.delivery_operational_role = $6)
+         or ($6 in ('MANAGER','TEAM_MANAGER','TEAM_LEADER','SENIOR_SME','JUNIOR_SME') and a.academy_area = 'DEVELOPMENT_OPERATIONS' and a.delivery_operational_role = $6)
        )
        and ($7 = '' or ($7 = 'enabled' and coalesce(a.enabled,false)) or ($7 = 'disabled' and not coalesce(a.enabled,false)))
      order by e.display_name, e.employee_code`,
@@ -1220,9 +1245,21 @@ export async function attemptEmployeeAcademySync(employeeId: string, actor: Admi
     await dbQuery(
       `update employee_application_access
        set sync_status = 'SYNCED', last_synced_at = now(), last_sync_error = null,
-           external_application_user_id = $4
+           external_application_user_id = $4,
+           delivery_hierarchy_attention = $5,
+           academy_learning_assignment_id = $6,
+           academy_learning_path_key = $7,
+           academy_learning_path_title = $8,
+           academy_learning_assignment_status = $9,
+           academy_learning_assigned_at = $10,
+           academy_learning_first_lesson_route = $11,
+           academy_learning_state_synced_at = now()
        where employee_id = $1 and application_key = $2 and last_sync_request_id = $3`,
-      [employeeId, academyApplicationKey, requestId, result.academyUserId]
+      [employeeId, academyApplicationKey, requestId, result.academyUserId,
+        result.hierarchyAttention, result.learningAssignment.assignmentId,
+        result.learningAssignment.pathKey, result.learningAssignment.pathTitle,
+        result.learningAssignment.status, result.learningAssignment.assignedAt,
+        result.learningAssignment.firstLessonRoute]
     );
     const bootstrapRows = await withDbTransaction(async (query) => {
       const bootstrap = await query<{ status: string; candidate_employee_id: string | null }>(
@@ -1267,6 +1304,84 @@ export async function attemptEmployeeAcademySync(employeeId: string, actor: Admi
     );
     return { synced: false as const, requestId, error: syncError.message };
   }
+}
+
+async function assertDeliveryLearningAssignmentTarget(employeeId: string) {
+  const employee = await getEmployee(employeeId);
+  if (!employee) throw new ApiError(404, "NOT_FOUND", "Employee was not found.");
+  if (employee.archivedAt || employee.employmentStatus !== "ACTIVE" || !employee.academyEnabled) {
+    throw new ApiError(409, "BAD_REQUEST", "Activate the employee and enable Academy access before assigning learning.");
+  }
+  if (employee.academyArea !== "DEVELOPMENT_OPERATIONS" || !employee.deliveryOperationalRole) {
+    throw new ApiError(409, "BAD_REQUEST", "Delivery Core can be assigned only to an active Development / Operations role.");
+  }
+  if (employee.syncStatus !== "SYNCED" || !employee.academyUserId) {
+    throw new ApiError(409, "BAD_REQUEST", "Complete Academy sync before assigning learning.");
+  }
+  if (employee.deliveryHierarchyAttention) {
+    throw new ApiError(409, "BAD_REQUEST", "Complete the Team Manager reporting assignment before assigning learning.");
+  }
+  return employee;
+}
+
+export async function previewEmployeeDeliveryLearningAssignment(employeeId: string, reason: string, actor: AdminSession) {
+  const employee = await assertDeliveryLearningAssignmentTarget(employeeId);
+  const preview = await previewAcademyDeliveryLearningAssignment(
+    [employee.id],
+    reason,
+    { adminId: actor.adminUserId, email: actor.email }
+  );
+  return { employee, preview };
+}
+
+export async function assignEmployeeDeliveryLearning(employeeId: string, reason: string, actor: AdminSession) {
+  const employee = await assertDeliveryLearningAssignmentTarget(employeeId);
+  const result = await assignAcademyDeliveryLearning(
+    [employee.id],
+    reason,
+    { adminId: actor.adminUserId, email: actor.email }
+  );
+  const assignmentId = result.assignmentIds[0] || employee.learningAssignmentId;
+  await dbQuery(
+    `update employee_application_access
+     set academy_learning_assignment_id=$3,
+         academy_learning_path_key=$4,
+         academy_learning_path_title=$5,
+         academy_learning_assignment_status='ACTIVE',
+         academy_learning_assigned_at=now(),
+         academy_learning_first_lesson_route=$6,
+         academy_learning_state_synced_at=now()
+     where employee_id=$1 and application_key=$2`,
+    [employeeId, academyApplicationKey, assignmentId, result.preview.path.pathKey,
+      result.preview.path.title, result.preview.path.firstLessonRoute]
+  );
+  return result;
+}
+
+export async function transitionEmployeeDeliveryLearningAssignment(
+  employeeId: string,
+  transition: "PAUSE" | "RESUME" | "WITHDRAW",
+  reason: string,
+  actor: AdminSession
+) {
+  const employee = await assertDeliveryLearningAssignmentTarget(employeeId);
+  if (!employee.learningAssignmentId) {
+    throw new ApiError(409, "BAD_REQUEST", "Assign the Delivery Core Learning Path before changing its status.");
+  }
+  const result = await transitionAcademyDeliveryLearningAssignment(
+    employee.id,
+    transition,
+    reason,
+    { adminId: actor.adminUserId, email: actor.email }
+  );
+  await dbQuery(
+    `update employee_application_access
+     set academy_learning_assignment_status=$3,
+         academy_learning_state_synced_at=now()
+     where employee_id=$1 and application_key=$2`,
+    [employeeId, academyApplicationKey, result.status]
+  );
+  return result;
 }
 
 export async function auditEmployeeMutation({

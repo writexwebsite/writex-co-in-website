@@ -14,6 +14,7 @@ export type AcademySetupStageKey =
   | "SALES_TRAINER"
   | "SALES_FIRST_EMPLOYEE"
   | "DELIVERY_MANAGER"
+  | "DELIVERY_TEAM_MANAGER"
   | "DELIVERY_TEAM_LEADER"
   | "DELIVERY_SENIOR_SME"
   | "DELIVERY_JUNIOR_SME"
@@ -24,6 +25,7 @@ export type AcademySetupCreatePreset = {
   academyArea: AcademyArea;
   academyRole: AcademyRole;
   deliveryResponsibility?: DeliveryOperationalRole | "TRAINER";
+  deliveryReportingParentEmployeeId?: string;
 };
 
 export type AcademySetupStage = {
@@ -163,49 +165,87 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
   const managerCandidates = roleCandidates("MANAGER");
   const manager = managerCandidates.find((employee) => synced(employee) && !employee.deliveryReportingParentEmployeeId) || null;
   const managerCandidate = manager || managerCandidates[0] || null;
+  const teamManagerCandidates = roleCandidates("TEAM_MANAGER");
+  const teamManager = teamManagerCandidates.find((employee) => synced(employee)
+    && Boolean(manager && employee.deliveryReportingParentEmployeeId === manager.id)) || null;
+  const teamManagerCandidate = teamManager || teamManagerCandidates[0] || null;
   const teamLeaderCandidates = roleCandidates("TEAM_LEADER");
-  const teamLeader = teamLeaderCandidates.find((employee) => synced(employee) && Boolean(manager && employee.deliveryReportingParentEmployeeId === manager.id)) || null;
-  const tlCandidate = teamLeader || teamLeaderCandidates[0] || null;
+  const teamLeader = teamLeaderCandidates.find((employee) => synced(employee)
+    && !employee.deliveryHierarchyAttention
+    && Boolean(teamManager && employee.deliveryReportingParentEmployeeId === teamManager.id)) || null;
+  const transitionalTeamLeader = teamLeaderCandidates.find((employee) => Boolean(
+    manager
+    && employee.deliveryReportingParentEmployeeId === manager.id
+    && employee.deliveryHierarchyAttention === "TEAM_MANAGER_ASSIGNMENT_REQUIRED"
+  )) || null;
+  const operationalTeamLeader = teamLeader || transitionalTeamLeader;
+  const tlCandidate = operationalTeamLeader || teamLeaderCandidates[0] || null;
   const seniorCandidates = roleCandidates("SENIOR_SME");
   const senior = seniorCandidates.find((employee) => synced(employee)
-    && Boolean(teamLeader && employee.deliveryReportingParentEmployeeId === teamLeader.id)
+    && Boolean(operationalTeamLeader && employee.deliveryReportingParentEmployeeId === operationalTeamLeader.id)
     && Boolean(trainer && employee.deliveryTrainerEmployeeId === trainer.id)) || null;
   const seniorCandidate = senior || seniorCandidates[0] || null;
   const juniorCandidates = roleCandidates("JUNIOR_SME");
   const junior = juniorCandidates.find((employee) => synced(employee)
-    && Boolean(teamLeader && employee.deliveryReportingParentEmployeeId === teamLeader.id)
+    && Boolean(operationalTeamLeader && employee.deliveryReportingParentEmployeeId === operationalTeamLeader.id)
     && Boolean(trainer && employee.deliveryTrainerEmployeeId === trainer.id)) || null;
   const juniorCandidate = junior || juniorCandidates[0] || null;
   const learnerCandidate = seniorCandidate || juniorCandidate;
-  const firstLearner = [senior, junior].find((employee) => Boolean(employee?.academyUserId)) || null;
+  const firstLearner = [senior, junior].find((employee) => Boolean(
+    employee?.academyUserId
+    && employee.learningAssignmentId
+    && ["ASSIGNED", "ACTIVE", "PAUSED", "COMPLETED"].includes(employee.learningAssignmentStatus)
+  )) || null;
+  const teamManagerStage: AcademySetupStage = teamManager && teamLeader
+    ? stage("DELIVERY_TEAM_MANAGER", "Team Manager", "Reports to the Delivery Manager and governs assigned Team Leaders.", teamManager, teamManager)
+    : {
+        key: "DELIVERY_TEAM_MANAGER",
+        label: "Team Manager",
+        explanation: "Reports to the Delivery Manager and governs assigned Team Leaders.",
+        status: commonReady && manager ? "NEEDS_ACTION" : "BLOCKED",
+        completedBy: teamManager?.displayName || null,
+        issue: !commonReady || !manager
+          ? "Create the Delivery Manager first."
+          : !teamManager
+            ? "Add a Team Manager under the Delivery Manager and assign the existing Team Leader."
+            : transitionalTeamLeader
+              ? `Assign ${transitionalTeamLeader.displayName} to ${teamManager.displayName}; the temporary direct Delivery Manager relationship remains active until then.`
+              : "Assign an active Team Leader to this Team Manager."
+      };
   const stages = [
     stage("DELIVERY_MANAGER", "Delivery Manager", "Creates the root of the Development / Operations reporting hierarchy.", managerCandidate, manager, !commonReady),
-    stage("DELIVERY_TEAM_LEADER", "Team Leader", "Reports to the approved Delivery Manager.", tlCandidate, teamLeader, !manager, tlCandidate ? "Assign the correct active Delivery Manager and retry sync." : "Create the Delivery Manager first."),
-    stage("DELIVERY_SENIOR_SME", "Senior SME", "Reports to the Team Leader and has a separate Delivery Trainer assignment.", seniorCandidate, senior, !teamLeader || !trainer, seniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !teamLeader ? "Create the Team Leader first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Senior SME under the Team Leader and assign the Delivery Trainer."),
-    stage("DELIVERY_JUNIOR_SME", "Junior SME", "Reports directly to the Team Leader and has a separate Delivery Trainer assignment.", juniorCandidate, junior, !teamLeader || !trainer, juniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !teamLeader ? "Create the Team Leader first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Junior SME under the Team Leader and assign the Delivery Trainer."),
+    teamManagerStage,
+    stage("DELIVERY_TEAM_LEADER", "Team Leader", "Reports to the approved Team Manager.", tlCandidate, operationalTeamLeader, !manager, tlCandidate ? "Assign the Team Leader to the approved Team Manager and retry sync." : "Create the Team Manager first."),
+    stage("DELIVERY_SENIOR_SME", "Senior SME", "Reports to the Team Leader and has a separate Delivery Trainer assignment.", seniorCandidate, senior, !operationalTeamLeader || !trainer, seniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !operationalTeamLeader ? "Complete the Team Manager and Team Leader relationship first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Senior SME under the Team Leader and assign the Delivery Trainer."),
+    stage("DELIVERY_JUNIOR_SME", "Junior SME", "Reports directly to the Team Leader and has a separate Delivery Trainer assignment.", juniorCandidate, junior, !operationalTeamLeader || !trainer, juniorCandidate ? "Correct the Team Leader, Delivery Trainer, or sync state." : !operationalTeamLeader ? "Complete the Team Manager and Team Leader relationship first." : !trainer ? "Assign a Delivery Trainer before enabling this learner." : "Add a Junior SME under the Team Leader and assign the Delivery Trainer."),
     stage("DELIVERY_TRAINER", "Delivery Trainer", "Supports learning without becoming the operational hierarchy parent.", trainerCandidate, trainer, !commonReady),
-    stage("DELIVERY_FIRST_LEARNER", "First learner ready", "Confirms identity, Delivery mapping, credentials, and Academy sync are healthy.", learnerCandidate, firstLearner, !senior && !junior, learnerCandidate ? "Open the learner record to complete credentials or resolve Academy sync." : "Create a Senior or Junior SME first.")
+    stage("DELIVERY_FIRST_LEARNER", "First learner ready", "Confirms identity, hierarchy, Trainer, active learning assignment, credentials, and Academy sync are healthy.", learnerCandidate, firstLearner, !senior && !junior, learnerCandidate ? "Open the learner record and assign the Delivery Core Learning Path." : "Create a Senior or Junior SME first.")
   ];
   let action: AcademySetupAction | null = null;
   if (!commonReady) action = { kind: "OPEN_GOVERNANCE", label: "Complete Academy SuperAdmin", explanation: "The shared Academy authority must be healthy first.", href: "/admin/ai-governance#primary-superadmin" };
   else if (!manager) action = managerCandidate
     ? errorAction(managerCandidate, stages[0].issue || "Repair the Delivery Manager mapping.")
     : createAction("Add Delivery Manager", stages[0].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "MANAGER" });
-  else if (!teamLeader) action = tlCandidate
-    ? errorAction(tlCandidate, stages[1].issue || "Repair the Delivery Team Leader mapping.")
-    : createAction("Add Team Leader", stages[1].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "TEAM_LEADER" });
+  else if (!teamManager) action = teamManagerCandidate
+    ? errorAction(teamManagerCandidate, stages[1].issue || "Repair the Delivery Team Manager mapping.")
+    : createAction("Add Team Manager", stages[1].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "TEAM_MANAGER", deliveryReportingParentEmployeeId: manager.id });
+  else if (!teamLeader) action = transitionalTeamLeader
+    ? { kind: "OPEN_EMPLOYEE", label: "Assign Team Leader", explanation: stages[1].issue || "Move the existing Team Leader under the Team Manager.", href: `/admin/employees/${transitionalTeamLeader.id}` }
+    : tlCandidate
+      ? errorAction(tlCandidate, stages[2].issue || "Repair the Delivery Team Leader mapping.")
+      : createAction("Add Team Leader", stages[2].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "TEAM_LEADER", deliveryReportingParentEmployeeId: teamManager.id });
   else if (!trainer) action = trainerCandidate
-    ? errorAction(trainerCandidate, stages[4].issue || "Repair the Delivery Trainer mapping.")
-    : createAction("Add Delivery Trainer", stages[4].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "TRAINER", deliveryResponsibility: "TRAINER" });
+    ? errorAction(trainerCandidate, stages[5].issue || "Repair the Delivery Trainer mapping.")
+    : createAction("Add Delivery Trainer", stages[5].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "TRAINER", deliveryResponsibility: "TRAINER" });
   else if (!senior) action = seniorCandidate
-    ? errorAction(seniorCandidate, stages[2].issue || "Repair the Senior SME mapping.")
-    : createAction("Add Senior SME", stages[2].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "SENIOR_SME" });
+    ? errorAction(seniorCandidate, stages[3].issue || "Repair the Senior SME mapping.")
+    : createAction("Add Senior SME", stages[3].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "SENIOR_SME", deliveryReportingParentEmployeeId: operationalTeamLeader!.id });
   else if (!junior) action = juniorCandidate
-    ? errorAction(juniorCandidate, stages[3].issue || "Repair the Junior SME mapping.")
-    : createAction("Add Junior SME", stages[3].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "JUNIOR_SME" });
+    ? errorAction(juniorCandidate, stages[4].issue || "Repair the Junior SME mapping.")
+    : createAction("Add Junior SME", stages[4].explanation, { academyArea: "DEVELOPMENT_OPERATIONS", academyRole: "EMPLOYEE", deliveryResponsibility: "JUNIOR_SME", deliveryReportingParentEmployeeId: operationalTeamLeader!.id });
   else if (!firstLearner) action = learnerCandidate
-    ? errorAction(learnerCandidate, stages[5].issue || "Complete credentials and Academy sync.")
-    : { kind: "OPEN_SYNC", label: "Open Academy Sync Attention", explanation: stages[5].explanation, href: "/admin/employees?sync=attention&area=DEVELOPMENT_OPERATIONS" };
+    ? { kind: "OPEN_EMPLOYEE", label: "Assign Learning", explanation: stages[6].issue || "Assign the Delivery Core Learning Path.", href: `/admin/employees/${learnerCandidate.id}#delivery-learning-assignment` }
+    : { kind: "OPEN_SYNC", label: "Open Academy Sync Attention", explanation: stages[6].explanation, href: "/admin/employees?sync=attention&area=DEVELOPMENT_OPERATIONS" };
   const complete = stages.every((item) => item.status === "COMPLETE");
   return {
     key: "DEVELOPMENT_OPERATIONS",
@@ -214,7 +254,7 @@ function buildDeliveryTrack(employees: EmployeeDirectoryItem[], commonReady: boo
     stages,
     action,
     summary: complete
-      ? `Delivery is ready: ${manager?.displayName}, ${teamLeader?.displayName}, ${senior?.displayName}, ${junior?.displayName}, and ${trainer?.displayName}.`
+      ? `Delivery is ready: ${manager?.displayName}, ${teamManager?.displayName}, ${teamLeader?.displayName}, ${senior?.displayName}, ${junior?.displayName}, and ${trainer?.displayName}.`
       : `${stages.filter((item) => item.status === "COMPLETE").length} of ${stages.length} Delivery stages are complete.`
   };
 }

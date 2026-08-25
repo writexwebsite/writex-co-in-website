@@ -24,7 +24,7 @@ type AcademySyncPayload = {
   };
   delivery: {
     departmentCode: "DEVELOPMENT_OPERATIONS";
-    operationalRole: "MANAGER" | "TEAM_LEADER" | "SENIOR_SME" | "JUNIOR_SME" | null;
+    operationalRole: "MANAGER" | "TEAM_MANAGER" | "TEAM_LEADER" | "SENIOR_SME" | "JUNIOR_SME" | null;
     reportingParentEmployeeId: string | null;
     trainerEmployeeId: string | null;
   } | null;
@@ -48,6 +48,58 @@ type AcademySyncResult = {
   created: boolean;
   credentialsGenerated?: boolean;
   initialPassword?: string;
+  hierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED" | null;
+  learningAssignment: AcademyLearningAssignmentSummary;
+};
+
+export type AcademyLearningAssignmentSummary = {
+  assignmentId: string | null;
+  pathKey: string | null;
+  pathTitle: string | null;
+  status: "NOT_ASSIGNED" | "ASSIGNED" | "ACTIVE" | "PAUSED" | "COMPLETED" | "INACTIVE" | "WITHDRAWN";
+  assignedAt: string | null;
+  firstLessonRoute: string | null;
+};
+
+export type AcademyLearningAssignmentPreview = {
+  path: {
+    pathKey: "DELIVERY_CORE";
+    title: string;
+    curriculumVersion: string;
+    lessonCount: number;
+    sublessonCount: number;
+    effectiveVersion: number;
+    firstLessonRoute: string;
+  };
+  targets: Array<{
+    userId: string;
+    displayName: string;
+    operationalRole: "MANAGER" | "TEAM_MANAGER" | "TEAM_LEADER" | "SENIOR_SME" | "JUNIOR_SME";
+    existingStatus: AcademyLearningAssignmentSummary["status"];
+  }>;
+  newAssignments: number;
+  existingActiveAssignments: number;
+  reactivations: number;
+  autoAssignmentStatus: "OFF" | "CONTROLLED_UAT" | "WORKFORCE_ACTIVE";
+};
+
+export type AcademyLearningAssignmentResult = {
+  batchId: string;
+  assignmentIds: string[];
+  preview: AcademyLearningAssignmentPreview;
+  created: number;
+  reactivated: number;
+  unchanged: number;
+};
+
+export type AcademyLearningAssignmentLifecycleResult = {
+  assignmentId: string;
+  learnerUserId: string;
+  employeeReference: string | null;
+  previousStatus: AcademyLearningAssignmentSummary["status"];
+  status: AcademyLearningAssignmentSummary["status"];
+  assignmentVersion: number;
+  progressPreserved: true;
 };
 
 export type AcademyCredentialResult = {
@@ -385,6 +437,50 @@ export async function resetAcademyEmployeePassword(
     });
     throw safeError;
   }
+}
+
+export function previewAcademyDeliveryLearningAssignment(
+  employeeReferences: string[],
+  reason: string,
+  requestedBy: { adminId: string; email: string }
+) {
+  return signedAcademyRequest<AcademyLearningAssignmentPreview>({
+    pathname: "/api/internal/delivery/learning-assignments",
+    method: "POST",
+    body: JSON.stringify({ requestId: randomUUID(), action: "PREVIEW", employeeReferences, pathKey: "DELIVERY_CORE", reason, requestedBy })
+  });
+}
+
+export function assignAcademyDeliveryLearning(
+  employeeReferences: string[],
+  reason: string,
+  requestedBy: { adminId: string; email: string }
+) {
+  return signedAcademyRequest<AcademyLearningAssignmentResult>({
+    pathname: "/api/internal/delivery/learning-assignments",
+    method: "POST",
+    body: JSON.stringify({ requestId: randomUUID(), action: "ASSIGN", employeeReferences, pathKey: "DELIVERY_CORE", reason, requestedBy })
+  });
+}
+
+export function transitionAcademyDeliveryLearningAssignment(
+  employeeReference: string,
+  transition: "PAUSE" | "RESUME" | "WITHDRAW",
+  reason: string,
+  requestedBy: { adminId: string; email: string }
+) {
+  return signedAcademyRequest<AcademyLearningAssignmentLifecycleResult>({
+    pathname: "/api/internal/delivery/learning-assignments",
+    method: "POST",
+    body: JSON.stringify({
+      requestId: randomUUID(),
+      action: transition,
+      employeeReferences: [employeeReference],
+      pathKey: "DELIVERY_CORE",
+      reason,
+      requestedBy
+    })
+  });
 }
 
 export async function previewAcademyEmployeePurge(

@@ -54,6 +54,8 @@ export default async function EmployeePreviewPage({
   const params = await searchParams;
   const employeeId = params.view === "superadmin"
     ? employeePreviewIds.superAdmin
+    : params.view === "delivery-assigned"
+      ? employeePreviewIds.seniorSme
     : params.view === "delivery"
       ? employeePreviewIds.juniorSme
       : params.view === "detail"
@@ -63,6 +65,26 @@ export default async function EmployeePreviewPage({
   const lifecycle = params.lifecycle || "active";
   const setupEmployees = params.state === "empty"
     ? []
+    : params.state === "team-manager-missing"
+      ? employeePreviewItems
+          .filter((item) => item.id !== employeePreviewIds.deliveryTeamManager)
+          .map((item) => item.id === employeePreviewIds.deliveryTeamLeader
+            ? {
+                ...item,
+                deliveryReportingParentEmployeeId: employeePreviewIds.deliveryManager,
+                deliveryReportingParentName: "Devika Rao",
+                deliveryHierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED" as const
+              }
+            : item)
+      : params.state === "team-manager-pending"
+        ? employeePreviewItems.map((item) => item.id === employeePreviewIds.deliveryTeamLeader
+          ? {
+              ...item,
+              deliveryReportingParentEmployeeId: employeePreviewIds.deliveryManager,
+              deliveryReportingParentName: "Devika Rao",
+              deliveryHierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED" as const
+            }
+          : item)
     : params.state === "delivery-incomplete"
       ? employeePreviewItems.filter((item) => item.id !== employeePreviewIds.juniorSme)
       : employeePreviewItems;

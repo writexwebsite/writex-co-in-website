@@ -5,7 +5,8 @@ export const assignableAcademyRoles = academyRoles;
 export const employeeSyncStatuses = ["PENDING", "SYNCED", "FAILED"] as const;
 export const employeeSegments = ["NEW_BDE", "SENIOR_BDE"] as const;
 export const academyAreas = ["SALES", "DEVELOPMENT_OPERATIONS", "ACADEMY_WIDE"] as const;
-export const deliveryOperationalRoles = ["MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"] as const;
+export const deliveryOperationalRoles = ["MANAGER", "TEAM_MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"] as const;
+export const deliveryLearningAssignmentStatuses = ["NOT_ASSIGNED", "ASSIGNED", "ACTIVE", "PAUSED", "COMPLETED", "INACTIVE", "WITHDRAWN"] as const;
 export const employeeLifecycleFilters = ["active", "inactive", "archived", "all"] as const;
 
 export type EmployeeStatus = (typeof employeeStatuses)[number];
@@ -14,9 +15,11 @@ export type EmployeeSyncStatus = (typeof employeeSyncStatuses)[number];
 export type EmployeeSegment = (typeof employeeSegments)[number];
 export type AcademyArea = (typeof academyAreas)[number];
 export type DeliveryOperationalRole = (typeof deliveryOperationalRoles)[number];
+export type DeliveryLearningAssignmentStatus = (typeof deliveryLearningAssignmentStatuses)[number];
 
 export const deliveryReportingParent: Record<Exclude<DeliveryOperationalRole, "MANAGER">, DeliveryOperationalRole> = {
-  TEAM_LEADER: "MANAGER",
+  TEAM_MANAGER: "MANAGER",
+  TEAM_LEADER: "TEAM_MANAGER",
   SENIOR_SME: "TEAM_LEADER",
   JUNIOR_SME: "TEAM_LEADER"
 };
@@ -58,6 +61,13 @@ export type EmployeeDirectoryItem = {
   deliveryReportingParentName: string | null;
   deliveryTrainerEmployeeId: string | null;
   deliveryTrainerName: string | null;
+  deliveryHierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED" | null;
+  learningAssignmentId: string | null;
+  learningPathKey: string | null;
+  learningPathTitle: string | null;
+  learningAssignmentStatus: DeliveryLearningAssignmentStatus;
+  learningAssignedAt: string | null;
+  learningFirstLessonRoute: string | null;
   syncStatus: EmployeeSyncStatus;
   lastSyncedAt: string | null;
   lastSyncError: string | null;

@@ -255,12 +255,17 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   const ui = await read("components/admin/EmployeeControlPlane.tsx");
   const migration = await read("database/migrations/20260824_delivery_academy_employee_mapping.sql");
   const correction = await read("database/migrations/20260824_delivery_hierarchy_correction.sql");
+  const teamManagerCorrection = await read("database/migrations/20260825_delivery_team_manager_learning_assignment.sql");
+  const assignmentRoute = await read("app/api/admin/employees/[employeeId]/learning-assignment/route.ts");
   assert.match(domain, /academyAreas = \["SALES", "DEVELOPMENT_OPERATIONS", "ACADEMY_WIDE"\]/);
-  assert.match(domain, /deliveryOperationalRoles = \["MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"\]/);
+  assert.match(domain, /deliveryOperationalRoles = \["MANAGER", "TEAM_MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME"\]/);
   assert.match(validation, /deliveryReportingParentEmployeeId: optionalUuid/);
   assert.match(validation, /deliveryTrainerEmployeeId: optionalUuid/);
   assert.equal(isValidDeliveryReportingEdge("SENIOR_SME", "TEAM_LEADER"), true);
   assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "TEAM_LEADER"), true);
+  assert.equal(isValidDeliveryReportingEdge("TEAM_MANAGER", "MANAGER"), true);
+  assert.equal(isValidDeliveryReportingEdge("TEAM_LEADER", "TEAM_MANAGER"), true);
+  assert.equal(isValidDeliveryReportingEdge("TEAM_LEADER", "MANAGER"), false);
   assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "SENIOR_SME"), false);
   assert.equal(isValidDeliveryReportingEdge("JUNIOR_SME", "MANAGER"), false);
   assert.equal(isValidDeliveryReportingEdge("SENIOR_SME", "JUNIOR_SME"), false);
@@ -275,6 +280,7 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   assert.match(ui, /Field label="Reports To"/);
   assert.match(ui, /Assigned Delivery Trainer/);
   assert.match(ui, /Trainer assignment never changes the operational reporting line/);
+  assert.match(ui, /Delivery Manager → Team Manager → Team Leader/);
   assert.match(ui, /employee\?\.deliveryOperationalRole \|\| suggestedSetup\?\.deliveryResponsibility \|\| "MANAGER"/);
   assert.match(ui, /Complete the Academy operating structure/);
   assert.match(ui, /Common governance/);
@@ -292,4 +298,24 @@ test("Website Admin models Delivery area, operational hierarchy and Trainer assi
   assert.match(correction, /FOUNDER_DELIVERY_HIERARCHY_CORRECTION/);
   assert.match(correction, /employee_application_access_delivery_parent_guard/);
   assert.doesNotMatch(correction, /delete from employees|drop table/i);
+  assert.match(teamManagerCorrection, /TEAM_MANAGER_ASSIGNMENT_REQUIRED/);
+  assert.match(teamManagerCorrection, /academy_learning_assignment_status/);
+  assert.match(teamManagerCorrection, /when 'TEAM_LEADER' then 'TEAM_MANAGER'/);
+  assert.match(assignmentRoute, /previewEmployeeDeliveryLearningAssignment/);
+  assert.match(assignmentRoute, /assignEmployeeDeliveryLearning/);
+  assert.match(ui, /Nothing is assigned until you confirm/);
+});
+
+test("Website Admin governs Delivery learning assignment lifecycle without deleting progress", async () => {
+  const academyClient = await read("lib/employees/academy-client.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const route = await read("app/api/admin/employees/[employeeId]/learning-assignment/route.ts");
+  const controlPlane = await read("components/admin/EmployeeControlPlane.tsx");
+  assert.match(academyClient, /PAUSE[\s\S]*RESUME[\s\S]*WITHDRAW/);
+  assert.match(repository, /transitionEmployeeDeliveryLearningAssignment/);
+  assert.match(route, /delivery_learning_\$\{input\.action\.toLowerCase\(\)\}/);
+  assert.match(controlPlane, /Pause learning/);
+  assert.match(controlPlane, /Resume learning/);
+  assert.match(controlPlane, /Withdraw assignment/);
+  assert.match(controlPlane, /Training progress and history were preserved/);
 });

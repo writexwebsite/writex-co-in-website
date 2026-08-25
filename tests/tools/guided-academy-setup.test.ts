@@ -25,6 +25,8 @@ function employee(id: string, options: {
   deliveryTrainerId?: string | null;
   syncStatus?: EmployeeDirectoryItem["syncStatus"];
   academyUserId?: string | null;
+  hierarchyAttention?: EmployeeDirectoryItem["deliveryHierarchyAttention"];
+  assignmentStatus?: EmployeeDirectoryItem["learningAssignmentStatus"];
 } = {}): EmployeeDirectoryItem {
   const role = options.role || "EMPLOYEE";
   const area = options.area || (role === "SUPER_ADMIN" ? "ACADEMY_WIDE" : "SALES");
@@ -50,6 +52,13 @@ function employee(id: string, options: {
     deliveryReportingParentName: null,
     deliveryTrainerEmployeeId: options.deliveryTrainerId || null,
     deliveryTrainerName: null,
+    deliveryHierarchyAttention: options.hierarchyAttention || null,
+    learningAssignmentId: options.assignmentStatus && options.assignmentStatus !== "NOT_ASSIGNED" ? `assignment-${id}` : null,
+    learningPathKey: options.assignmentStatus && options.assignmentStatus !== "NOT_ASSIGNED" ? "DELIVERY_CORE" : null,
+    learningPathTitle: options.assignmentStatus && options.assignmentStatus !== "NOT_ASSIGNED" ? "Delivery Core Learning Path" : null,
+    learningAssignmentStatus: options.assignmentStatus || "NOT_ASSIGNED",
+    learningAssignedAt: options.assignmentStatus && options.assignmentStatus !== "NOT_ASSIGNED" ? new Date(0).toISOString() : null,
+    learningFirstLessonRoute: options.assignmentStatus && options.assignmentStatus !== "NOT_ASSIGNED" ? "/delivery/learn/core/1" : null,
     syncStatus: options.syncStatus || "SYNCED",
     lastSyncedAt: new Date(0).toISOString(),
     lastSyncError: options.syncStatus === "FAILED" ? "Academy sync failed." : null,
@@ -69,9 +78,10 @@ function completeRecords() {
     employee("sales-trainer", { role: "TRAINER", managerEmployeeId: "sales-manager" }),
     employee("sales-bde", { managerEmployeeId: "sales-trainer" }),
     employee("delivery-manager", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "MANAGER" }),
-    employee("delivery-tl", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "TEAM_LEADER", deliveryParentId: "delivery-manager" }),
+    employee("delivery-team-manager", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "TEAM_MANAGER", deliveryParentId: "delivery-manager" }),
+    employee("delivery-tl", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "TEAM_LEADER", deliveryParentId: "delivery-team-manager" }),
     employee("delivery-trainer", { role: "TRAINER", area: "DEVELOPMENT_OPERATIONS" }),
-    employee("senior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "SENIOR_SME", deliveryParentId: "delivery-tl", deliveryTrainerId: "delivery-trainer" }),
+    employee("senior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "SENIOR_SME", deliveryParentId: "delivery-tl", deliveryTrainerId: "delivery-trainer", assignmentStatus: "ACTIVE" }),
     employee("junior-sme", { area: "DEVELOPMENT_OPERATIONS", deliveryRole: "JUNIOR_SME", deliveryParentId: "delivery-tl", deliveryTrainerId: "delivery-trainer" })
   ];
 }
@@ -91,7 +101,41 @@ test("unified setup completes only after Sales and Delivery data are both valid 
   assert.equal(state.complete, true);
   assert.equal(state.superAdmin.completedBy, "Super");
   assert.equal(state.tracks.every((track) => track.complete && track.action === null), true);
-  assert.deepEqual(state.tracks[1].stages.map((stage) => stage.status), ["COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE"]);
+  assert.deepEqual(state.tracks[1].stages.map((stage) => stage.status), ["COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE", "COMPLETE"]);
+});
+
+test("existing direct Manager to Team Leader remains a guided transition requiring Team Manager assignment", () => {
+  const records = completeRecords().filter((item) => item.id !== "delivery-team-manager");
+  const teamLeaderIndex = records.findIndex((item) => item.id === "delivery-tl");
+  records[teamLeaderIndex] = {
+    ...records[teamLeaderIndex],
+    deliveryReportingParentEmployeeId: "delivery-manager",
+    deliveryHierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED"
+  };
+  const state = evaluateAcademySetupJourney(records, bootstrap);
+  const delivery = state.tracks.find((track) => track.key === "DEVELOPMENT_OPERATIONS")!;
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_TEAM_MANAGER")?.status, "NEEDS_ACTION");
+  assert.equal(delivery.stages.filter((stage) => stage.status === "COMPLETE").length, 6);
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_TEAM_LEADER")?.status, "COMPLETE");
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_SENIOR_SME")?.status, "COMPLETE");
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_JUNIOR_SME")?.status, "COMPLETE");
+  assert.equal(delivery.action?.label, "Add Team Manager");
+});
+
+test("existing Team Manager guides the same Team Leader transition without breaking downstream readiness", () => {
+  const records = completeRecords();
+  const teamLeaderIndex = records.findIndex((item) => item.id === "delivery-tl");
+  records[teamLeaderIndex] = {
+    ...records[teamLeaderIndex],
+    deliveryReportingParentEmployeeId: "delivery-manager",
+    deliveryHierarchyAttention: "TEAM_MANAGER_ASSIGNMENT_REQUIRED"
+  };
+  const state = evaluateAcademySetupJourney(records, bootstrap);
+  const delivery = state.tracks.find((track) => track.key === "DEVELOPMENT_OPERATIONS")!;
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_TEAM_MANAGER")?.status, "NEEDS_ACTION");
+  assert.equal(delivery.stages.find((stage) => stage.key === "DELIVERY_TEAM_LEADER")?.status, "COMPLETE");
+  assert.equal(delivery.action?.label, "Assign Team Leader");
+  assert.equal(delivery.action?.href, "/admin/employees/delivery-tl");
 });
 
 test("Delivery hierarchy regression returns to error with an exact repair action", () => {

@@ -7,7 +7,7 @@ import { requireAdminSession } from "@/lib/admin/session";
 import { getAcademyInitialAdminBootstrap, listEmployees, listEmployeeTeams } from "@/lib/employees/repository";
 import { academyAreas, employeeLifecycleFilters, type AcademyArea, type EmployeeLifecycleFilter } from "@/lib/employees/domain";
 
-const responsibilityFilters = ["SUPER_ADMIN", "SALES_MANAGER_TL", "SALES_TRAINER", "SALES_EMPLOYEE", "MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME", "DELIVERY_TRAINER"] as const;
+const responsibilityFilters = ["SUPER_ADMIN", "SALES_MANAGER_TL", "SALES_TRAINER", "SALES_EMPLOYEE", "MANAGER", "TEAM_MANAGER", "TEAM_LEADER", "SENIOR_SME", "JUNIOR_SME", "DELIVERY_TRAINER"] as const;
 const syncFilters = ["attention", "SYNCED", "PENDING", "FAILED"] as const;
 
 export const metadata: Metadata = {

@@ -104,6 +104,22 @@ export async function PATCH(
     if (before.employeeSegment !== input.employeeSegment) {
       await auditEmployeeMutation({ actor: admin, employeeId, action: "academy_employee_segment_changed", metadata: { before: before.employeeSegment, after: input.employeeSegment, identityPreserved: true }, request });
     }
+    if (before.deliveryOperationalRole === "TEAM_LEADER"
+      && before.deliveryReportingParentEmployeeId !== input.deliveryReportingParentEmployeeId) {
+      await auditEmployeeMutation({
+        actor: admin,
+        employeeId,
+        action: "delivery_team_manager_layer_inserted",
+        metadata: {
+          previousParentEmployeeId: before.deliveryReportingParentEmployeeId,
+          newParentEmployeeId: input.deliveryReportingParentEmployeeId,
+          reason: "FOUNDER_TEAM_MANAGER_LAYER_INSERTION",
+          employeeIdentityPreserved: true,
+          learningHistoryPreserved: true
+        },
+        request
+      });
+    }
     const sync = await attemptEmployeeAcademySync(employeeId, admin);
     await auditEmployeeMutation({
       actor: admin,

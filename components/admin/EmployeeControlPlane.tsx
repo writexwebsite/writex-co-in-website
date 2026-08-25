@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   AlertTriangle,
+  BookOpen,
   Check,
   Copy,
   GraduationCap,
@@ -70,6 +71,7 @@ function academyResponsibilityLabel(employee: EmployeeDirectoryItem) {
   if (employee.academyArea === "DEVELOPMENT_OPERATIONS") {
     if (employee.academyRole === "TRAINER") return "Delivery Trainer";
     return employee.deliveryOperationalRole === "TEAM_LEADER" ? "Team Leader"
+      : employee.deliveryOperationalRole === "TEAM_MANAGER" ? "Team Manager"
       : employee.deliveryOperationalRole === "SENIOR_SME" ? "Senior Subject Matter Expert"
         : employee.deliveryOperationalRole === "JUNIOR_SME" ? "Junior Subject Matter Expert"
           : employee.deliveryOperationalRole === "MANAGER" ? "Delivery Manager"
@@ -232,6 +234,7 @@ export function EmployeeDirectoryControl({
               <option value="SALES_TRAINER">Sales Trainer</option>
               <option value="SALES_EMPLOYEE">Sales employee</option>
               <option value="MANAGER">Delivery Manager</option>
+              <option value="TEAM_MANAGER">Delivery Team Manager</option>
               <option value="TEAM_LEADER">Delivery Team Leader</option>
               <option value="SENIOR_SME">Senior SME</option>
               <option value="JUNIOR_SME">Junior SME</option>
@@ -455,7 +458,7 @@ function WebsiteAcademySetupJourney({
                 <p className="text-xs font-semibold uppercase text-wxViolet700">{track.label}</p>
                 <h3 id={`academy-track-${track.key}`} className="mt-1 font-semibold text-wxIndigo900">{track.complete ? "Track ready" : "Setup journey"}</h3>
                 <p className="mt-1 text-xs leading-5 text-wxIndigo600">{track.summary}</p>
-                {track.key === "DEVELOPMENT_OPERATIONS" ? <p className="mt-2 text-xs leading-5 text-wxIndigo700">Manager → Team Leader; Senior SME and Junior SME are direct Team Leader reports. Trainer assignment remains separate.</p> : null}
+                {track.key === "DEVELOPMENT_OPERATIONS" ? <p className="mt-2 text-xs leading-5 text-wxIndigo700">Delivery Manager → Team Manager → Team Leader. Senior SME and Junior SME are direct Team Leader reports. Trainer assignment remains separate.</p> : null}
               </div>
               {actionControl(track.action)}
             </div>
@@ -1037,7 +1040,7 @@ function EmployeeEditor({
   const [employeeSegment, setEmployeeSegment] = useState<EmployeeSegment>(employee?.employeeSegment || "NEW_BDE");
   const [department, setDepartment] = useState(employee?.department ?? (suggestedSetup?.academyArea === "DEVELOPMENT_OPERATIONS" ? "Development / Operations" : ""));
   const [managerEmployeeId, setManagerEmployeeId] = useState(employee?.managerEmployeeId || "");
-  const [deliveryReportingParentEmployeeId, setDeliveryReportingParentEmployeeId] = useState(employee?.deliveryReportingParentEmployeeId || "");
+  const [deliveryReportingParentEmployeeId, setDeliveryReportingParentEmployeeId] = useState(employee?.deliveryReportingParentEmployeeId || suggestedSetup?.deliveryReportingParentEmployeeId || "");
   const [deliveryTrainerEmployeeId, setDeliveryTrainerEmployeeId] = useState(employee?.deliveryTrainerEmployeeId || "");
   const [bootstrapConfirmed, setBootstrapConfirmed] = useState(false);
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
@@ -1407,6 +1410,7 @@ function EmployeeEditor({
                 setDeliveryTrainerEmployeeId("");
               }} className={inputClass}>
                 <option value="MANAGER">Delivery Manager</option>
+                <option value="TEAM_MANAGER">Team Manager</option>
                 <option value="TEAM_LEADER">Team Leader</option>
                 <option value="TRAINER">Delivery Trainer</option>
                 <option value="SENIOR_SME">Senior SME</option>
@@ -1419,7 +1423,7 @@ function EmployeeEditor({
                 <option value="">Select {requiredDeliveryParentRole.replaceAll("_", " ").toLowerCase()}</option>
                 {deliveryParentOptions.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {item.employeeCode}</option>)}
               </select>
-              <span className="text-xs font-normal text-wxIndigo500">Manager → Team Leader. Both Senior SME and Junior SME report directly to the Team Leader.</span>
+              <span className="text-xs font-normal text-wxIndigo500">Delivery Manager → Team Manager → Team Leader. Both Senior SME and Junior SME report directly to the Team Leader.</span>
             </Field> : <div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo600"><span className="font-semibold text-wxIndigo900">Operational parent</span><p className="mt-1">{deliveryResponsibility === "TRAINER" ? "Not applicable. Trainer is a separate relationship." : "Root of the Delivery hierarchy."}</p></div>}
             {deliveryTrainerRequired ? <Field label="Assigned Delivery Trainer">
               <select value={deliveryTrainerEmployeeId} onChange={(event) => setDeliveryTrainerEmployeeId(event.target.value)} required={academyEnabled && deliveryTrainerRequired} className={inputClass}>
@@ -1457,6 +1461,7 @@ function EmployeeEditor({
             <StatusTile label="Reports to" value={employee.deliveryReportingParentName || (deliveryResponsibility === "MANAGER" || deliveryResponsibility === "TRAINER" ? "Not applicable" : "Reassignment required")} icon={<UserRound className="h-4 w-4" />} tone={requiredDeliveryParentRole && !employee.deliveryReportingParentName ? "danger" : undefined}/>
             <StatusTile label="Trainer" value={employee.deliveryTrainerName || (deliveryTrainerRequired ? "Reassignment required" : "Not assigned")} icon={<GraduationCap className="h-4 w-4" />} tone={deliveryTrainerRequired && !employee.deliveryTrainerName ? "danger" : undefined}/>
           </div> : null}
+          {employee && academyArea === "DEVELOPMENT_OPERATIONS" ? <WebsiteDeliveryLearningAssignment employee={employee} /> : null}
         </section>
 
         <div className="flex flex-col gap-2 rounded-md border border-wxBorder bg-wxSurfaceElevated/95 p-3 shadow-lift sm:flex-row sm:items-center sm:justify-between md:sticky md:bottom-20 md:z-20 md:backdrop-blur">
@@ -1467,6 +1472,174 @@ function EmployeeEditor({
         </div>
       </form>
     </div>
+  );
+}
+
+type WebsiteAssignmentPreview = {
+  path: {
+    pathKey: string;
+    title: string;
+    curriculumVersion: string;
+    lessonCount: number;
+    sublessonCount: number;
+    effectiveVersion: number;
+    firstLessonRoute: string;
+  };
+  targets: Array<{ displayName: string; operationalRole: string; existingStatus: string }>;
+  newAssignments: number;
+  existingActiveAssignments: number;
+  reactivations: number;
+  autoAssignmentStatus: string;
+};
+
+function WebsiteDeliveryLearningAssignment({ employee }: { employee: EmployeeDirectoryItem }) {
+  const router = useRouter();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const [reason, setReason] = useState("Website Admin governed Delivery Core learning assignment");
+  const [preview, setPreview] = useState<WebsiteAssignmentPreview | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const active = ["ASSIGNED", "ACTIVE", "PAUSED", "COMPLETED"].includes(employee.learningAssignmentStatus);
+  const canPause = ["ASSIGNED", "ACTIVE"].includes(employee.learningAssignmentStatus);
+  const canResume = employee.learningAssignmentStatus === "PAUSED";
+  const canWithdraw = ["ASSIGNED", "ACTIVE", "PAUSED"].includes(employee.learningAssignmentStatus);
+  const blocker = employee.deliveryHierarchyAttention
+    ? "Complete the Team Manager reporting assignment first."
+    : employee.syncStatus !== "SYNCED" || !employee.academyUserId
+      ? "Complete Academy sync before assigning learning."
+      : !employee.academyEnabled || employee.employmentStatus !== "ACTIVE"
+        ? "Activate the employee and Academy access before assigning learning."
+        : "";
+
+  useEffect(() => {
+    if (!preview) return;
+    const first = dialogRef.current?.querySelector<HTMLElement>("button, input, [href]");
+    first?.focus();
+  }, [preview]);
+
+  function closePreview() {
+    setPreview(null);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  function trapDialog(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closePreview();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), [href]") || []);
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  async function requestAssignment(action: "PREVIEW" | "ASSIGN" | "PAUSE" | "RESUME" | "WITHDRAW") {
+    if (action === "WITHDRAW" && !window.confirm("Withdraw this current learning assignment? Training progress, assessments, evidence and history will be preserved.")) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const response = await fetch(`/api/admin/employees/${employee.id}/learning-assignment`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action, reason })
+    });
+    const payload = await response.json().catch(() => null) as {
+      data?: { result?: { preview?: WebsiteAssignmentPreview } };
+      error?: { message?: string };
+    } | null;
+    setBusy(false);
+    if (!response.ok) {
+      setError(payload?.error?.message || "The learning assignment could not be completed.");
+      return;
+    }
+    const nextPreview = payload?.data?.result?.preview;
+    if (action === "PREVIEW" && nextPreview) {
+      setPreview(nextPreview);
+      return;
+    }
+    setPreview(null);
+    setMessage(action === "PAUSE"
+      ? "Learning assignment paused. Training progress and history were preserved."
+      : action === "RESUME"
+        ? "Learning assignment resumed."
+        : action === "WITHDRAW"
+          ? "Learning assignment withdrawn. Training progress and history were preserved."
+          : active
+            ? "The existing active learning assignment was preserved."
+            : "Delivery Core Learning Path assigned.");
+    router.refresh();
+  }
+
+  return (
+    <section id="delivery-learning-assignment" className="mt-5 scroll-mt-24 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4" aria-labelledby="delivery-learning-assignment-title">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase text-wxViolet700">Learning assignment</p>
+          <h3 id="delivery-learning-assignment-title" className="mt-1 font-semibold text-wxIndigo900">{employee.learningPathTitle || "No learning path assigned"}</h3>
+          <p className="mt-1 text-sm leading-6 text-wxIndigo600">
+            {active
+              ? `${employee.learningAssignmentStatus.replaceAll("_", " ")} · ${employee.learningAssignedAt ? formatAdminTimestamp(employee.learningAssignedAt) : "assignment time pending"}`
+              : "Assign the approved 26-lesson, 266-sublesson Delivery Core Learning Path without bypassing lesson progression."}
+          </p>
+          {employee.learningFirstLessonRoute ? <a href={`https://academy.writex.co.in${employee.learningFirstLessonRoute}`} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-wxViolet700 underline underline-offset-4"><BookOpen className="h-4 w-4" /> Open first lesson route</a> : null}
+        </div>
+        <AdminStatusBadge tone={active ? "success" : "warning"}>{employee.learningAssignmentStatus.replaceAll("_", " ")}</AdminStatusBadge>
+      </div>
+      <label className="mt-4 grid max-w-2xl gap-1.5 text-sm font-semibold text-wxIndigo800">
+        Assignment reason
+        <input value={reason} onChange={(event) => setReason(event.target.value)} minLength={8} maxLength={500} className={inputClass} />
+      </label>
+      {blocker ? <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">{blocker}</p> : null}
+      {error ? <p role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</p> : null}
+      {message ? <p role="status" className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{message}</p> : null}
+      <button ref={triggerRef} type="button" disabled={busy || Boolean(blocker) || reason.trim().length < 8} onClick={() => requestAssignment("PREVIEW")} className="wx-gradient-action mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+        <GraduationCap className="h-4 w-4" /> {busy ? "Checking..." : active ? "Review Assignment" : "Assign Learning"}
+      </button>
+      {canPause || canResume || canWithdraw ? <div className="mt-3 flex flex-wrap gap-2" aria-label="Learning assignment lifecycle">
+        {canPause ? <button type="button" disabled={busy || reason.trim().length < 8} onClick={() => requestAssignment("PAUSE")} className="min-h-10 rounded-md border border-wxBorder bg-wxSurface px-3 text-sm font-semibold text-wxIndigo700 disabled:opacity-50">Pause learning</button> : null}
+        {canResume ? <button type="button" disabled={busy || reason.trim().length < 8} onClick={() => requestAssignment("RESUME")} className="min-h-10 rounded-md border border-emerald-300 bg-emerald-50 px-3 text-sm font-semibold text-emerald-900 disabled:opacity-50">Resume learning</button> : null}
+        {canWithdraw ? <button type="button" disabled={busy || reason.trim().length < 8} onClick={() => requestAssignment("WITHDRAW")} className="min-h-10 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-800 disabled:opacity-50">Withdraw assignment</button> : null}
+      </div> : null}
+
+      {preview ? <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" role="presentation">
+        <section ref={dialogRef} onKeyDown={trapDialog} role="dialog" aria-modal="true" aria-labelledby="assignment-confirmation-title" className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-md border border-wxBorder bg-wxSurface p-5 shadow-lift md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-wxViolet700">Assignment preview</p>
+              <h2 id="assignment-confirmation-title" className="mt-1 text-xl font-semibold text-wxIndigo900">Confirm Delivery learning</h2>
+              <p className="mt-1 text-sm text-wxIndigo600">Nothing is assigned until you confirm.</p>
+            </div>
+            <button type="button" onClick={closePreview} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-wxBorder" aria-label="Close assignment preview"><X className="h-4 w-4" /></button>
+          </div>
+          <dl className="mt-5 grid gap-3 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm sm:grid-cols-2">
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Path</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.path.title}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Effective version</dt><dd className="mt-1 font-semibold text-wxIndigo900">v{preview.path.effectiveVersion}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Target</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets[0]?.displayName} · {preview.targets[0]?.operationalRole.replaceAll("_", " ")}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Target count</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets.length}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Current state</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.targets[0]?.existingStatus.replaceAll("_", " ")}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Effect</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.existingActiveAssignments ? "Preserve existing active assignment" : preview.reactivations ? "Reactivate historical assignment" : "Create one active assignment"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Curriculum</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.path.lessonCount} lessons · {preview.path.sublessonCount} sublessons</dd></div>
+            <div><dt className="text-xs font-semibold uppercase text-wxIndigo500">Auto assignment</dt><dd className="mt-1 font-semibold text-wxIndigo900">{preview.autoAssignmentStatus}</dd></div>
+          </dl>
+          <p className="mt-4 text-sm leading-6 text-wxIndigo600">Assignment enrols this employee in the path. Frozen assessment and prerequisite progression still control later lessons.</p>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={closePreview} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700">Cancel</button>
+            <button type="button" disabled={busy} onClick={() => requestAssignment("ASSIGN")} className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Assigning..." : "Confirm Assignment"}</button>
+          </div>
+        </section>
+      </div> : null}
+    </section>
   );
 }
 
