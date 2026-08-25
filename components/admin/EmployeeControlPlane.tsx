@@ -656,7 +656,153 @@ export function EmployeeDetailControl({
   employees: EmployeeDirectoryItem[];
   teams: EmployeeTeam[];
 }) {
-  return <EmployeeEditor employee={employee} employees={employees} teams={teams} />;
+  return <div className="space-y-6">
+    {employee.academyArea === "DEVELOPMENT_OPERATIONS" && employee.deliveryOperationalRole === "MANAGER"
+      ? <DeliveryManagerHierarchySummary employee={employee} employees={employees} />
+      : null}
+    {employee.academyArea === "DEVELOPMENT_OPERATIONS" && employee.deliveryOperationalRole === "TEAM_MANAGER"
+      ? <TeamManagerTeamLeaderAssignment employee={employee} employees={employees} />
+      : null}
+    <EmployeeEditor employee={employee} employees={employees} teams={teams} />
+  </div>;
+}
+
+function DeliveryManagerHierarchySummary({
+  employee,
+  employees
+}: {
+  employee: EmployeeDirectoryItem;
+  employees: EmployeeDirectoryItem[];
+}) {
+  const teamManagers = employees.filter((item) => item.academyArea === "DEVELOPMENT_OPERATIONS"
+    && item.deliveryOperationalRole === "TEAM_MANAGER"
+    && item.deliveryReportingParentEmployeeId === employee.id
+    && item.employmentStatus === "ACTIVE"
+    && !item.archivedAt);
+  const waitingTeamLeaders = employees.filter((item) => item.academyArea === "DEVELOPMENT_OPERATIONS"
+    && item.deliveryOperationalRole === "TEAM_LEADER"
+    && item.deliveryReportingParentEmployeeId === employee.id
+    && item.deliveryHierarchyAttention === "TEAM_MANAGER_ASSIGNMENT_REQUIRED"
+    && item.employmentStatus === "ACTIVE"
+    && !item.archivedAt);
+
+  return <section className="rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6" aria-labelledby="delivery-manager-hierarchy-title">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <p className="text-xs font-semibold uppercase text-wxViolet700">Delivery reporting control</p>
+        <h2 id="delivery-manager-hierarchy-title" className="mt-1 text-lg font-semibold text-wxIndigo900">Team Manager transition</h2>
+        <p className="mt-1 text-sm leading-6 text-wxIndigo600">Existing employees remain intact. Create Team Managers through the normal employee flow, then assign the waiting Team Leaders from each Team Manager profile.</p>
+      </div>
+      <Link href="/admin/employees" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxViolet700">
+        <Plus className="h-4 w-4" /> Add Team Manager
+      </Link>
+    </div>
+    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      <div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4">
+        <h3 className="font-semibold text-wxIndigo900">Team Managers</h3>
+        {teamManagers.length ? <ul className="mt-3 space-y-2">
+          {teamManagers.map((item) => <li key={item.id}><Link href={`/admin/employees/${item.id}`} className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-wxBorder bg-wxSurface px-3 text-sm font-semibold text-wxIndigo800 hover:border-wxViolet700"><span>{item.displayName} · {item.employeeCode}</span><span className="text-xs text-wxViolet700">Manage</span></Link></li>)}
+        </ul> : <p className="mt-2 text-sm text-wxIndigo600">No active Team Manager is assigned yet.</p>}
+      </div>
+      <div
+        className="rounded-md border p-4 text-wxIndigo900"
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--wx-orange) 9%, var(--wx-surface))",
+          borderColor: "color-mix(in srgb, var(--wx-orange) 40%, var(--wx-border))"
+        }}
+      >
+        <h3 className="font-semibold text-wxIndigo900">Team Leaders awaiting Team Manager assignment</h3>
+        {waitingTeamLeaders.length ? <ul className="mt-3 space-y-2">
+          {waitingTeamLeaders.map((item) => <li key={item.id}><Link href={`/admin/employees/${item.id}`} className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-wxBorder bg-wxSurface px-3 text-sm font-semibold text-wxIndigo900 hover:border-wxViolet700"><span>{item.displayName} · {item.employeeCode}</span><span className="text-xs text-wxViolet700">Review</span></Link></li>)}
+        </ul> : <p className="mt-2 text-sm text-wxIndigo600">No Team Leader is waiting in this Manager scope.</p>}
+      </div>
+    </div>
+  </section>;
+}
+
+function TeamManagerTeamLeaderAssignment({
+  employee,
+  employees
+}: {
+  employee: EmployeeDirectoryItem;
+  employees: EmployeeDirectoryItem[];
+}) {
+  const router = useRouter();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const assigned = employees.filter((item) => item.academyArea === "DEVELOPMENT_OPERATIONS"
+    && item.deliveryOperationalRole === "TEAM_LEADER"
+    && item.deliveryReportingParentEmployeeId === employee.id
+    && item.employmentStatus === "ACTIVE"
+    && !item.archivedAt);
+  const eligible = employees.filter((item) => item.academyArea === "DEVELOPMENT_OPERATIONS"
+    && item.deliveryOperationalRole === "TEAM_LEADER"
+    && item.deliveryReportingParentEmployeeId === employee.deliveryReportingParentEmployeeId
+    && item.deliveryHierarchyAttention === "TEAM_MANAGER_ASSIGNMENT_REQUIRED"
+    && item.employmentStatus === "ACTIVE"
+    && item.academyEnabled
+    && !item.archivedAt);
+
+  function toggle(employeeId: string) {
+    setSelected((current) => current.includes(employeeId)
+      ? current.filter((item) => item !== employeeId)
+      : [...current, employeeId]);
+  }
+
+  async function assign() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const response = await fetch(`/api/admin/employees/${employee.id}/team-leaders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        teamLeaderEmployeeIds: selected,
+        reason: "FOUNDER_TEAM_MANAGER_LAYER_INSERTION"
+      })
+    });
+    const payload = await response.json().catch(() => null) as {
+      data?: { sync?: Array<{ synced?: boolean; error?: string }> };
+      error?: { message?: string };
+    } | null;
+    setBusy(false);
+    if (!response.ok) {
+      setError(payload?.error?.message || "The Team Leaders could not be assigned.");
+      return;
+    }
+    const failedSyncs = payload?.data?.sync?.filter((item) => !item.synced) || [];
+    setConfirming(false);
+    setSelected([]);
+    setMessage(failedSyncs.length
+      ? `Reporting relationships were saved, but ${failedSyncs.length} Academy sync requires attention.`
+      : "Team Leader reporting relationships were assigned and synchronised.");
+    router.refresh();
+  }
+
+  return <section className="rounded-lg border border-wxBorder bg-wxSurface p-5 shadow-soft md:p-6" aria-labelledby="team-manager-assignment-title">
+    <div>
+      <p className="text-xs font-semibold uppercase text-wxViolet700">Delivery reporting control</p>
+      <h2 id="team-manager-assignment-title" className="mt-1 text-lg font-semibold text-wxIndigo900">Assign Team Leaders</h2>
+      <p className="mt-1 text-sm leading-6 text-wxIndigo600">Select one or several existing Team Leaders from this Delivery Manager scope. Identity, access, learning progress, assessments, and history are preserved.</p>
+    </div>
+    {!employee.deliveryReportingParentEmployeeId ? <p className="mt-4 rounded-md border border-wxBorder bg-wxSurfaceSoft px-4 py-3 text-sm text-wxIndigo800">Assign this Team Manager to an active Delivery Manager first.</p> : null}
+    {assigned.length ? <div className="mt-5">
+      <h3 className="text-sm font-semibold text-wxIndigo900">Currently assigned</h3>
+      <div className="mt-2 flex flex-wrap gap-2">{assigned.map((item) => <Link key={item.id} href={`/admin/employees/${item.id}`} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">{item.displayName} · {item.employeeCode}</Link>)}</div>
+    </div> : null}
+    <fieldset className="mt-5" disabled={!employee.deliveryReportingParentEmployeeId || busy}>
+      <legend className="text-sm font-semibold text-wxIndigo900">Eligible Team Leaders</legend>
+      {eligible.length ? <div className="mt-2 grid gap-2 md:grid-cols-2">{eligible.map((item) => <label key={item.id} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-md border border-wxBorder bg-wxSurfaceSoft px-3 py-2 text-sm font-semibold text-wxIndigo800"><input type="checkbox" checked={selected.includes(item.id)} onChange={() => toggle(item.id)} className="h-4 w-4 accent-violet-700" /><span>{item.displayName} · {item.employeeCode}</span></label>)}</div>
+        : <p className="mt-2 text-sm text-wxIndigo600">No Team Leader is awaiting assignment in this Delivery Manager scope.</p>}
+    </fieldset>
+    {error ? <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</p> : null}
+    {message ? <p role="status" className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{message}</p> : null}
+    {eligible.length ? <button type="button" disabled={!selected.length || busy} onClick={() => setConfirming(true)} className="wx-gradient-action mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50"><UsersRound className="h-4 w-4" /> Assign selected Team Leaders</button> : null}
+    {confirming ? <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" role="presentation"><section role="dialog" aria-modal="true" aria-labelledby="confirm-team-leader-assignment" className="w-full max-w-lg rounded-md border border-wxBorder bg-wxSurface p-5 shadow-lift md:p-6"><h2 id="confirm-team-leader-assignment" className="text-lg font-semibold text-wxIndigo900">Confirm Team Leader assignment</h2><p className="mt-2 text-sm leading-6 text-wxIndigo600">Assign {selected.length} existing Team Leader{selected.length === 1 ? "" : "s"} to {employee.displayName}? No employee or learning record will be recreated.</p><div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={() => setConfirming(false)} className="min-h-11 rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700">Cancel</button><button type="button" disabled={busy} onClick={assign} className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Assigning..." : "Confirm assignment"}</button></div></section></div> : null}
+  </section>;
 }
 
 type LifecycleDialog =

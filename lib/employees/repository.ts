@@ -625,6 +625,135 @@ export async function updateEmployee(employeeId: string, input: EmployeeMutation
   });
 }
 
+export type DeliveryTeamLeaderAssignmentResult = {
+  teamManagerEmployeeId: string;
+  deliveryManagerEmployeeId: string;
+  assignedTeamLeaderEmployeeIds: string[];
+};
+
+export async function assignDeliveryTeamLeadersToTeamManager({
+  teamManagerEmployeeId,
+  teamLeaderEmployeeIds,
+  actor,
+  reason
+}: {
+  teamManagerEmployeeId: string;
+  teamLeaderEmployeeIds: string[];
+  actor: AdminSession;
+  reason: "FOUNDER_TEAM_MANAGER_LAYER_INSERTION";
+}): Promise<DeliveryTeamLeaderAssignmentResult> {
+  return withDbTransaction(async (query) => {
+    const teamManagerRows = await query<{
+      employee_id: string;
+      delivery_reporting_parent_employee_id: string | null;
+    }>(
+      `select a.employee_id,a.delivery_reporting_parent_employee_id
+       from employee_application_access a
+       join employees e on e.id=a.employee_id
+       where a.employee_id=$1 and a.application_key=$2
+         and a.academy_area='DEVELOPMENT_OPERATIONS'
+         and a.delivery_operational_role='TEAM_MANAGER'
+         and a.enabled and e.employment_status='ACTIVE' and e.archived_at is null
+       for update`,
+      [teamManagerEmployeeId, academyApplicationKey]
+    );
+    const teamManager = teamManagerRows[0];
+    if (!teamManager) {
+      throw new ApiError(404, "NOT_FOUND", "An active Delivery Team Manager was not found.");
+    }
+    if (!teamManager.delivery_reporting_parent_employee_id) {
+      throw new ApiError(409, "BAD_REQUEST", "Assign this Team Manager to an active Delivery Manager first.");
+    }
+
+    const deliveryManagerRows = await query<{ employee_id: string }>(
+      `select a.employee_id
+       from employee_application_access a
+       join employees e on e.id=a.employee_id
+       where a.employee_id=$1 and a.application_key=$2
+         and a.academy_area='DEVELOPMENT_OPERATIONS'
+         and a.delivery_operational_role='MANAGER'
+         and a.enabled and e.employment_status='ACTIVE' and e.archived_at is null
+       for update`,
+      [teamManager.delivery_reporting_parent_employee_id, academyApplicationKey]
+    );
+    if (!deliveryManagerRows[0]) {
+      throw new ApiError(409, "BAD_REQUEST", "The Team Manager must report to an active Delivery Manager.");
+    }
+
+    const teamLeaders = await query<{
+      employee_id: string;
+      delivery_reporting_parent_employee_id: string | null;
+    }>(
+      `select a.employee_id,a.delivery_reporting_parent_employee_id
+       from employee_application_access a
+       join employees e on e.id=a.employee_id
+       where a.employee_id=any($1::uuid[]) and a.application_key=$2
+         and a.academy_area='DEVELOPMENT_OPERATIONS'
+         and a.delivery_operational_role='TEAM_LEADER'
+         and a.enabled and e.employment_status='ACTIVE' and e.archived_at is null
+       for update`,
+      [teamLeaderEmployeeIds, academyApplicationKey]
+    );
+    if (teamLeaders.length !== teamLeaderEmployeeIds.length) {
+      throw new ApiError(409, "BAD_REQUEST", "Every selected employee must be an active Delivery Team Leader.");
+    }
+
+    const allowedCurrentParents = new Set([
+      teamManagerEmployeeId,
+      teamManager.delivery_reporting_parent_employee_id
+    ]);
+    const wrongScope = teamLeaders.find((teamLeader) =>
+      !teamLeader.delivery_reporting_parent_employee_id
+      || !allowedCurrentParents.has(teamLeader.delivery_reporting_parent_employee_id)
+    );
+    if (wrongScope) {
+      throw new ApiError(
+        409,
+        "BAD_REQUEST",
+        "A selected Team Leader belongs to another Delivery Manager or Team Manager scope. Reconcile that hierarchy separately."
+      );
+    }
+
+    for (const teamLeader of teamLeaders) {
+      await query(
+        `update employee_application_access
+         set delivery_reporting_parent_employee_id=$3,
+             delivery_hierarchy_attention=null,
+             sync_status=case when external_application_user_id is not null then 'PENDING' else sync_status end,
+             last_sync_error=null,
+             sync_version=sync_version + case when external_application_user_id is not null then 1 else 0 end
+         where employee_id=$1 and application_key=$2`,
+        [teamLeader.employee_id, academyApplicationKey, teamManagerEmployeeId]
+      );
+      await query(
+        `insert into audit_logs
+          (actor_type,actor_id,actor_email,entity_type,entity_id,action,metadata)
+         values ('admin',$1,$2,'employee',$3,'delivery_team_manager_layer_inserted',$4::jsonb)`,
+        [
+          actor.adminUserId,
+          actor.email,
+          teamLeader.employee_id,
+          JSON.stringify({
+            previousParentEmployeeId: teamLeader.delivery_reporting_parent_employee_id,
+            newParentEmployeeId: teamManagerEmployeeId,
+            deliveryManagerEmployeeId: teamManager.delivery_reporting_parent_employee_id,
+            reason,
+            employeeIdentityPreserved: true,
+            learningHistoryPreserved: true,
+            batchAssignment: teamLeaderEmployeeIds.length > 1
+          })
+        ]
+      );
+    }
+
+    return {
+      teamManagerEmployeeId,
+      deliveryManagerEmployeeId: teamManager.delivery_reporting_parent_employee_id,
+      assignedTeamLeaderEmployeeIds: teamLeaders.map((teamLeader) => teamLeader.employee_id)
+    };
+  });
+}
+
 export type EmployeeLifecycleMutation =
   | { action: "DEACTIVATE"; reason: string }
   | { action: "ARCHIVE"; reason: string }

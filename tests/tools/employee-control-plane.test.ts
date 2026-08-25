@@ -319,3 +319,23 @@ test("Website Admin governs Delivery learning assignment lifecycle without delet
   assert.match(controlPlane, /Withdraw assignment/);
   assert.match(controlPlane, /Training progress and history were preserved/);
 });
+
+test("Website Admin inserts Team Manager with governed one-or-many Team Leader assignment", async () => {
+  const validation = await read("lib/employees/validation.ts");
+  const repository = await read("lib/employees/repository.ts");
+  const route = await read("app/api/admin/employees/[employeeId]/team-leaders/route.ts");
+  const controlPlane = await read("components/admin/EmployeeControlPlane.tsx");
+  assert.match(validation, /deliveryTeamLeaderAssignmentSchema/);
+  assert.match(validation, /FOUNDER_TEAM_MANAGER_LAYER_INSERTION/);
+  assert.match(repository, /assignDeliveryTeamLeadersToTeamManager/);
+  assert.match(repository, /batchAssignment/);
+  assert.match(repository, /learningHistoryPreserved: true/);
+  assert.match(repository, /for update/);
+  assert.match(route, /attemptEmployeeAcademySync/);
+  assert.match(controlPlane, /Team Leaders awaiting Team Manager assignment/);
+  assert.match(controlPlane, /color-mix\(in srgb, var\(--wx-orange\) 9%, var\(--wx-surface\)\)/);
+  assert.doesNotMatch(controlPlane, /Team Leaders awaiting Team Manager assignment[\s\S]{0,600}bg-amber-50/);
+  assert.match(controlPlane, /Assign selected Team Leaders/);
+  assert.match(controlPlane, /Select one or several existing Team Leaders/);
+  assert.match(controlPlane, /No employee or learning record will be recreated/);
+});

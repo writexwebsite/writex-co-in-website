@@ -54,6 +54,10 @@ export default async function EmployeePreviewPage({
   const params = await searchParams;
   const employeeId = params.view === "superadmin"
     ? employeePreviewIds.superAdmin
+    : params.view === "delivery-manager"
+      ? employeePreviewIds.deliveryManager
+    : params.view === "delivery-team-manager"
+      ? employeePreviewIds.deliveryTeamManager
     : params.view === "delivery-assigned"
       ? employeePreviewIds.seniorSme
     : params.view === "delivery"
@@ -113,7 +117,7 @@ export default async function EmployeePreviewPage({
         : "Development-only visual preview of the WP1.5 employee control plane."}
     >
       {employee ? (
-        <EmployeeDetailControl employee={employee} employees={employeePreviewItems} teams={employeePreviewTeams} />
+        <EmployeeDetailControl employee={employee} employees={setupEmployees} teams={employeePreviewTeams} />
       ) : (
         <EmployeeDirectoryControl
           employees={params.state === "empty" ? [] : filteredEmployees}

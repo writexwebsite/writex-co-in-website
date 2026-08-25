@@ -64,3 +64,9 @@ export const employeePermanentDeleteSchema = z.object({
   mode: z.enum(["ZERO_HISTORY", "FULL_PURGE"]),
   acknowledged: z.literal(true)
 });
+
+export const deliveryTeamLeaderAssignmentSchema = z.object({
+  teamLeaderEmployeeIds: z.array(z.uuid()).min(1).max(50)
+    .transform((ids) => [...new Set(ids)]),
+  reason: z.literal("FOUNDER_TEAM_MANAGER_LAYER_INSERTION")
+});
