@@ -51,6 +51,11 @@ create table if not exists axo_webhook_deliveries (
 create index if not exists axo_webhook_deliveries_retry_idx
   on axo_webhook_deliveries (status, next_attempt_at);
 
-insert into schema_migrations (migration_name)
+create table if not exists axo_api_schema_migrations (
+  migration_name text primary key,
+  applied_at timestamptz not null default now()
+);
+
+insert into axo_api_schema_migrations (migration_name)
 values ('20260826_axo_control_api_v1')
 on conflict (migration_name) do nothing;
