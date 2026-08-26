@@ -108,7 +108,7 @@ export function ServiceCard({ service, icon: Icon = BookOpenCheck }: ServiceCard
           </li>
         ))}
       </ul>
-      <span className={cn("mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold transition duration-200", accent.text)}>
+      <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-wxIndigo700 transition duration-200 group-hover:text-wxIndigo900">
         View Service
         <ArrowRight
           className="h-4 w-4 transition duration-200 group-hover:translate-x-1"

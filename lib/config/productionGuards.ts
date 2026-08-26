@@ -41,8 +41,36 @@ export function getProductionReadiness() {
   if (has("AWS_S3_BUCKET") && !has("AWS_REGION")) {
     warnings.push("AWS region should be configured with the S3 bucket.");
   }
+  if (
+    isProd &&
+    !(
+      has("AWS_REGION") &&
+      has("AWS_ACCESS_KEY_ID") &&
+      has("AWS_SECRET_ACCESS_KEY") &&
+      has("AWS_S3_BUCKET") &&
+      has("AWS_S3_PRIVATE_PREFIX")
+    )
+  ) {
+    blockers.push("Private AWS S3 storage is required.");
+  }
   if (has("RESEND_API_KEY") && !has("QUOTE_NOTIFICATION_EMAIL")) {
     warnings.push("Quote notification email is missing.");
+  }
+  const smtpConfigured = has("SMTP_HOST") && has("SMTP_FROM_EMAIL");
+  if (isProd && !smtpConfigured && !has("RESEND_API_KEY")) {
+    blockers.push("Transactional email delivery is required.");
+  }
+  if (isProd && !has("QUOTE_NOTIFICATION_EMAIL")) {
+    blockers.push("Quote notification recipient is required.");
+  }
+  if (isProd && !has("CONTACT_NOTIFICATION_EMAIL")) {
+    blockers.push("Contact notification recipient is required.");
+  }
+  if (isProd && (process.env.INTEGRATION_MODE !== "live" || !has("LTS_API_BASE_URL") || !has("LTS_API_KEY"))) {
+    blockers.push("Live LTS integration is required for client authentication.");
+  }
+  if (isProd && !(has("EMPLOYEE_AUTH_API_BASE_URL") || has("EMPLOYEE_DIRECTORY_API_BASE_URL"))) {
+    blockers.push("Employee authentication directory is required.");
   }
   if (isProd && !has("JOB_SECRET")) blockers.push("Job route secret is required.");
 

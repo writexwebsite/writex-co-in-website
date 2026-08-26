@@ -16,13 +16,9 @@ export function organizationSchema() {
     logo: absoluteUrl("/images/original/writex-logo-300.png"),
     email: siteConfig.email,
     telephone: siteConfig.primaryPhone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "42A, Express Tower, Auckland Square",
-      addressLocality: "Kolkata",
-      addressRegion: "West Bengal",
-      postalCode: "700017",
-      addressCountry: "IN"
+    location: {
+      "@type": "Place",
+      name: siteConfig.address
     },
     contactPoint: [
       {

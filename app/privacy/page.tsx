@@ -7,7 +7,7 @@ import { breadcrumbSchema } from "@/lib/schema";
 import { buildMetadata } from "@/lib/site";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Privacy Policy",
+  title: "Privacy Policy and Data Handling",
   description:
     "Privacy policy for WriteX academic support enquiries, quote requests, file handling, contact details, and communication preferences.",
   path: "/privacy"
@@ -65,6 +65,22 @@ export default function PrivacyPage() {
               [
                 "Employee Login data",
                 "Employee authentication and activity records may be processed to control role-based access, protect internal systems, and maintain operational accountability."
+              ],
+              [
+                "Careers and hiring data",
+                "Candidate applications may include contact details, qualifications, work history, availability, role answers, relationship disclosures, private files, interview records, assessment responses, and consent records. These are used for human-reviewed recruitment and security operations."
+              ],
+              [
+                "Assessment monitoring",
+                "Candidate-specific assessments may record autosave, timing, copy or paste attempts, focus changes, reconnects, and similar integrity events. These signals support human review and do not cause automatic rejection by themselves."
+              ],
+              [
+                "Candidate verification",
+                "With appropriate consent, authorised reviewers may assess identity, education, employment, reference, or background evidence. A manual review is not presented as electronic, police, or government verification unless an approved provider supplies that exact result."
+              ],
+              [
+                "Hiring retention and deletion",
+                "Candidate records receive an operational review date based on whether the application is active, selected, joined, rejected, withdrawn, expired, or held in the talent pool. Eligible deletion requests are processed subject to identity checks, security records, documented legal holds, and applicable obligations."
               ],
               [
                 "Cookies",

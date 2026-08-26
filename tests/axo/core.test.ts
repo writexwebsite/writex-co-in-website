@@ -4,6 +4,7 @@ import { AXO_MASCOT_STATES, AXO_SERVICES } from "../../lib/axo/config";
 import { AXO_UNKNOWN_ANSWER, searchApprovedKnowledge } from "../../lib/axo/knowledge";
 import { sanitizeAxoAnalytics } from "../../lib/axo/analytics";
 import { axoContactSchema, buildRequirementSummary, requiredFieldsForService, validateAxoFile } from "../../lib/axo/rules";
+import { isAxoRouteEligible } from "../../lib/axo/visibility";
 
 test("uses only approved public service categories", () => {
   assert.deepEqual(AXO_SERVICES.map(({ id }) => id), ["coursework", "dissertation", "sop", "editing", "originality", "formatting"]);
@@ -45,4 +46,38 @@ test("approved FAQ search falls back without fabrication", () => {
 
 test("all required mascot emotional states have mappings", () => {
   for (const state of ["idle", "welcoming", "attentive", "curious", "thinking", "guiding", "reassuring", "waiting", "concerned", "pleased", "successful", "unavailable"]) assert.ok(state in AXO_MASCOT_STATES);
+});
+
+test("shows AXO on every approved public route", () => {
+  const publicRoutes = [
+    "/",
+    "/about-us",
+    "/trust-centre",
+    "/pricing",
+    "/contact",
+    "/help",
+    "/samples",
+    "/reviews",
+    "/assignment-support",
+    "/dissertation-thesis-support",
+    "/editing-proofreading",
+    "/sop-admissions-writing",
+    "/plagiarism-ai-review",
+    "/formatting-referencing"
+  ];
+
+  for (const route of publicRoutes) assert.equal(isAxoRouteEligible(route), true, route);
+});
+
+test("keeps AXO out of admin and authenticated portal routes", () => {
+  const excludedRoutes = [
+    "/admin",
+    "/admin/leads",
+    "/client-login",
+    "/client/dashboard",
+    "/employee-login",
+    "/employee/operations"
+  ];
+
+  for (const route of excludedRoutes) assert.equal(isAxoRouteEligible(route), false, route);
 });

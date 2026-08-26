@@ -54,7 +54,7 @@ export function AxoScrollStory({ variant }: { variant: AxoStoryVariant }) {
       <div className="sticky top-0 h-[100svh] overflow-hidden border-r border-wxBorder">
         <div aria-hidden className="absolute inset-0 bg-hero-spectrum" />
         <div aria-hidden className={`absolute inset-[12%] rounded-full bg-brand-spectrum opacity-[0.09] blur-3xl transition-opacity duration-700 ${transitioning ? "opacity-20" : ""}`} />
-        <div className="absolute left-[7%] top-[6%] z-20"><BrandLogo markClassName="h-14 w-52 2xl:h-16 2xl:w-60" /></div>
+        <div className="absolute left-[7%] top-[6%] z-20"><BrandLogo markClassName="w-52 2xl:w-60" sizes="(min-width: 1536px) 240px, 208px" /></div>
         <div className={`absolute inset-0 transition-transform duration-700 ${transitioning ? "scale-[1.025]" : ""}`}>
           {checked && capable ? (
             <AxoWebGLScene variant={variant} progress={progress} pointer={pointer} active={visible} transitioning={transitioning} />

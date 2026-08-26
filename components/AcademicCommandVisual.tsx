@@ -100,11 +100,9 @@ export function AcademicCommandVisual() {
             return (
               <motion.li
                 key={step.label}
+                data-state={active ? "selected" : "default"}
                 className={cn(
-                  "relative grid grid-cols-[2.25rem_1fr] gap-3 rounded-md border p-3",
-                  active
-                    ? "border-wxViolet700/25 bg-white"
-                    : "border-wxBorder bg-white/70"
+                  "wx-interactive-state relative grid grid-cols-[2.25rem_1fr] gap-3 rounded-md border p-3"
                 )}
                 style={{
                   boxShadow: active ? `0 12px 28px ${step.color}1F` : undefined
@@ -119,10 +117,10 @@ export function AcademicCommandVisual() {
                 >
                 <span
                   className={cn(
-                    "relative z-10 flex h-9 w-9 items-center justify-center rounded-md border",
+                    "wx-state-icon-surface relative z-10 flex h-9 w-9 items-center justify-center rounded-md border",
                     active
-                      ? "border-transparent text-white"
-                      : "border-wxBorder bg-wxSurfaceSoft"
+                      ? "border-transparent"
+                      : "border-wxBorder"
                   )}
                   style={{
                     backgroundColor: active ? step.color : "#F3EBFD",
@@ -135,7 +133,7 @@ export function AcademicCommandVisual() {
                   <span className="block text-sm font-semibold text-wxIndigo900">
                     {step.label}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-wxIndigo500">
+                  <span className="wx-state-muted mt-0.5 block text-xs leading-5">
                     {step.detail}
                   </span>
                 </span>

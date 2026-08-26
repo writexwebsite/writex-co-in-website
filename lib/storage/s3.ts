@@ -3,17 +3,16 @@ import "server-only";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  PutObjectCommand,
-  S3Client
+  HeadObjectCommand,
+  PutObjectCommand
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ApiError } from "@/lib/api/response";
 import { dbQuery } from "@/lib/db";
-import { isProduction } from "@/lib/security";
-
-const globalForS3 = globalThis as typeof globalThis & {
-  writexS3Client?: S3Client;
-};
+import {
+  getS3Runtime,
+  isS3RuntimeConfigured
+} from "@/lib/storage/s3-config";
 
 export type FileAssetType =
   | "quote_brief"
@@ -25,6 +24,14 @@ export type FileAssetType =
   | "preview"
   | "final_delivery"
   | "revision_attachment"
+  | "trust_report_evidence"
+  | "hiring_candidate_file"
+  | "hiring_assessment_file"
+  | "hiring_verification_file"
+  | "hiring_voice_file"
+  | "hiring_interview_file"
+  | "holiday_theme_asset"
+  | "festival_pack_zip"
   | "other";
 
 type UploadFileInput = {
@@ -34,6 +41,7 @@ type UploadFileInput = {
   assetType: FileAssetType;
   invoiceId?: string;
   quoteLeadId?: string;
+  holidayAssetRole?: string;
 };
 
 type BuildS3KeyInput = {
@@ -41,6 +49,7 @@ type BuildS3KeyInput = {
   quoteLeadId?: string;
   invoiceId?: string;
   fileName: string;
+  holidayAssetRole?: string;
 };
 
 const quoteAssetFolders: Partial<Record<FileAssetType, string>> = {
@@ -51,49 +60,6 @@ const quoteAssetFolders: Partial<Record<FileAssetType, string>> = {
   dissertation_chapter: "dissertation-chapters",
   other: "other"
 };
-
-function isS3Configured() {
-  return Boolean(
-    process.env.AWS_REGION &&
-      process.env.AWS_ACCESS_KEY_ID &&
-      process.env.AWS_SECRET_ACCESS_KEY &&
-      process.env.AWS_S3_BUCKET
-  );
-}
-
-function assertS3Configured() {
-  if (!isS3Configured()) {
-    throw new ApiError(
-      503,
-      "NOT_CONFIGURED",
-      isProduction()
-        ? "Secure file storage is not configured."
-        : "Secure file storage is not configured for this environment."
-    );
-  }
-}
-
-function getS3Client() {
-  assertS3Configured();
-
-  if (!globalForS3.writexS3Client) {
-    globalForS3.writexS3Client = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ""
-      }
-    });
-  }
-
-  return globalForS3.writexS3Client;
-}
-
-function getBucketName() {
-  assertS3Configured();
-
-  return process.env.AWS_S3_BUCKET || "";
-}
 
 export function sanitizeFileName(fileName: string) {
   const sanitized = fileName
@@ -110,10 +76,10 @@ export function buildS3Key({
   type,
   quoteLeadId,
   invoiceId,
-  fileName
+  fileName,
+  holidayAssetRole
 }: BuildS3KeyInput) {
-  const privatePrefix = (process.env.AWS_S3_PRIVATE_PREFIX || "writex")
-    .replace(/^\/+|\/+$/g, "");
+  const privatePrefix = getS3Runtime().privatePrefix;
   const safeFileName = `${crypto.randomUUID()}-${sanitizeFileName(fileName)}`;
 
   if (type === "payment_proof") {
@@ -132,6 +98,54 @@ export function buildS3Key({
     return `${privatePrefix}/revision-requests/${invoiceId || "pending"}/${safeFileName}`;
   }
 
+  if (type === "trust_report_evidence") {
+    return `${privatePrefix}/trust-centre/reports/${safeFileName}`;
+  }
+
+  if (type === "hiring_candidate_file") {
+    return `${privatePrefix}/hiring/candidates/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "hiring_assessment_file") {
+    return `${privatePrefix}/hiring/assessments/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "hiring_verification_file") {
+    return `${privatePrefix}/hiring/verification/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "hiring_voice_file") {
+    return `${privatePrefix}/hiring/voice/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "hiring_interview_file") {
+    return `${privatePrefix}/hiring/interviews/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "holiday_theme_asset") {
+    const holidayFolder =
+      holidayAssetRole === "audio"
+        ? "audio"
+        : holidayAssetRole === "axo" || holidayAssetRole === "axo_animation"
+          ? "axo"
+          : holidayAssetRole?.startsWith("login_") ||
+              holidayAssetRole === "mobile_fallback" ||
+              holidayAssetRole === "reduced_motion"
+            ? "login"
+            : holidayAssetRole === "decorative_overlay" ||
+                holidayAssetRole === "particle_overlay" ||
+                holidayAssetRole === "logo_overlay" ||
+                holidayAssetRole === "header" ||
+                holidayAssetRole === "supporting"
+              ? "decorations"
+              : "themes";
+    return `${privatePrefix}/writex/holiday/${holidayFolder}/${invoiceId || "unassigned"}/${safeFileName}`;
+  }
+
+  if (type === "festival_pack_zip") {
+    return `${privatePrefix}/writex/holiday/packs/${invoiceId || "unassigned"}/${safeFileName}`;
+  }
+
   const folder = quoteAssetFolders[type] || "other";
   const owner = quoteLeadId || `pending/${crypto.randomUUID()}`;
 
@@ -139,7 +153,7 @@ export function buildS3Key({
 }
 
 export function isStorageConfigured() {
-  return isS3Configured();
+  return isS3RuntimeConfigured();
 }
 
 export async function uploadFileToS3(
@@ -150,12 +164,14 @@ export async function uploadFileToS3(
     type: options.assetType,
     quoteLeadId: options.quoteLeadId,
     invoiceId: options.invoiceId,
+    holidayAssetRole: options.holidayAssetRole,
     fileName: options.fileName
   });
 
-  await getS3Client().send(
+  const { client, bucket } = getS3Runtime();
+  await client.send(
     new PutObjectCommand({
-      Bucket: getBucketName(),
+      Bucket: bucket,
       Key: s3Key,
       Body: fileBuffer,
       ContentType: options.mimeType,
@@ -177,16 +193,26 @@ export async function uploadFile(input: UploadFileInput) {
     mimeType: input.mimeType,
     assetType: input.assetType,
     invoiceId: input.invoiceId,
-    quoteLeadId: input.quoteLeadId
+    quoteLeadId: input.quoteLeadId,
+    holidayAssetRole: input.holidayAssetRole
   });
 }
 
-export async function getSignedPreviewUrl(s3Key: string, expiresInSeconds = 300) {
+export async function getSignedPreviewUrl(
+  s3Key: string,
+  expiresInSeconds = 300,
+  options: { fileName?: string; mimeType?: string } = {}
+) {
+  const { client, bucket } = getS3Runtime();
   return getSignedUrl(
-    getS3Client(),
+    client,
     new GetObjectCommand({
-      Bucket: getBucketName(),
-      Key: s3Key
+      Bucket: bucket,
+      Key: s3Key,
+      ResponseContentDisposition: options.fileName
+        ? `inline; filename="${sanitizeFileName(options.fileName)}"`
+        : "inline",
+      ResponseContentType: options.mimeType
     }),
     { expiresIn: expiresInSeconds }
   );
@@ -199,10 +225,76 @@ export async function getSignedDownloadUrl(
   return getSignedPreviewUrl(s3Key, expiresInSeconds);
 }
 
+export async function getPrivateObjectBuffer(
+  s3Key: string,
+  maxBytes = 10 * 1024 * 1024
+) {
+  const { client, bucket } = getS3Runtime();
+  const response = await client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: s3Key
+    })
+  );
+
+  if ((response.ContentLength || 0) > maxBytes) {
+    throw new ApiError(413, "BAD_REQUEST", "This file is too large to preview.");
+  }
+
+  if (!response.Body) {
+    throw new ApiError(404, "NOT_FOUND", "The private file could not be read.");
+  }
+
+  const bytes = await response.Body.transformToByteArray();
+  if (bytes.byteLength > maxBytes) {
+    throw new ApiError(413, "BAD_REQUEST", "This file is too large to preview.");
+  }
+
+  return Buffer.from(bytes);
+}
+
+export async function getPrivateObjectMetadata(s3Key: string) {
+  const { client, bucket } = getS3Runtime();
+  const response = await client.send(
+    new HeadObjectCommand({
+      Bucket: bucket,
+      Key: s3Key
+    })
+  );
+  return {
+    contentLength: Number(response.ContentLength || 0),
+    contentType: response.ContentType || null,
+    etag: response.ETag || null,
+    lastModified: response.LastModified || null
+  };
+}
+
+export async function putPrivateObjectAtKey({
+  s3Key,
+  buffer,
+  mimeType
+}: {
+  s3Key: string;
+  buffer: Buffer;
+  mimeType: string;
+}) {
+  const { client, bucket } = getS3Runtime();
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: s3Key,
+      Body: buffer,
+      ContentType: mimeType,
+      ServerSideEncryption: "AES256"
+    })
+  );
+}
+
 export async function deleteFileFromS3(s3Key: string) {
-  await getS3Client().send(
+  const { client, bucket } = getS3Runtime();
+  await client.send(
     new DeleteObjectCommand({
-      Bucket: getBucketName(),
+      Bucket: bucket,
       Key: s3Key
     })
   );

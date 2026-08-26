@@ -256,10 +256,51 @@ export const adminLoginSchema = z.object({
   password: z.string().min(8)
 });
 
-export const futureClientLoginSchema = z.object({
-  invoiceId: z.string().trim().min(3),
-  whatsapp: z.string().trim().min(8)
-});
+const strongAdminPassword = z
+  .string()
+  .min(14, "Use at least 14 characters.")
+  .max(128, "Password is too long.")
+  .regex(/[a-z]/, "Add a lowercase letter.")
+  .regex(/[A-Z]/, "Add an uppercase letter.")
+  .regex(/[0-9]/, "Add a number.")
+  .regex(/[^A-Za-z0-9]/, "Add a symbol.");
+
+export const adminChangePasswordSchema = z
+  .object({
+    newPassword: strongAdminPassword,
+    confirmPassword: z.string()
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"]
+  });
+
+export const futureClientLoginSchema = z
+  .object({
+    invoiceNumber: z.string().trim().min(3).optional(),
+    mobile: z.string().trim().min(8).optional(),
+    invoiceId: z.string().trim().min(3).optional(),
+    whatsapp: z.string().trim().min(8).optional()
+  })
+  .transform((value, context) => {
+    const invoiceId = value.invoiceNumber || value.invoiceId;
+    const whatsapp = value.mobile || value.whatsapp;
+    if (!invoiceId) {
+      context.addIssue({
+        code: "custom",
+        path: ["invoiceNumber"],
+        message: "Invoice number is required."
+      });
+    }
+    if (!whatsapp) {
+      context.addIssue({
+        code: "custom",
+        path: ["mobile"],
+        message: "Registered mobile number is required."
+      });
+    }
+    return { invoiceId: invoiceId || "", whatsapp: whatsapp || "" };
+  });
 
 export const employeeLoginSchema = z.object({
   identifier: z.string().trim().min(3).max(160),
@@ -270,4 +311,5 @@ export type QuoteLeadSubmission = z.infer<typeof quoteLeadSubmissionSchema>;
 export type QuoteLeadApiInput = z.infer<typeof quoteLeadApiSchema>;
 export type FileUploadMetadata = z.infer<typeof fileUploadMetadataSchema>;
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
+export type AdminChangePasswordInput = z.infer<typeof adminChangePasswordSchema>;
 export type FutureClientLoginInput = z.infer<typeof futureClientLoginSchema>;

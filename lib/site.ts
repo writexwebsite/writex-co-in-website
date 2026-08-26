@@ -15,9 +15,8 @@ export const siteConfig = {
   supportPhones: ["+91 81007 45556", "+91 70038 82237"],
   email: process.env.NEXT_PUBLIC_PRIMARY_EMAIL || "info@writex.co.in",
   supportEmail:
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "customer@writex.co.in",
-  address:
-    "42A, Express Tower, Auckland Square, Kolkata - 700017",
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "business@writex.co.in",
+  address: "Kolkata, India",
   supportHours: "Monday to Saturday, 10:00 AM - 8:00 PM IST",
   defaultWhatsAppMessage:
     "Hi WriteX, I need academic support. I want to share my brief for a quote."
@@ -62,10 +61,6 @@ export function getWhatsAppUrl(message = siteConfig.defaultWhatsAppMessage) {
 
 export function getPhoneUrl(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
-}
-
-export function getOfficeMapUrl() {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteConfig.address)}`;
 }
 
 type MetadataInput = {

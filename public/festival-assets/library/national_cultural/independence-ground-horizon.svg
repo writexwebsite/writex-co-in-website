@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 112" role="img" aria-labelledby="title">
+  <title id="title">Restrained Independence Day page-bottom horizon</title>
+  <defs>
+    <linearGradient id="saffron" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#ff9933" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#ff9933" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="green" x1="1" y1="0" x2="0" y2="0">
+      <stop stop-color="#138808" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#138808" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="navy" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#16347a" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#16347a" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#16347a" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 103C170 58 350 63 560 96C635 108 682 109 720 104" fill="none" stroke="url(#saffron)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M1440 103C1270 58 1090 63 880 96C805 108 758 109 720 104" fill="none" stroke="url(#green)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M180 107C410 86 565 92 720 105C875 92 1030 86 1260 107" fill="none" stroke="url(#navy)" stroke-width="2"/>
+  <path d="M0 110H1440" stroke="#ffffff" stroke-opacity="0.68"/>
+  <circle cx="720" cy="104" r="3.5" fill="#16347a"/>
+</svg>

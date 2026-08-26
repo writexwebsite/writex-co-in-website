@@ -339,6 +339,7 @@ function buildQuoteWhatsAppMessage(values: QuoteFormValues, fileName: string) {
 export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
   const shouldReduceMotion = useReducedMotion();
   const startedRef = useRef(false);
+  const submissionKeyRef = useRef("");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [fileReference, setFileReference] = useState<FileReference | null>(null);
   const [success, setSuccess] = useState(false);
@@ -502,6 +503,10 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
     setPreparedWhatsAppUrl(whatsappUrl);
 
     try {
+      if (!submissionKeyRef.current) {
+        submissionKeyRef.current = crypto.randomUUID();
+      }
+
       const submittedLeadIntelligence = buildQuoteLeadIntelligence({
         service: values.service,
         level: values.level,
@@ -520,6 +525,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
 
       const result = await submitQuoteLead({
         ...values,
+        idempotencyKey: submissionKeyRef.current,
         fileName: fileReference?.name,
         fileSize: fileReference?.size,
         fileType: fileReference?.type,
@@ -598,6 +604,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               setLeadId("");
               setActiveStepIndex(0);
               setWhatsappClicked(false);
+              submissionKeyRef.current = "";
               startedRef.current = false;
             }}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-sageBorder bg-white px-5 text-sm font-semibold text-charcoalInk transition hover:border-mutedCopper"
@@ -675,13 +682,14 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               <li
                 key={step.name}
                 aria-current={isActive ? "step" : undefined}
+                data-state={isActive ? "selected" : "default"}
                 className={cn(
                   "rounded-md border px-3 py-3 text-xs font-semibold transition",
                   isActive
-                    ? "border-mutedCopper bg-mutedCopper/10 text-charcoalInk"
+                    ? "wx-interactive-state"
                     : isComplete
                       ? "border-academicGreen/30 bg-academicGreen/10 text-charcoalInk"
-                      : "border-sageBorder bg-paleSage text-slateText"
+                      : "wx-interactive-state text-slateText"
                 )}
               >
                 <span className="block uppercase tracking-[0.12em]">
@@ -920,7 +928,7 @@ export function QuoteForm({ prefillService }: QuoteFormProps = {}) {
               className="mt-2 flex min-h-[58px] cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-softTeal/50 bg-paleSage px-4 py-3 text-sm text-slateText transition hover:border-mutedCopper hover:bg-white"
             >
               <span className="truncate">
-                {fileReference?.name || "Upload your brief, rubric, draft, or prompt."}
+                {fileReference?.name || "Upload your brief, rubric, draft, lecture notes, or formatting requirements."}
               </span>
               <motion.span
                 animate={

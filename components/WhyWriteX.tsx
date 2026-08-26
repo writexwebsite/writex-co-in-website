@@ -29,7 +29,7 @@ const whyPoints = [
   },
   {
     title: "Confidential file handling",
-    copy: "Briefs, drafts, prompts, and conversations stay inside the workflow.",
+    copy: "Briefs, rubrics, drafts, information, and formatting requirements stay inside the workflow.",
     icon: LockKeyhole
   }
 ];

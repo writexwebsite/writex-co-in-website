@@ -6,7 +6,10 @@ import {
   isDatabaseConfigured,
   linkFileAssetToQuoteLead
 } from "@/lib/db";
-import { notifyNewLead } from "@/lib/notifications";
+import {
+  notifyNewLead,
+  notifyQuoteAcknowledgement
+} from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
 import { assignLeadAutomatically } from "@/lib/crm/leadAssignment";
 import { scoreLead } from "@/lib/crm/leadScoring";
@@ -14,6 +17,8 @@ import { deriveSourceChannel } from "@/lib/revenue/attribution";
 import { assertRateLimit, getRequestContext } from "@/lib/security";
 import { quoteLeadApiSchema } from "@/lib/validation";
 import { getDemoClientSessionFromRequest, getDemoEmployeeSessionFromRequest } from "@/lib/demo/session";
+import { getSubmissionKey, runSubmissionOnce } from "@/lib/submission-idempotency";
+import { assertNotTestClientRequest } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -37,6 +42,7 @@ function failureResponse(message = fallbackMessage, status = 500, errors?: unkno
 export async function POST(request: NextRequest) {
   if (getDemoClientSessionFromRequest(request) || getDemoEmployeeSessionFromRequest(request)) return failureResponse("This action is disabled in demo mode.", 403);
   try {
+    await assertNotTestClientRequest(request);
     const context = getRequestContext(request);
     assertRateLimit({
       key: `quote:${context.ipAddress}`,
@@ -61,6 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data;
+    const submissionKey = getSubmissionKey(request, "quote", body);
 
     if (!isDatabaseConfigured()) {
       return failureResponse(fallbackMessage, 503);
@@ -128,8 +135,25 @@ export async function POST(request: NextRequest) {
       utmTerm: body.utmTerm,
       utmContent: body.utmContent,
       deviceType: body.deviceType,
-      sourceChannel
+      sourceChannel,
+      submissionKey
     });
+
+    if (!lead.created) {
+      return NextResponse.json(
+        {
+          success: true,
+          leadId: lead.id,
+          message: successMessage,
+          duplicateSuppressed: true,
+          notification: {
+            sent: false,
+            reason: "duplicate_suppressed"
+          }
+        },
+        { status: 200 }
+      );
+    }
 
     if (body.uploadedFileAssetId) {
       await linkFileAssetToQuoteLead({
@@ -160,7 +184,7 @@ export async function POST(request: NextRequest) {
     };
 
     try {
-      notification = await notifyNewLead({
+      const quoteNotification = {
         leadId: lead.id,
         name: body.name,
         email: body.email,
@@ -176,7 +200,36 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(lead.created_at).toISOString(),
         uploadedFileName: uploadedFileAsset?.file_name ?? body.fileName,
         fileAssetId: uploadedFileAsset?.id
+      };
+      const submission = await runSubmissionOnce({
+        key: getSubmissionKey(request, "quote-notifications", body),
+        task: async () => {
+          const internal = await notifyNewLead(quoteNotification);
+          let acknowledgement: Awaited<ReturnType<typeof notifyQuoteAcknowledgement>> = {
+            sent: false,
+            reason: "not_attempted"
+          };
+
+          try {
+            acknowledgement = await notifyQuoteAcknowledgement(quoteNotification);
+          } catch {
+            console.error("Quote acknowledgement failed", {
+              leadId: lead.id,
+              code: "SMTP_ACKNOWLEDGEMENT_FAILED"
+            });
+          }
+
+          console.info("Quote email delivery completed", {
+            leadId: lead.id,
+            internalMessageId: "messageId" in internal ? internal.messageId : undefined,
+            acknowledgementMessageId:
+              "messageId" in acknowledgement ? acknowledgement.messageId : undefined
+          });
+
+          return internal;
+        }
       });
+      notification = submission.value;
     } catch (error) {
       console.error("Quote lead notification failed", {
         leadId: lead.id,

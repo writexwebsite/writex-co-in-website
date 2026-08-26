@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { getWhatsAppUrl, siteConfig } from "@/lib/site";
 import { quoteTrackingEvents, trackQuoteEvent } from "@/lib/tracking";
@@ -90,12 +90,41 @@ function buildContactWhatsAppMessage(intent: IntentKey, form: FormData) {
 export function ContactForm() {
   const [intent, setIntent] = useState<IntentKey>("quote");
   const [preparedUrl, setPreparedUrl] = useState("");
+  const [deliveryState, setDeliveryState] = useState<"idle" | "sending" | "sent" | "fallback">("idle");
+  const submissionKeyRef = useRef("");
   const activeIntent = useMemo(() => getIntent(intent), [intent]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const whatsappUrl = getWhatsAppUrl(buildContactWhatsAppMessage(intent, form));
+
+    setDeliveryState("sending");
+    try {
+      if (!submissionKeyRef.current) {
+        submissionKeyRef.current = crypto.randomUUID();
+      }
+
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": submissionKeyRef.current
+        },
+        body: JSON.stringify({
+          intent: activeIntent.label,
+          name: String(form.get("name") || ""),
+          email: String(form.get("email") || ""),
+          whatsapp: String(form.get("whatsapp") || "") || undefined,
+          reference: String(form.get("reference") || "") || undefined,
+          message: String(form.get("message") || "")
+        })
+      });
+
+      setDeliveryState(response.ok ? "sent" : "fallback");
+    } catch {
+      setDeliveryState("fallback");
+    }
 
     setPreparedUrl(whatsappUrl);
     trackQuoteEvent(quoteTrackingEvents.whatsappFallbackClicked, {
@@ -109,11 +138,12 @@ export function ContactForm() {
       <div className="rounded-md border border-softTeal/30 bg-white p-6 shadow-soft">
         <CheckCircle2 className="h-10 w-10 text-softTeal" aria-hidden />
         <h2 className="mt-4 text-2xl font-semibold text-charcoalInk">
-          Your route is ready
+          {deliveryState === "sent" ? "Your message has been sent" : "Your route is ready"}
         </h2>
         <p className="mt-3 text-sm leading-7 text-slateText">
-          Thanks for sharing the details. For the fastest response, please send
-          this context on WhatsApp or use the recommended channel below.
+          {deliveryState === "sent"
+            ? "Thanks for sharing the details. A confirmation has been sent to your email address."
+            : "Email delivery is temporarily unavailable. Please send this context on WhatsApp or use the recommended channel below."}
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <a
@@ -136,7 +166,11 @@ export function ContactForm() {
         <button
           type="button"
           className="mt-5 text-sm font-semibold text-softTeal underline-offset-4 hover:underline"
-          onClick={() => setPreparedUrl("")}
+          onClick={() => {
+            setPreparedUrl("");
+            setDeliveryState("idle");
+            submissionKeyRef.current = "";
+          }}
         >
           Edit contact details
         </button>
@@ -240,9 +274,10 @@ export function ContactForm() {
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <button
           type="submit"
+          disabled={deliveryState === "sending"}
           className="wx-gradient-action inline-flex min-h-12 items-center justify-center rounded-md px-6 text-sm font-semibold text-white transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wxViolet700"
         >
-          Prepare Contact Route
+          {deliveryState === "sending" ? "Sending..." : "Send Message"}
         </button>
         <a
           href={getWhatsAppUrl()}

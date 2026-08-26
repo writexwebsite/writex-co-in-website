@@ -29,7 +29,8 @@ export function FAQ({ items }: FAQProps) {
             <button
               id={buttonId}
               type="button"
-              className="group flex min-h-14 w-full items-center justify-between gap-4 px-5 py-4 text-left text-base font-semibold text-wxIndigo900 transition hover:bg-wxSurfaceSoft/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-wxViolet700 sm:px-6"
+              data-state={open ? "selected" : "default"}
+              className="wx-interactive-state group flex min-h-14 w-full items-center justify-between gap-4 border-0 px-5 py-4 text-left text-base font-semibold transition sm:px-6"
               aria-expanded={open}
               aria-controls={panelId}
               onClick={() => {

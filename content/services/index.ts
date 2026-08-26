@@ -16,7 +16,7 @@ const servicePages: SeoContentSource[] = [
     path: "/assignment-support",
     rolloutPhase: "launch",
     contentStatus: editableStatus,
-    seoTitle: "Coursework & Assignment Support for University Students | WriteX",
+    seoTitle: "Coursework Support for University Students | WriteX",
     metaDescription:
       "Get confidential academic support for coursework briefs, research guidance, structure review, editing, referencing, and model solutions for learning.",
     h1: "Coursework & Brief Support for University Students",

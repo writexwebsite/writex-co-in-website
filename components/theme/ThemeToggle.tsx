@@ -21,17 +21,17 @@ export function ThemeToggle({ compact = false, onSelect }: { compact?: boolean; 
           type="button"
           role="radio"
           aria-checked={mode === option}
+          data-state={mode === option ? "selected" : "default"}
           className={cn(
-            "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-left text-wxIndigo700 outline-none transition focus-visible:ring-2 focus-visible:ring-wxViolet700",
-            compact ? "justify-center px-2" : "hover:bg-wxSurfaceSoft",
-            mode === option && "bg-wxSurface text-wxViolet700 shadow-sm"
+            "wx-interactive-state flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2 text-left outline-none transition",
+            compact && "justify-center px-2"
           )}
           onClick={() => { setMode(option); onSelect?.(); }}
         >
           <Icon className="h-4 w-4 shrink-0" aria-hidden />
           <span className={compact ? "text-xs font-semibold" : "min-w-0 flex-1"}>
             <span className="block font-semibold">{label}</span>
-            {compact ? null : <span className="block text-xs font-normal text-wxIndigo500">{description}</span>}
+            {compact ? null : <span className="wx-state-muted block text-xs font-normal">{description}</span>}
           </span>
           {!compact && mode === option ? <Check className="h-4 w-4" aria-hidden /> : null}
         </button>

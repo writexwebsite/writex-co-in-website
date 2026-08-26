@@ -105,7 +105,7 @@ Copy `.env.example` to `.env.local` for local development and configure producti
 NEXT_PUBLIC_SITE_URL=https://www.writex.co.in
 NEXT_PUBLIC_WHATSAPP_NUMBER=918100977068
 NEXT_PUBLIC_PRIMARY_EMAIL=info@writex.co.in
-NEXT_PUBLIC_SUPPORT_EMAIL=customer@writex.co.in
+NEXT_PUBLIC_SUPPORT_EMAIL=business@writex.co.in
 
 DATABASE_URL=
 

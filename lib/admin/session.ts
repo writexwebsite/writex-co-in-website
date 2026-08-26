@@ -27,5 +27,9 @@ export async function requireAdminSession() {
     redirect("/admin/login");
   }
 
+  if (session.mustChangePassword) {
+    redirect("/admin/change-password");
+  }
+
   return session;
 }

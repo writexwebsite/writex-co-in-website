@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "independence-day-designer-v1",
+  "version": 1,
+  "name": "Independence Day Designer Pack",
+  "source": "WriteX_Login_Production_Ready_Independence_Day_FINAL_FIXED.zip",
+  "assets": {
+    "background4x3": "background-4x3.png",
+    "backgroundWide": "background-wide.png",
+    "backgroundUltrawide": "background-ultrawide.png",
+    "logo": "writex-logo.png",
+    "hero": null
+  },
+  "tokens": {
+    "desktopColumns": "58_42",
+    "formMaxWidthPx": 512,
+    "cardRadiusPx": 28,
+    "cardOpacity": 0.9,
+    "blurPx": 24
+  },
+  "quality": {
+    "responsiveBackgrounds": "approved",
+    "logo": "approved",
+    "formTokens": "approved",
+    "suppliedHeroLayer": "invalid_blank",
+    "fallback": "scene_complete_responsive_backgrounds",
+    "containsEmbeddedLoginUi": false,
+    "singleRealFormRequired": true
+  },
+  "security": {
+    "declarativeOnly": true,
+    "scriptsAllowed": false,
+    "serverFilesAllowed": false
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "independence-day-designer-v1",
+  "version": 5,
+  "name": "Independence Day Designer Pack",
+  "source": "Design 2.png",
+  "sourceSha256": "4df8c469a301c60c50e004b0ae3845a46876f980370262eadf85903a2e62b274",
+  "assets": {
+    "background4x3": "background-4x3-8k.webp",
+    "backgroundWide": "background-wide-8k.webp",
+    "backgroundUltrawide": "background-ultrawide-8k.webp",
+    "backgroundFullScene16x10": "background-full-scene-16x10-v3.webp",
+    "backgroundFullSceneWide": "background-full-scene-wide-v3.webp",
+    "backgroundFullSceneUltrawide": "background-full-scene-ultrawide-v3.webp",
+    "backgroundFullScene21x9": "background-full-scene-21x9-v3.webp",
+    "logo": "writex-logo.png",
+    "hero": "background-4x3-8k.webp"
+  },
+  "dimensions": {
+    "background4x3": [7680, 5760],
+    "backgroundWide": [7680, 4320],
+    "backgroundUltrawide": [8192, 3888],
+    "backgroundFullScene16x10": [2731, 1707],
+    "backgroundFullSceneWide": [3035, 1707],
+    "backgroundFullSceneUltrawide": [3684, 1707],
+    "backgroundFullScene21x9": [4032, 1707]
+  },
+  "composition": {
+    "sourceArtwork": "approved_reference",
+    "mockLoginCardExcluded": true,
+    "preserveArtworkProportions": true,
+    "fit": "cover",
+    "mode": "single_canvas_floating_form",
+    "backgroundStrategy": "responsive_approved_canvas",
+    "ambience": "none",
+    "solidFormSideFill": false
+  },
+  "tokens": {
+    "desktopColumns": "canvas_overlay",
+    "formMaxWidthPx": 480,
+    "cardRadiusPx": 24,
+    "cardOpacity": 1,
+    "blurPx": 0
+  },
+  "quality": {
+    "responsiveBackgrounds": "approved_8k",
+    "logo": "approved",
+    "formTokens": "approved",
+    "containsEmbeddedLoginUi": false,
+    "singleRealFormRequired": true
+  },
+  "security": {
+    "declarativeOnly": true,
+    "scriptsAllowed": false,
+    "serverFilesAllowed": false
+  }
+}

@@ -110,11 +110,9 @@ function OptionGroup<T extends string>({
             <button
               key={option}
               type="button"
+              data-state={selected ? "selected" : "default"}
               className={cn(
-                "min-h-10 rounded-md border px-3 py-2 text-left text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mutedCopper",
-                selected
-                  ? "border-mutedCopper bg-mutedCopper/10 text-charcoalInk"
-                  : "border-sageBorder bg-white text-slateText hover:border-softTeal hover:bg-paleSage"
+                "wx-interactive-state min-h-10 rounded-md border px-3 py-2 text-left text-xs font-semibold transition"
               )}
               aria-pressed={selected}
               onClick={() => onChange(option)}

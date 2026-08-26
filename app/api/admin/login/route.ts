@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { apiError, apiOk, notConfigured, unauthorized } from "@/lib/api/response";
 import {
   createSignedSessionToken,
+  getAdminSessionMaxAgeSeconds,
   setSessionCookie,
   verifyAdminPassword
 } from "@/lib/auth";
@@ -32,9 +33,10 @@ export async function POST(request: NextRequest) {
       password_hash: string;
       role: string;
       is_active: boolean;
+      must_change_password: boolean;
     }>(
       `
-        select id, name, email, password_hash, role, is_active
+        select id, name, email, password_hash, role, is_active, must_change_password
         from admin_users
         where lower(email) = lower($1)
         limit 1
@@ -62,13 +64,14 @@ export async function POST(request: NextRequest) {
       admin.id
     ]);
 
-    const maxAge = 60 * 60 * 8;
+    const maxAge = getAdminSessionMaxAgeSeconds();
     const token = createSignedSessionToken(
       {
         kind: "admin",
         adminUserId: admin.id,
         email: admin.email,
-        role: admin.role
+        role: admin.role,
+        mustChangePassword: admin.must_change_password
       },
       maxAge
     );
@@ -77,7 +80,8 @@ export async function POST(request: NextRequest) {
         id: admin.id,
         name: admin.name,
         email: admin.email,
-        role: admin.role
+        role: admin.role,
+        mustChangePassword: admin.must_change_password
       }
     });
 

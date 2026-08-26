@@ -1,7 +1,9 @@
 import "server-only";
 
 import { dbQuery, isDatabaseConfigured } from "@/lib/db";
-import { isStorageConfigured } from "@/lib/storage/s3";
+import { isEmailConfigured } from "@/lib/notifications";
+import { getS3Health } from "@/lib/storage/s3-health";
+import type { SanitizedS3Health } from "@/lib/storage/s3-status";
 
 type CountRow = { label: string; count: string };
 type LatestLeadRow = {
@@ -52,7 +54,9 @@ async function safeQuery<T extends { [key: string]: unknown }>(
   }
 }
 
-export async function getAdminMetrics() {
+export async function getAdminMetrics(
+  options: { includeStorageHealth?: boolean } = {}
+) {
   const [leadCounts, leadStatus, latestLeads, serviceCounts, subjectCounts, countryCounts] =
     await Promise.all([
       safeQuery<{ today: string; week: string; month: string; total: string }>(`
@@ -167,6 +171,23 @@ export async function getAdminMetrics() {
     `)
   ]);
 
+  let storageHealth: SanitizedS3Health | null = null;
+  if (options.includeStorageHealth) {
+    try {
+      storageHealth = await getS3Health();
+    } catch {
+      storageHealth = {
+        state: "status_unavailable",
+        configured: false,
+        reachable: false,
+        bucket: "not_configured",
+        privateAccess: null,
+        publicAccessBlocked: null,
+        lastCheckedAt: new Date().toISOString()
+      };
+    }
+  }
+
   return {
     leads: {
       today: Number(leadTotals.today || 0),
@@ -207,8 +228,9 @@ export async function getAdminMetrics() {
     },
     system: {
       databaseConfigured: isDatabaseConfigured(),
-      s3Configured: isStorageConfigured(),
-      emailConfigured: Boolean(process.env.RESEND_API_KEY),
+      s3Configured: storageHealth?.configured ?? false,
+      s3Health: storageHealth,
+      emailConfigured: isEmailConfigured(),
       ltsMode: process.env.INTEGRATION_MODE || "disabled",
       pmtMode: process.env.INTEGRATION_MODE || "disabled"
     }

@@ -22,6 +22,25 @@ export const clientDemoData = {
   payment: { paymentStatus: "Partially Paid", isSettled: false, canUnlockDownload: false, totalAmount: 24000, paidAmount: 12000, balanceAmount: 12000, currency: "INR" },
   paymentProof: null,
   delivery: { previewAvailable: true, finalAvailable: false, downloadUnlocked: false },
+  trust: {
+    invoice: {
+      state: "unavailable",
+      label: "Verification temporarily unavailable"
+    },
+    representative: {
+      state: "unavailable",
+      label: "Verification temporarily unavailable"
+    },
+    payment: {
+      state: "unavailable",
+      label: "Verification temporarily unavailable",
+      status: "Partially Paid"
+    },
+    verificationId: null,
+    lastVerifiedAt: null,
+    safePaymentNotice:
+      "Only use payment instructions printed on your official WriteX invoice. If any payment detail changes, stop and verify with WriteX."
+  },
   support: { whatsappUrl: "", email: "Demo support disabled", supportHours: "Demo mode" },
   revisions: []
 } as const;

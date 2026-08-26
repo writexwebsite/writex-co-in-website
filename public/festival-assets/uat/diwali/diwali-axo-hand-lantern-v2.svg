@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 752 1159" role="img" aria-labelledby="title desc">
+  <title id="title">Diwali AXO right-hand lantern accessory, corrected version 2</title>
+  <desc id="desc">A transparent lantern whose grip is aligned to AXO's lowered right hand without covering the face, chest or belt branding.</desc>
+  <g id="right-hand-grip">
+    <path d="M635 770c10-8 23-7 32 2" fill="none" stroke="#f5bb32" stroke-width="18" stroke-linecap="round"/>
+    <path d="M636 768c38 18 62 48 68 91" fill="none" stroke="#8b3b42" stroke-width="12" stroke-linecap="round"/>
+    <path d="M622 753c20-19 52-16 69 7l-11 26c-16-19-37-23-60-9Z" fill="#d99527" stroke="#742a50" stroke-width="6"/>
+  </g>
+  <circle cx="668" cy="906" r="112" fill="#ffbd45" opacity=".08"/>
+  <circle cx="668" cy="906" r="82" fill="#ffbd45" opacity=".08"/>
+  <path d="M618 837h103l-12 31h-79Z" fill="#d99527" stroke="#78304f" stroke-width="7"/>
+  <path d="m628 866 83 2-8 117-65 1Z" fill="#ffc84e" fill-opacity=".74" stroke="#78304f" stroke-width="8"/>
+  <path d="M639 888h63M637 960h67M670 869v112" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="6"/>
+  <path d="M638 986h65l-8 24h-49Z" fill="#d99527" stroke="#78304f" stroke-width="7"/>
+  <path d="M672 941c-24-19-2-40 2-60 20 20 34 40-2 60Z" fill="#ed6a2f"/>
+  <circle cx="672" cy="917" r="10" fill="#fffbd9"/>
+  <g fill="#f4c557">
+    <path d="m599 838 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
+    <path d="m729 875 4 8 9 1-7 7 2 9-8-4-8 4 2-9-7-7 9-1Z"/>
+  </g>
+</svg>

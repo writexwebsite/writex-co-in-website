@@ -16,16 +16,50 @@ function formatDate(value: string | Date) {
   }).format(new Date(value));
 }
 
-export default async function AdminRevisionsPage() {
+export default async function AdminRevisionsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ search?: string }>;
+}) {
   const session = await requireAdminSession();
   const revisions = await getAdminRevisions();
+  const { search = "" } = await searchParams;
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRevisions = normalizedSearch
+    ? revisions.filter((revision) =>
+        [
+          revision.invoice_id,
+          revision.request_type,
+          revision.issue_category,
+          revision.related_section,
+          revision.status
+        ].some((value) =>
+          String(value || "").toLowerCase().includes(normalizedSearch)
+        )
+      )
+    : revisions;
 
   return (
     <AdminShell session={session} eyebrow="Operations queue" title="Revision requests">
+      <form action="/admin/revisions" className="mb-5 flex gap-2 rounded-md border border-wxBorder bg-wxSurface p-4">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Search requests or order references</span>
+          <input
+            type="search"
+            name="search"
+            defaultValue={search}
+            placeholder="Search invoice, request, issue or status"
+            className="min-h-11 w-full rounded-md border border-wxBorder bg-wxSurface px-3 text-sm text-wxIndigo900 outline-none focus:border-wxViolet700"
+          />
+        </label>
+        <button type="submit" className="wx-gradient-action min-h-11 rounded-md px-4 text-sm font-semibold text-white">
+          Search
+        </button>
+      </form>
       <section className="overflow-hidden rounded-lg border border-sageBorder bg-white shadow-soft">
-        {revisions.length ? (
+        {filteredRevisions.length ? (
           <div className="divide-y divide-sageBorder">
-            {revisions.map((revision) => (
+            {filteredRevisions.map((revision) => (
               <Link
                 key={revision.id}
                 href={`/admin/revisions/${revision.id}`}
@@ -62,8 +96,9 @@ export default async function AdminRevisionsPage() {
           </div>
         ) : (
           <div className="p-6 text-sm text-slateText">
-            No revision requests have been submitted yet. Client review
-            requests will appear here once submitted.
+            {normalizedSearch
+              ? "No request matches this search."
+              : "No revision requests have been submitted yet. Client review requests will appear here once submitted."}
           </div>
         )}
       </section>

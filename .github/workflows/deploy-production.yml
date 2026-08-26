@@ -49,6 +49,10 @@ jobs:
             --exclude='.env*' \
             --exclude='*.log' \
             --exclude='.codex-*' \
+            --exclude='.next.stale-*' \
+            --exclude=artifacts \
+            --exclude=handoff \
+            --exclude=handoff-work \
             -czf release-source.tgz .
 
       - name: Upload release source

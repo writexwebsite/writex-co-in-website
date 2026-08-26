@@ -2,7 +2,6 @@ import type { NextRequest } from "next/server";
 import { ApiError, apiError, apiOk } from "@/lib/api/response";
 import {
   createClientSessionRecord,
-  createSignedSessionToken,
   getClientSessionMaxAgeSeconds,
   setClientSessionCookie
 } from "@/lib/auth";
@@ -40,18 +39,6 @@ export async function POST(request: NextRequest) {
       userAgent: context.userAgent
     });
     const maxAge = getClientSessionMaxAgeSeconds();
-    const token = createSignedSessionToken(
-      {
-        kind: "client",
-        sessionId: session.sessionId,
-        invoiceId: body.invoiceId,
-        whatsapp: body.whatsapp,
-        tokenHash: session.tokenHash,
-        accessLevel: "restricted",
-        securityMode: "restricted_two_field"
-      },
-      maxAge
-    );
     const response = apiOk({
       valid: result.valid,
       authenticated: true,
@@ -60,7 +47,7 @@ export async function POST(request: NextRequest) {
       maskedWhatsapp: result.whatsappMasked ?? null
     });
 
-    setClientSessionCookie(response, token, maxAge);
+    setClientSessionCookie(response, session.sessionToken, maxAge);
     return response;
   } catch (error) {
     return apiError(error);

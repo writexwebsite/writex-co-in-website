@@ -31,6 +31,7 @@ export type QuoteLeadPayload = {
   utmTerm?: string;
   utmContent?: string;
   deviceType?: string;
+  idempotencyKey?: string;
 };
 
 export type QuoteLeadResult = {
@@ -44,7 +45,10 @@ export async function submitQuoteLead(
   const response = await fetch("/api/quote", {
     method: "POST",
     headers: {
-      "content-type": "application/json"
+      "content-type": "application/json",
+      ...(payload.idempotencyKey
+        ? { "idempotency-key": payload.idempotencyKey }
+        : {})
     },
     body: JSON.stringify({
       name: payload.name,

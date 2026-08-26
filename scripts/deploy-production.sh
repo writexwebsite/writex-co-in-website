@@ -36,15 +36,35 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
+load_runtime_env() {
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+}
+
+restart_writex() {
+  load_runtime_env
+  if [[ -n "$(pm2 pid writex-co-in 2>/dev/null || true)" ]]; then
+    pm2 restart writex-co-in --update-env
+  else
+    pm2 start "${CURRENT_LINK}/ecosystem.config.cjs" --only writex-co-in --update-env
+  fi
+}
+
 mkdir -p "${RELEASE_DIR}"
 rsync -a --delete \
   --exclude='.git/' \
-  --exclude='.next/' \
-  --exclude='node_modules/' \
+  --exclude='.next' \
+  --exclude='node_modules' \
   --exclude='.env' \
   --exclude='.env.*' \
   --exclude='*.log' \
   --exclude='.codex-*' \
+  --exclude='.next.stale-*' \
+  --exclude='artifacts/' \
+  --exclude='handoff/' \
+  --exclude='handoff-work/' \
   --exclude='tmp/' \
   "${SOURCE_DIR}/" "${RELEASE_DIR}/"
 
@@ -75,7 +95,7 @@ rollback_on_error() {
     restore_link="${APP_ROOT}/.current-restore-${RELEASE_ID}"
     ln -s "${PREVIOUS_TARGET}" "${restore_link}"
     mv -Tf "${restore_link}" "${CURRENT_LINK}"
-    pm2 startOrReload "${CURRENT_LINK}/ecosystem.config.cjs" --only writex-co-in --update-env || true
+    restart_writex || true
   elif [[ "$(readlink -f "${CURRENT_LINK}" 2>/dev/null || true)" == "${RELEASE_DIR}" ]]; then
     rm -f -- "${CURRENT_LINK}"
     pm2 delete writex-co-in >/dev/null 2>&1 || true
@@ -84,7 +104,7 @@ rollback_on_error() {
 }
 trap rollback_on_error ERR
 
-pm2 startOrReload "${CURRENT_LINK}/ecosystem.config.cjs" --only writex-co-in --update-env
+restart_writex
 
 for attempt in {1..20}; do
   if curl --fail --silent --show-error http://127.0.0.1:3002/api/health >/dev/null; then

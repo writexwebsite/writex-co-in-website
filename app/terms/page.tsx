@@ -61,7 +61,7 @@ export default function TermsPage() {
               ],
               [
                 "File accuracy",
-                "Students should provide accurate briefs, rubrics, drafts, prompts, and formatting requirements before work begins."
+                "Students should provide accurate briefs, rubrics, drafts, lectures, information and formatting requirements before work begins."
               ],
               [
                 "File delivery and client access",

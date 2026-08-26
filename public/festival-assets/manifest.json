@@ -1,0 +1,692 @@
+{
+  "version": 2,
+  "generatedAt": "source-controlled",
+  "illustrationFamily": "WriteX soft-dimensional festival",
+  "qualityGate": "approved_assets_only",
+  "library": {
+    "marigold-yellow": {
+      "path": "/festival-assets/library/flowers_botanicals/marigold-yellow.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "marigold-orange": {
+      "path": "/festival-assets/library/flowers_botanicals/marigold-orange.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "marigold-saffron": {
+      "path": "/festival-assets/library/flowers_botanicals/marigold-saffron.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "marigold-garland": {
+      "path": "/festival-assets/library/flowers_botanicals/marigold-garland.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "marigold-mango-toran": {
+      "path": "/festival-assets/library/flowers_botanicals/marigold-mango-toran.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "lotus-pink": {
+      "path": "/festival-assets/library/flowers_botanicals/lotus-pink.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "rose-red": {
+      "path": "/festival-assets/library/flowers_botanicals/rose-red.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "jasmine-cluster": {
+      "path": "/festival-assets/library/flowers_botanicals/jasmine-cluster.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "hibiscus-red": {
+      "path": "/festival-assets/library/flowers_botanicals/hibiscus-red.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "tuberose-stem": {
+      "path": "/festival-assets/library/flowers_botanicals/tuberose-stem.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "chrysanthemum-gold": {
+      "path": "/festival-assets/library/flowers_botanicals/chrysanthemum-gold.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "palash-branch": {
+      "path": "/festival-assets/library/flowers_botanicals/palash-branch.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "pine-cone-branch": {
+      "path": "/festival-assets/library/flowers_botanicals/pine-cone-branch.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "holly-sprig": {
+      "path": "/festival-assets/library/flowers_botanicals/holly-sprig.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "mistletoe-sprig": {
+      "path": "/festival-assets/library/flowers_botanicals/mistletoe-sprig.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "diya-brass": {
+      "path": "/festival-assets/library/light_fire/diya-brass.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "diya-row": {
+      "path": "/festival-assets/library/light_fire/diya-row.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "temple-bell": {
+      "path": "/festival-assets/library/ceremonial_objects/temple-bell.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "conch-shell": {
+      "path": "/festival-assets/library/ceremonial_objects/conch-shell.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "dhaak-drum": {
+      "path": "/festival-assets/library/ceremonial_objects/dhaak-drum.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "dhunuchi": {
+      "path": "/festival-assets/library/ceremonial_objects/dhunuchi.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "kandil-lantern": {
+      "path": "/festival-assets/library/light_fire/kandil-lantern.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "alpana-bengal": {
+      "path": "/festival-assets/library/patterns/alpana-bengal.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "rangoli-diya": {
+      "path": "/festival-assets/library/patterns/rangoli-diya.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "mandala-gold": {
+      "path": "/festival-assets/library/patterns/mandala-gold.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "holi-gulal-cloud": {
+      "path": "/festival-assets/library/holi/holi-gulal-cloud.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "holi-pichkari": {
+      "path": "/festival-assets/library/holi/holi-pichkari.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "holi-edge-splash": {
+      "path": "/festival-assets/library/holi/holi-edge-splash.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "holi-colour-ribbon": {
+      "path": "/festival-assets/library/holi/holi-colour-ribbon.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "safe-firework-gold": {
+      "path": "/festival-assets/library/light_fire/safe-firework-gold.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-tree": {
+      "path": "/festival-assets/library/christmas/christmas-tree.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-snowman": {
+      "path": "/festival-assets/library/christmas/christmas-snowman.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-reindeer": {
+      "path": "/festival-assets/library/christmas/christmas-reindeer.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-santa-sleigh": {
+      "path": "/festival-assets/library/christmas/christmas-santa-sleigh.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-gift-stack": {
+      "path": "/festival-assets/library/christmas/christmas-gift-stack.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "christmas-snowflake": {
+      "path": "/festival-assets/library/christmas/christmas-snowflake.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "crescent-star-lantern": {
+      "path": "/festival-assets/library/ceremonial_objects/crescent-star-lantern.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "tricolour-kite": {
+      "path": "/festival-assets/library/national_cultural/tricolour-kite.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "tricolour-ribbon": {
+      "path": "/festival-assets/library/national_cultural/tricolour-ribbon.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "axo-holi-pichkari": {
+      "path": "/festival-assets/library/axo_accessories/axo-holi-pichkari.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "axo-independence-flag": {
+      "path": "/festival-assets/library/axo_accessories/axo-independence-flag.svg",
+      "qualityStatus": "approved_with_size_restrictions",
+      "fixedVersion": 3
+    },
+    "axo-diwali-scarf": {
+      "path": "/festival-assets/library/axo_accessories/axo-diwali-scarf.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "axo-durga-puja": {
+      "path": "/festival-assets/library/axo_accessories/axo-durga-puja.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    },
+    "axo-christmas-hat": {
+      "path": "/festival-assets/library/axo_accessories/axo-christmas-hat.svg",
+      "qualityStatus": "approved",
+      "fixedVersion": 2
+    }
+  },
+  "packs": {
+    "durga-puja": {
+      "slug": "durga-puja",
+      "palette": {
+        "primary": "#B51E38",
+        "secondary": "#F1A72C",
+        "accent": "#F8F0E7"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/durga-puja/header/scene.svg",
+        "heroAccent": "/festival-assets/durga-puja/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/durga-puja/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/durga-puja/overlays/login-corners.svg",
+        "icon": "/festival-assets/durga-puja/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-mango-toran",
+        "hero": "alpana-bengal",
+        "axo": "axo-durga-puja"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "diwali": {
+      "slug": "diwali",
+      "palette": {
+        "primary": "#8B2C13",
+        "secondary": "#F2A51A",
+        "accent": "#FFF0B8"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/diwali/header/scene.svg",
+        "heroAccent": "/festival-assets/diwali/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/diwali/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/diwali/overlays/login-corners.svg",
+        "icon": "/festival-assets/diwali/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-mango-toran",
+        "hero": "rangoli-diya",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "diwali_lights",
+      "approvalState": "approved"
+    },
+    "holi": {
+      "slug": "holi",
+      "palette": {
+        "primary": "#6D28D9",
+        "secondary": "#EC4899",
+        "accent": "#22B8CF"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/holi/header/scene.svg",
+        "heroAccent": "/festival-assets/holi/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/holi/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/holi/overlays/login-corners.svg",
+        "icon": "/festival-assets/holi/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "holi-edge-splash",
+        "hero": "holi-gulal-cloud",
+        "axo": "axo-holi-pichkari"
+      },
+      "effect": "holi_spray",
+      "approvalState": "approved"
+    },
+    "christmas": {
+      "slug": "christmas",
+      "palette": {
+        "primary": "#176B45",
+        "secondary": "#C62F45",
+        "accent": "#E5B94B"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/christmas/header/scene.svg",
+        "heroAccent": "/festival-assets/christmas/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/christmas/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/christmas/overlays/login-corners.svg",
+        "icon": "/festival-assets/christmas/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "pine-cone-branch",
+        "hero": "christmas-tree",
+        "axo": "axo-christmas-hat"
+      },
+      "effect": "christmas_reindeer",
+      "approvalState": "approved"
+    },
+    "new-year": {
+      "slug": "new-year",
+      "palette": {
+        "primary": "#313E93",
+        "secondary": "#D8A84B",
+        "accent": "#F0DDFE"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/new-year/header/scene.svg",
+        "heroAccent": "/festival-assets/new-year/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/new-year/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/new-year/overlays/login-corners.svg",
+        "icon": "/festival-assets/new-year/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "tricolour-ribbon",
+        "hero": "mandala-gold",
+        "axo": "axo-christmas-hat"
+      },
+      "effect": "confetti",
+      "approvalState": "approved"
+    },
+    "independence-day": {
+      "slug": "independence-day",
+      "palette": {
+        "primary": "#F07B22",
+        "secondary": "#198754",
+        "accent": "#2459A6"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/independence-day/header/scene.svg",
+        "heroAccent": "/festival-assets/independence-day/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/library/axo_accessories/axo-independence-flag.svg",
+        "loginOverlay": "/festival-assets/independence-day/overlays/login-corners.svg",
+        "icon": "/festival-assets/independence-day/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "tricolour-ribbon",
+        "hero": "tricolour-kite",
+        "axo": "axo-independence-flag"
+      },
+      "effect": "national_ribbon",
+      "approvalState": "approved"
+    },
+    "republic-day": {
+      "slug": "republic-day",
+      "palette": {
+        "primary": "#F07B22",
+        "secondary": "#198754",
+        "accent": "#2459A6"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/republic-day/header/scene.svg",
+        "heroAccent": "/festival-assets/republic-day/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/republic-day/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/republic-day/overlays/login-corners.svg",
+        "icon": "/festival-assets/republic-day/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "tricolour-ribbon",
+        "hero": "tricolour-kite",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "national_ribbon",
+      "approvalState": "approved"
+    },
+    "janmashtami": {
+      "slug": "janmashtami",
+      "palette": {
+        "primary": "#245B91",
+        "secondary": "#2E7D5A",
+        "accent": "#D8A735"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/janmashtami/header/scene.svg",
+        "heroAccent": "/festival-assets/janmashtami/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/janmashtami/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/janmashtami/overlays/login-corners.svg",
+        "icon": "/festival-assets/janmashtami/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-garland",
+        "hero": "lotus-pink",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "ganesh-chaturthi": {
+      "slug": "ganesh-chaturthi",
+      "palette": {
+        "primary": "#B43A25",
+        "secondary": "#EE9C27",
+        "accent": "#F8DCA8"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/ganesh-chaturthi/header/scene.svg",
+        "heroAccent": "/festival-assets/ganesh-chaturthi/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/ganesh-chaturthi/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/ganesh-chaturthi/overlays/login-corners.svg",
+        "icon": "/festival-assets/ganesh-chaturthi/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-mango-toran",
+        "hero": "lotus-pink",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "eid-al-fitr": {
+      "slug": "eid-al-fitr",
+      "palette": {
+        "primary": "#087A55",
+        "secondary": "#D7B15B",
+        "accent": "#E9F5EB"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/eid-al-fitr/header/scene.svg",
+        "heroAccent": "/festival-assets/eid-al-fitr/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/eid-al-fitr/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/eid-al-fitr/overlays/login-corners.svg",
+        "icon": "/festival-assets/eid-al-fitr/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "crescent-star-lantern",
+        "hero": "crescent-star-lantern",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "eid_lanterns",
+      "approvalState": "approved"
+    },
+    "eid-al-adha": {
+      "slug": "eid-al-adha",
+      "palette": {
+        "primary": "#087A55",
+        "secondary": "#D7B15B",
+        "accent": "#E9F5EB"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/eid-al-adha/header/scene.svg",
+        "heroAccent": "/festival-assets/eid-al-adha/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/eid-al-adha/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/eid-al-adha/overlays/login-corners.svg",
+        "icon": "/festival-assets/eid-al-adha/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "crescent-star-lantern",
+        "hero": "crescent-star-lantern",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "eid_lanterns",
+      "approvalState": "approved"
+    },
+    "onam": {
+      "slug": "onam",
+      "palette": {
+        "primary": "#2E7D32",
+        "secondary": "#E9A23B",
+        "accent": "#B83A2C"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/onam/header/scene.svg",
+        "heroAccent": "/festival-assets/onam/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/onam/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/onam/overlays/login-corners.svg",
+        "icon": "/festival-assets/onam/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "jasmine-cluster",
+        "hero": "marigold-garland",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "raksha-bandhan": {
+      "slug": "raksha-bandhan",
+      "palette": {
+        "primary": "#A72A55",
+        "secondary": "#D69B36",
+        "accent": "#F6C5D8"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/raksha-bandhan/header/scene.svg",
+        "heroAccent": "/festival-assets/raksha-bandhan/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/raksha-bandhan/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/raksha-bandhan/overlays/login-corners.svg",
+        "icon": "/festival-assets/raksha-bandhan/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-garland",
+        "hero": "rose-red",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "navratri": {
+      "slug": "navratri",
+      "palette": {
+        "primary": "#A71930",
+        "secondary": "#EAA52B",
+        "accent": "#6C2E91"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/navratri/header/scene.svg",
+        "heroAccent": "/festival-assets/navratri/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/navratri/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/navratri/overlays/login-corners.svg",
+        "icon": "/festival-assets/navratri/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-mango-toran",
+        "hero": "rangoli-diya",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "poila-boishakh": {
+      "slug": "poila-boishakh",
+      "palette": {
+        "primary": "#A71930",
+        "secondary": "#F1EEE7",
+        "accent": "#E3A328"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/poila-boishakh/header/scene.svg",
+        "heroAccent": "/festival-assets/poila-boishakh/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/poila-boishakh/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/poila-boishakh/overlays/login-corners.svg",
+        "icon": "/festival-assets/poila-boishakh/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-garland",
+        "hero": "alpana-bengal",
+        "axo": "axo-durga-puja"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "valentines-day": {
+      "slug": "valentines-day",
+      "palette": {
+        "primary": "#B3225B",
+        "secondary": "#F283A8",
+        "accent": "#F7D4E1"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/valentines-day/header/scene.svg",
+        "heroAccent": "/festival-assets/valentines-day/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/valentines-day/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/valentines-day/overlays/login-corners.svg",
+        "icon": "/festival-assets/valentines-day/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "rose-red",
+        "hero": "rose-red",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "halloween": {
+      "slug": "halloween",
+      "palette": {
+        "primary": "#5B2A86",
+        "secondary": "#F28A22",
+        "accent": "#242138"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/halloween/header/scene.svg",
+        "heroAccent": "/festival-assets/halloween/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/halloween/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/halloween/overlays/login-corners.svg",
+        "icon": "/festival-assets/halloween/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "kandil-lantern",
+        "hero": "kandil-lantern",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "teachers-day": {
+      "slug": "teachers-day",
+      "palette": {
+        "primary": "#263B84",
+        "secondary": "#D69A34",
+        "accent": "#C6D7F4"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/teachers-day/header/scene.svg",
+        "heroAccent": "/festival-assets/teachers-day/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/teachers-day/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/teachers-day/overlays/login-corners.svg",
+        "icon": "/festival-assets/teachers-day/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "mandala-gold",
+        "hero": "tricolour-kite",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "womens-day": {
+      "slug": "womens-day",
+      "palette": {
+        "primary": "#7C2D92",
+        "secondary": "#E55A8B",
+        "accent": "#F1C8E2"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/womens-day/header/scene.svg",
+        "heroAccent": "/festival-assets/womens-day/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/womens-day/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/womens-day/overlays/login-corners.svg",
+        "icon": "/festival-assets/womens-day/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "rose-red",
+        "hero": "hibiscus-red",
+        "axo": "axo-diwali-scarf"
+      },
+      "effect": "sway",
+      "approvalState": "approved"
+    },
+    "company-anniversary": {
+      "slug": "company-anniversary",
+      "palette": {
+        "primary": "#5B22D7",
+        "secondary": "#E14587",
+        "accent": "#F05B2D"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/company-anniversary/header/scene.svg",
+        "heroAccent": "/festival-assets/company-anniversary/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/company-anniversary/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/company-anniversary/overlays/login-corners.svg",
+        "icon": "/festival-assets/company-anniversary/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "mandala-gold",
+        "hero": "holi-gulal-cloud",
+        "axo": "axo-christmas-hat"
+      },
+      "effect": "confetti",
+      "approvalState": "approved"
+    },
+    "custom-event": {
+      "slug": "custom-event",
+      "palette": {
+        "primary": "#5B22D7",
+        "secondary": "#E14587",
+        "accent": "#F05B2D"
+      },
+      "assets": {
+        "headerScene": "/festival-assets/custom-event/header/scene.svg",
+        "heroAccent": "/festival-assets/custom-event/hero/corner-accent.svg",
+        "axoOutfit": "/festival-assets/custom-event/axo/outfit-overlay.svg",
+        "loginOverlay": "/festival-assets/custom-event/overlays/login-corners.svg",
+        "icon": "/festival-assets/custom-event/icons/motif.svg"
+      },
+      "motifs": {
+        "rail": "marigold-garland",
+        "hero": "mandala-gold",
+        "axo": "axo-christmas-hat"
+      },
+      "effect": "confetti",
+      "approvalState": "approved"
+    }
+  }
+}

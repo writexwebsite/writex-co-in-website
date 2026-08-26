@@ -75,6 +75,32 @@ export async function withDbTransaction<T>(
   }
 }
 
+export async function withDatabaseAdvisoryLock<T>(
+  lockName: string,
+  callback: () => Promise<T>
+): Promise<{ acquired: true; value: T } | { acquired: false }> {
+  const client = await getDatabasePool().connect();
+
+  try {
+    const lockResult = await client.query<{ acquired: boolean }>(
+      "select pg_try_advisory_lock(hashtextextended($1, 0)) as acquired",
+      [lockName]
+    );
+    if (!lockResult.rows[0]?.acquired) return { acquired: false };
+
+    try {
+      return { acquired: true, value: await callback() };
+    } finally {
+      await client.query(
+        "select pg_advisory_unlock(hashtextextended($1, 0))",
+        [lockName]
+      );
+    }
+  } finally {
+    client.release();
+  }
+}
+
 export type QuoteLeadInsert = {
   name: string;
   email?: string;
@@ -111,6 +137,7 @@ export type QuoteLeadInsert = {
   utmContent?: string;
   deviceType?: string;
   sourceChannel?: string;
+  submissionKey?: string;
 };
 
 export type QuoteFileAsset = {
@@ -164,7 +191,7 @@ export async function linkFileAssetToQuoteLead({
 }
 
 export async function insertQuoteLead(lead: QuoteLeadInsert) {
-  const result = await dbQuery<{ id: string; created_at: Date }>(
+  const result = await dbQuery<{ id: string; created_at: Date; created: boolean }>(
     `
       insert into quote_leads (
         name,
@@ -201,10 +228,13 @@ export async function insertQuoteLead(lead: QuoteLeadInsert) {
         utm_term,
         utm_content,
         device_type,
-        source_channel
+        source_channel,
+        submission_key
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20::jsonb, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
-      returning id, created_at
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20::jsonb, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
+      on conflict (submission_key) where submission_key is not null
+      do update set submission_key = excluded.submission_key
+      returning id, created_at, (xmax = 0) as created
     `,
     [
       lead.name,
@@ -241,7 +271,8 @@ export async function insertQuoteLead(lead: QuoteLeadInsert) {
       lead.utmTerm ?? null,
       lead.utmContent ?? null,
       lead.deviceType ?? null,
-      lead.sourceChannel ?? null
+      lead.sourceChannel ?? null,
+      lead.submissionKey ?? null
     ]
   );
 

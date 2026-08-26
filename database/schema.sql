@@ -15,10 +15,16 @@ create table if not exists admin_users (
   password_hash text not null,
   role text not null default 'viewer',
   is_active boolean not null default true,
+  must_change_password boolean not null default false,
+  password_changed_at timestamptz,
   last_login_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table admin_users
+  add column if not exists must_change_password boolean not null default false,
+  add column if not exists password_changed_at timestamptz;
 
 update admin_users
 set role = 'viewer'
@@ -97,6 +103,13 @@ alter table quote_leads
   add column if not exists utm_content text,
   add column if not exists device_type text,
   add column if not exists source_channel text;
+
+alter table quote_leads
+  add column if not exists submission_key text;
+
+create unique index if not exists quote_leads_submission_key_idx
+  on quote_leads(submission_key)
+  where submission_key is not null;
 
 alter table quote_leads
   add column if not exists phone_raw text,
@@ -320,7 +333,16 @@ create table if not exists client_sessions (
 
 alter table client_sessions
   add column if not exists access_level text not null default 'full',
-  add column if not exists security_mode text not null default 'access_code';
+  add column if not exists security_mode text not null default 'access_code',
+  add column if not exists client_reference text,
+  add column if not exists client_display_name text,
+  add column if not exists verification_reference text,
+  add column if not exists verified_at timestamptz,
+  add column if not exists idle_expires_at timestamptz,
+  add column if not exists absolute_expires_at timestamptz,
+  add column if not exists revoked_at timestamptz,
+  add column if not exists revocation_reason text,
+  add column if not exists last_rotated_at timestamptz not null default now();
 
 create table if not exists client_portal_credentials (
   id uuid primary key default gen_random_uuid(),
@@ -340,6 +362,77 @@ create table if not exists client_portal_credentials (
 );
 
 create index if not exists client_portal_credentials_invoice_idx on client_portal_credentials(invoice_id);
+
+create table if not exists client_portal_test_access (
+  id uuid primary key default gen_random_uuid(),
+  test_id text not null unique,
+  password_hash text not null,
+  test_profile_reference text not null,
+  test_invoice_reference text not null,
+  expires_at timestamptz not null,
+  single_use boolean not null default true,
+  used_at timestamptz,
+  revoked_at timestamptz,
+  created_by_admin_id uuid not null references admin_users(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  reason text not null,
+  last_used_ip_hash text,
+  last_used_at timestamptz,
+  check (
+    test_profile_reference in (
+      'partially_paid',
+      'fully_paid',
+      'project_in_progress',
+      'delivered'
+    )
+  ),
+  check (test_invoice_reference ~ '^WX-TEST-[A-Z0-9][A-Z0-9-]{3,63}$'),
+  check (char_length(reason) between 10 and 500),
+  check (expires_at > created_at)
+);
+
+create table if not exists client_portal_test_access_events (
+  id uuid primary key default gen_random_uuid(),
+  test_access_id uuid references client_portal_test_access(id) on delete set null,
+  test_id_hash text not null,
+  event_type text not null,
+  result text not null,
+  ip_hash text,
+  user_agent_category text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  check (
+    event_type in (
+      'generated',
+      'login_failed',
+      'login_succeeded',
+      'single_use_consumed',
+      'revoked'
+    )
+  ),
+  check (result in ('success', 'denied', 'failed'))
+);
+
+alter table client_sessions
+  add column if not exists test_session boolean not null default false,
+  add column if not exists test_access_id uuid
+    references client_portal_test_access(id) on delete set null,
+  add column if not exists test_profile_reference text;
+
+alter table client_sessions
+  drop constraint if exists client_sessions_test_profile_reference_check;
+
+alter table client_sessions
+  add constraint client_sessions_test_profile_reference_check
+  check (
+    test_profile_reference is null or
+    test_profile_reference in (
+      'partially_paid',
+      'fully_paid',
+      'project_in_progress',
+      'delivered'
+    )
+  );
 
 create table if not exists employee_sessions (
   id uuid primary key default gen_random_uuid(),
@@ -413,6 +506,7 @@ alter table file_assets
       'preview',
       'final_delivery',
       'revision_attachment',
+      'trust_report_evidence',
       'other'
     )
   );
@@ -585,6 +679,206 @@ create table if not exists sla_alerts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists official_representatives (
+  id uuid primary key default gen_random_uuid(),
+  source_system text not null,
+  source_employee_id text not null,
+  full_name text not null,
+  source_full_name text,
+  lts_public_display_name text,
+  manual_public_display_name text,
+  manual_public_display_name_updated_at timestamptz,
+  public_display_name text,
+  public_display_name_source text,
+  public_display_name_updated_at timestamptz,
+  designation text not null,
+  department text not null,
+  normalized_mobile_hash text not null,
+  mobile_last_four char(4) not null,
+  status text not null default 'Active',
+  is_publicly_verifiable boolean not null default false,
+  last_source_sync_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deactivated_at timestamptz
+);
+
+create table if not exists official_representative_numbers (
+  id uuid primary key default gen_random_uuid(),
+  representative_id uuid not null
+    references official_representatives(id) on delete cascade,
+  normalized_mobile_hash text not null,
+  mobile_last_four char(4) not null,
+  source_system text not null,
+  source_phone_type text not null,
+  status text not null default 'Active',
+  is_primary boolean not null default false,
+  management_status_override text,
+  management_primary_override boolean,
+  last_source_sync_at timestamptz,
+  created_by_admin_id uuid references admin_users(id) on delete set null,
+  updated_by_admin_id uuid references admin_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deactivated_at timestamptz,
+  check (mobile_last_four ~ '^[0-9]{4}$'),
+  check (
+    source_phone_type in (
+      'primary_official',
+      'secondary_official',
+      'temporary_official'
+    )
+  ),
+  check (status in ('Active', 'Inactive', 'Revoked')),
+  check (
+    management_status_override is null or
+    management_status_override in ('Active', 'Inactive', 'Revoked')
+  )
+);
+
+create table if not exists official_representative_number_audit (
+  id uuid primary key default gen_random_uuid(),
+  representative_id uuid not null
+    references official_representatives(id) on delete cascade,
+  representative_number_id uuid
+    references official_representative_numbers(id) on delete set null,
+  actor_admin_id uuid references admin_users(id) on delete set null,
+  action text not null,
+  reason text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  check (
+    action in (
+      'added',
+      'activated',
+      'deactivated',
+      'made_primary',
+      'revoked',
+      'source_synced'
+    )
+  ),
+  check (char_length(reason) between 10 and 500)
+);
+
+create table if not exists representative_sync_state (
+  source_system text primary key,
+  last_attempted_at timestamptz,
+  last_successful_at timestamptz,
+  received integer not null default 0,
+  created integer not null default 0,
+  updated integer not null default 0,
+  deactivated integer not null default 0,
+  rejected integer not null default 0,
+  numbers_received integer not null default 0,
+  numbers_created integer not null default 0,
+  numbers_updated integer not null default 0,
+  numbers_deactivated integer not null default 0,
+  rejected_numbers integer not null default 0,
+  safe_failure_reason text,
+  last_trigger text,
+  last_run_was_dry_run boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists trust_verification_events (
+  id uuid primary key default gen_random_uuid(),
+  verification_reference text not null unique,
+  verification_type text not null,
+  result text not null,
+  masked_input text not null,
+  correlation_id text not null,
+  data_source text not null,
+  verified_at timestamptz not null default now(),
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (verification_type in ('representative', 'invoice', 'payment', 'enquiry')),
+  check (result in ('verified', 'not_verified', 'unavailable'))
+);
+
+create table if not exists trust_suspicious_reports (
+  id uuid primary key default gen_random_uuid(),
+  report_reference text not null unique,
+  report_type text not null,
+  reported_identifier text not null,
+  related_reference text,
+  description text not null,
+  evidence_file_asset_id uuid references file_assets(id) on delete set null,
+  customer_email text not null,
+  customer_mobile text,
+  status text not null default 'received',
+  correlation_id text not null,
+  submission_key text not null unique,
+  notification_status text not null default 'pending',
+  notification_message_id text,
+  evidence_revoked_at timestamptz,
+  evidence_revoked_by_admin_id uuid references admin_users(id) on delete set null,
+  evidence_revocation_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    report_type in (
+      'Unknown representative',
+      'Different payment details',
+      'Personal UPI or bank request',
+      'Fake invoice',
+      'Fake QR code',
+      'Brand impersonation',
+      'Suspicious WhatsApp or email',
+      'Other'
+    )
+  ),
+  check (status in ('received', 'under_review', 'resolved', 'dismissed')),
+  check (notification_status in ('pending', 'sent', 'failed')),
+  check (
+    (evidence_revoked_at is null and evidence_revocation_reason is null) or
+    (evidence_revoked_at is not null and
+      char_length(trim(evidence_revocation_reason)) between 3 and 240)
+  )
+);
+
+alter table official_representatives
+  add column if not exists source_full_name text,
+  add column if not exists lts_public_display_name text,
+  add column if not exists manual_public_display_name text,
+  add column if not exists manual_public_display_name_updated_at timestamptz,
+  add column if not exists public_display_name text,
+  add column if not exists public_display_name_source text,
+  add column if not exists public_display_name_updated_at timestamptz;
+
+alter table official_representatives
+  drop constraint if exists official_representatives_public_display_name_source_check,
+  drop constraint if exists official_representatives_public_display_name_length_check,
+  drop constraint if exists official_representatives_lts_public_display_name_length_check,
+  drop constraint if exists official_representatives_manual_public_display_name_length_check;
+
+alter table official_representatives
+  add constraint official_representatives_public_display_name_source_check
+  check (
+    public_display_name_source is null or
+    public_display_name_source in (
+      'manual_override',
+      'lts_public_display_name',
+      'management_mapping',
+      'lts_sales_display_name',
+      'full_name_fallback'
+    )
+  ),
+  add constraint official_representatives_public_display_name_length_check
+  check (
+    public_display_name is null or
+    char_length(public_display_name) between 1 and 100
+  ),
+  add constraint official_representatives_lts_public_display_name_length_check
+  check (
+    lts_public_display_name is null or
+    char_length(lts_public_display_name) between 1 and 100
+  ),
+  add constraint official_representatives_manual_public_display_name_length_check
+  check (
+    manual_public_display_name is null or
+    char_length(manual_public_display_name) between 1 and 100
+  );
+
 alter table sla_alerts
   drop constraint if exists sla_alerts_severity_check,
   drop constraint if exists sla_alerts_status_check;
@@ -597,6 +891,20 @@ alter table sla_alerts
 
 create index if not exists client_sessions_invoice_idx on client_sessions(invoice_id);
 create index if not exists client_sessions_token_idx on client_sessions(session_token_hash);
+create unique index if not exists client_portal_test_access_test_id_idx
+  on client_portal_test_access(test_id);
+create index if not exists client_portal_test_access_expiry_idx
+  on client_portal_test_access(expires_at);
+create index if not exists client_portal_test_access_active_idx
+  on client_portal_test_access(revoked_at, expires_at)
+  where revoked_at is null;
+create index if not exists client_portal_test_access_events_access_idx
+  on client_portal_test_access_events(test_access_id, created_at desc);
+create index if not exists client_portal_test_access_events_rate_limit_idx
+  on client_portal_test_access_events(test_id_hash, ip_hash, created_at desc);
+create index if not exists client_sessions_test_access_idx
+  on client_sessions(test_access_id, expires_at desc)
+  where test_session = true and revoked_at is null;
 create index if not exists quote_leads_created_at_idx on quote_leads(created_at desc);
 create index if not exists quote_leads_status_idx on quote_leads(status, created_at desc);
 create index if not exists quote_leads_assigned_idx on quote_leads(assigned_to_admin_user_id, status, created_at desc);
@@ -626,6 +934,31 @@ create index if not exists lead_activity_logs_lead_idx on lead_activity_logs(lea
 create index if not exists revision_requests_invoice_idx on revision_requests(invoice_id, created_at desc);
 create index if not exists revision_requests_status_idx on revision_requests(status, created_at desc);
 create index if not exists sla_alerts_status_idx on sla_alerts(status, severity, created_at desc);
+create unique index if not exists official_representatives_source_id_idx
+  on official_representatives(source_system, source_employee_id);
+create index if not exists official_representatives_mobile_hash_idx
+  on official_representatives(normalized_mobile_hash);
+create index if not exists official_representatives_source_status_idx
+  on official_representatives(source_system, status);
+create index if not exists official_representatives_public_status_idx
+  on official_representatives(status, is_publicly_verifiable);
+create unique index if not exists official_representative_numbers_hash_idx
+  on official_representative_numbers(normalized_mobile_hash);
+create index if not exists official_representative_numbers_representative_idx
+  on official_representative_numbers(representative_id, status);
+create unique index if not exists official_representative_numbers_primary_idx
+  on official_representative_numbers(representative_id)
+  where is_primary = true
+    and status = 'Active'
+    and deactivated_at is null;
+create index if not exists official_representative_number_audit_rep_idx
+  on official_representative_number_audit(representative_id, created_at desc);
+create index if not exists trust_verification_type_created_idx
+  on trust_verification_events(verification_type, created_at desc);
+create index if not exists trust_suspicious_reports_status_idx
+  on trust_suspicious_reports(status, created_at desc);
+create index if not exists trust_suspicious_reports_created_idx
+  on trust_suspicious_reports(created_at desc);
 create unique index if not exists sla_alerts_open_unique_idx
   on sla_alerts(entity_type, entity_id, alert_type)
   where status in ('open', 'acknowledged');
@@ -663,4 +996,256 @@ for each row execute function set_updated_at();
 drop trigger if exists set_tool_sessions_updated_at on tool_sessions;
 create trigger set_tool_sessions_updated_at
 before update on tool_sessions
+for each row execute function set_updated_at();
+
+drop trigger if exists set_official_representatives_updated_at on official_representatives;
+create trigger set_official_representatives_updated_at
+before update on official_representatives
+for each row execute function set_updated_at();
+
+drop trigger if exists set_official_representative_numbers_updated_at
+  on official_representative_numbers;
+create trigger set_official_representative_numbers_updated_at
+before update on official_representative_numbers
+for each row execute function set_updated_at();
+
+drop trigger if exists set_trust_suspicious_reports_updated_at
+  on trust_suspicious_reports;
+create trigger set_trust_suspicious_reports_updated_at
+before update on trust_suspicious_reports
+for each row execute function set_updated_at();
+
+create table if not exists hiring_candidates (
+  id uuid primary key default gen_random_uuid(),
+  candidate_reference text not null unique,
+  application_role text not null,
+  department text,
+  reporting_line_reference_hash text,
+  access_domains text[] not null default '{}',
+  application_status text not null default 'applied',
+  applied_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    application_status in (
+      'applied',
+      'assessment',
+      'shortlisted',
+      'offer_pending',
+      'offered',
+      'hired',
+      'withdrawn',
+      'rejected'
+    )
+  )
+);
+
+create table if not exists hiring_candidate_disclosures (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null unique
+    references hiring_candidates(id) on delete cascade,
+  knows_applicant_or_employee boolean not null,
+  related_person_name_encrypted text,
+  relationship_type text,
+  related_role text,
+  disclosure_details_encrypted text,
+  encryption_version text,
+  disclosed_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    knows_applicant_or_employee = false
+    or (
+      related_person_name_encrypted is not null
+      and relationship_type is not null
+      and related_role is not null
+      and disclosure_details_encrypted is not null
+    )
+  )
+);
+
+create table if not exists hiring_candidate_identifiers (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null references hiring_candidates(id) on delete cascade,
+  signal_type text not null,
+  value_hash text not null,
+  safe_metadata jsonb not null default '{}'::jsonb,
+  observed_at timestamptz not null default now(),
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (candidate_id, signal_type, value_hash),
+  check (
+    signal_type in (
+      'ip',
+      'device_fingerprint',
+      'browser_device_profile',
+      'address',
+      'referral_source',
+      'emergency_contact',
+      'uploaded_file_metadata',
+      'assessment_session_behaviour'
+    )
+  )
+);
+
+create table if not exists hiring_candidate_similarity_artifacts (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null references hiring_candidates(id) on delete cascade,
+  artifact_type text not null,
+  exact_hash text not null,
+  signature_hashes text[] not null default '{}',
+  observed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (candidate_id, artifact_type, exact_hash),
+  check (
+    artifact_type in (
+      'assessment_answer',
+      'repeated_language',
+      'voice_script_pattern'
+    )
+  )
+);
+
+create table if not exists hiring_connected_candidate_reviews (
+  id uuid primary key default gen_random_uuid(),
+  candidate_a_id uuid not null
+    references hiring_candidates(id) on delete cascade,
+  candidate_b_id uuid not null
+    references hiring_candidates(id) on delete cascade,
+  risk_level text not null,
+  risk_score integer not null,
+  review_status text not null default 'pending_review',
+  decision text,
+  requires_human_review boolean not null,
+  requires_management_approval boolean not null,
+  automatic_rejection boolean not null default false,
+  reviewer_notes text,
+  reviewed_by_admin_user_id uuid references admin_users(id) on delete set null,
+  reviewed_at timestamptz,
+  final_offer_approved_by_admin_user_id uuid
+    references admin_users(id) on delete set null,
+  final_offer_approved_at timestamptz,
+  first_detected_at timestamptz not null default now(),
+  last_evaluated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (candidate_a_id, candidate_b_id),
+  check (candidate_a_id <> candidate_b_id),
+  check (risk_level in ('low', 'review', 'high')),
+  check (risk_score between 0 and 100),
+  check (
+    review_status in (
+      'pending_review',
+      'in_review',
+      'approved',
+      'declined',
+      'false_positive'
+    )
+  ),
+  check (
+    decision is null
+    or decision in (
+      'approved_no_additional_controls',
+      'approved_with_controls',
+      'declined_after_review',
+      'false_positive'
+    )
+  ),
+  check (automatic_rejection = false)
+);
+
+create table if not exists hiring_connected_candidate_signals (
+  id uuid primary key default gen_random_uuid(),
+  review_id uuid not null
+    references hiring_connected_candidate_reviews(id) on delete cascade,
+  signal_type text not null,
+  signal_weight integer not null,
+  confidence text not null,
+  safe_details jsonb not null default '{}'::jsonb,
+  first_observed_at timestamptz not null default now(),
+  last_observed_at timestamptz not null default now(),
+  unique (review_id, signal_type),
+  check (signal_weight between 0 and 100),
+  check (confidence in ('low', 'medium', 'high'))
+);
+
+create table if not exists hiring_connected_candidate_controls (
+  id uuid primary key default gen_random_uuid(),
+  review_id uuid not null unique
+    references hiring_connected_candidate_reviews(id) on delete cascade,
+  separate_assessors boolean not null default false,
+  separate_reporting_lines boolean not null default false,
+  restricted_cross_system_access boolean not null default false,
+  enhanced_probation_monitoring boolean not null default false,
+  no_direct_work_allocation_authority boolean not null default false,
+  no_shared_approval_chain boolean not null default false,
+  post_joining_audit_required boolean not null default false,
+  control_notes text,
+  approved_by_admin_user_id uuid references admin_users(id) on delete set null,
+  approved_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists hiring_connected_candidate_audit (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid references hiring_candidates(id) on delete set null,
+  review_id uuid
+    references hiring_connected_candidate_reviews(id) on delete set null,
+  actor_type text not null,
+  actor_admin_user_id uuid references admin_users(id) on delete set null,
+  action text not null,
+  safe_metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  check (actor_type in ('candidate', 'system', 'admin')),
+  check (
+    action in (
+      'relationship_disclosure',
+      'risk_flag_created',
+      'risk_flag_updated',
+      'reviewer_decision',
+      'override',
+      'final_offer_approval',
+      'post_joining_restrictions'
+    )
+  )
+);
+
+create index if not exists hiring_candidate_identifier_lookup_idx
+  on hiring_candidate_identifiers(signal_type, value_hash);
+create index if not exists hiring_similarity_artifact_type_idx
+  on hiring_candidate_similarity_artifacts(artifact_type, observed_at desc);
+create index if not exists hiring_connected_review_risk_idx
+  on hiring_connected_candidate_reviews(
+    risk_level,
+    review_status,
+    updated_at desc
+  );
+create index if not exists hiring_connected_review_candidate_a_idx
+  on hiring_connected_candidate_reviews(candidate_a_id);
+create index if not exists hiring_connected_review_candidate_b_idx
+  on hiring_connected_candidate_reviews(candidate_b_id);
+create index if not exists hiring_connected_audit_review_idx
+  on hiring_connected_candidate_audit(review_id, created_at desc);
+
+drop trigger if exists set_hiring_candidates_updated_at on hiring_candidates;
+create trigger set_hiring_candidates_updated_at
+before update on hiring_candidates
+for each row execute function set_updated_at();
+
+drop trigger if exists set_hiring_candidate_disclosures_updated_at
+  on hiring_candidate_disclosures;
+create trigger set_hiring_candidate_disclosures_updated_at
+before update on hiring_candidate_disclosures
+for each row execute function set_updated_at();
+
+drop trigger if exists set_hiring_connected_candidate_reviews_updated_at
+  on hiring_connected_candidate_reviews;
+create trigger set_hiring_connected_candidate_reviews_updated_at
+before update on hiring_connected_candidate_reviews
+for each row execute function set_updated_at();
+
+drop trigger if exists set_hiring_connected_candidate_controls_updated_at
+  on hiring_connected_candidate_controls;
+create trigger set_hiring_connected_candidate_controls_updated_at
+before update on hiring_connected_candidate_controls
 for each row execute function set_updated_at();

@@ -12,6 +12,7 @@ import {
 import { fileUploadMetadataSchema } from "@/lib/validation";
 import { scanUploadForMalware } from "@/lib/storage/malware";
 import { assertNotDemoRequest } from "@/lib/demo/session";
+import { assertNotTestClientRequest } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -117,6 +118,7 @@ function verifyFileSignature(buffer: Buffer, extension: string) {
 export async function POST(request: NextRequest) {
   try {
     assertNotDemoRequest(request);
+    await assertNotTestClientRequest(request);
     const context = getRequestContext(request);
     assertRateLimit({
       key: `upload-brief:${context.ipAddress}`,

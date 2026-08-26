@@ -37,6 +37,18 @@
   --wx-border: rgba(85, 22, 242, 0.11);
   --wx-border-strong: rgba(85, 22, 242, 0.22);
   --wx-muted: #bebfd8;
+  --wx-surface-default: #ffffff;
+  --wx-surface-hover: #f7f3ff;
+  --wx-surface-selected: #f0eaff;
+  --wx-surface-active: #e7ddff;
+  --wx-surface-disabled: #f0f1f7;
+  --wx-border-selected: #6d35e8;
+  --wx-text-selected: #211458;
+  --wx-text-selected-muted: #554f7d;
+  --wx-icon-default: #5516f2;
+  --wx-icon-selected: #5b21d8;
+  --wx-icon-disabled: #9298b4;
+  --wx-focus-ring: #6d35e8;
   --color-brand-primary: var(--wx-violet);
   --color-brand-secondary: var(--wx-blue);
   --color-brand-gradient: linear-gradient(
@@ -81,6 +93,14 @@
   --wx-shadow: 0 18px 52px rgba(85, 22, 242, 0.1);
 }
 
+@keyframes wx-review-asset-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -8px, 0); }
+}
+
+.wx-review-asset-motion { animation: wx-review-asset-float 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .wx-review-asset-motion { animation: none; } }
+
 html[data-theme="dark"] {
   color-scheme: dark;
   --wx-bg: #090d25;
@@ -103,6 +123,18 @@ html[data-theme="dark"] {
   --wx-orange: #ff7a45;
   --wx-green: #34d17b;
   --wx-red: #ff6674;
+  --wx-surface-default: #171c40;
+  --wx-surface-hover: #202751;
+  --wx-surface-selected: #272354;
+  --wx-surface-active: #302965;
+  --wx-surface-disabled: #111633;
+  --wx-border-selected: #ad91ff;
+  --wx-text-selected: #ffffff;
+  --wx-text-selected-muted: #c5cae8;
+  --wx-icon-default: #a17cff;
+  --wx-icon-selected: #d8ccff;
+  --wx-icon-disabled: #69739c;
+  --wx-focus-ring: #c3adff;
   --wx-page-canvas: radial-gradient(circle at 78% 15%, rgba(232,56,116,.14), transparent 30%), radial-gradient(circle at 18% 78%, rgba(85,22,242,.20), transparent 36%), linear-gradient(135deg, #080b20 0%, #0f1433 54%, #201657 100%);
   --wx-soft-band: linear-gradient(180deg, #0f1433 0%, #090d25 52%, #171c40 100%);
   --wx-header: rgba(9, 13, 37, 0.88);
@@ -116,6 +148,16 @@ html[data-axo-paused] [class*="animate-"],
 html[data-axo-paused] .wx-axo-roam,
 html[data-axo-paused] .wx-axo-emotion {
   animation-play-state: paused !important;
+}
+
+html[data-holiday-preview="true"] .wx-holiday-sound-control {
+  bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  html[data-holiday-preview="true"] .wx-axo-launcher-shell {
+    bottom: 4.25rem;
+  }
 }
 
 * {
@@ -376,7 +418,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-card-logo-mark {
     width: 16rem !important;
-    height: 4rem !important;
   }
 
   .wx-auth-form > .mt-7 {
@@ -416,7 +457,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-card-logo-mark {
     width: 14rem !important;
-    height: 3.5rem !important;
   }
 
   .wx-auth-form h1 {
@@ -455,7 +495,6 @@ html[data-theme="dark"] .wx-auth-field {
 
   .wx-auth-hero-logo {
     width: 17rem !important;
-    height: 3.75rem !important;
   }
 
   .wx-auth-brand-copy h2 {
@@ -502,6 +541,16 @@ html[data-theme="dark"] .wx-auth-field {
   will-change: transform, opacity;
 }
 
+.wx-axo-emotion:has(+ .wx-holiday-custom-axo[data-loaded="true"]) {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.wx-holiday-custom-axo[data-loaded="true"] {
+  animation: wx-axo-breathe 3.4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
 .wx-axo-emotion-welcoming,
 .wx-axo-emotion-pleased { animation-name: wx-axo-wave; animation-duration: 2.4s; }
 .wx-axo-emotion-curious { animation-name: wx-axo-curious; animation-duration: 2.2s; }
@@ -522,6 +571,241 @@ html[data-theme="dark"] .wx-auth-field {
 @keyframes wx-axo-thinking { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); } 50% { transform: translate3d(0, -3px, 0) rotate(2deg); } }
 @keyframes wx-axo-attentive { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(0, -4px, 0) scale(1.045); } }
 @keyframes wx-axo-celebrate { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(0, -8px, 0) scale(1.06); } }
+
+/* Independence Day decorates the real AXO launcher; it never substitutes a flat mascot. */
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"] {
+  --wx-axo-ceremony-destination: calc(-100vw + clamp(14.5rem, 16vw, 17rem));
+  transform: translate3d(0, 0, 0);
+  transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="enter"],
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="arrive"],
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="hoist"],
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="honour"] {
+  transform: translate3d(var(--wx-axo-ceremony-destination), 0, 0);
+}
+
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="enter"] button,
+.wx-axo-launcher-shell[data-festival-ceremony="independence-day"][data-ceremony-state="return"] button {
+  animation: wx-independence-axo-procession-step 420ms ease-in-out infinite;
+}
+
+@keyframes wx-independence-axo-procession-step {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
+  50% { transform: translate3d(0, -0.28rem, 0) rotate(1deg); }
+}
+
+.wx-independence-axo-ceremony {
+  left: clamp(1rem, 2vw, 2rem);
+  bottom: calc(1.15rem + env(safe-area-inset-bottom));
+  width: 10rem;
+  height: 13.75rem;
+  opacity: 1;
+  transition: opacity 420ms ease;
+}
+
+.wx-independence-axo-ceremony[data-ceremony-state="normal"] {
+  opacity: 0;
+}
+
+.wx-independence-flagpole {
+  position: absolute;
+  bottom: 0.7rem;
+  left: 1.25rem;
+  width: 5.25rem;
+  height: 12.25rem;
+}
+
+.wx-independence-flagpole-shaft {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.48rem;
+  width: 0.26rem;
+  height: 11.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #805619 0%, #f2d58b 42%, #a66d1b 100%);
+  box-shadow: 0 0 0 1px rgba(65, 42, 16, 0.2), 0 6px 18px rgba(15, 23, 42, 0.2);
+}
+
+.wx-independence-flagpole-finial {
+  position: absolute;
+  left: 0.27rem;
+  top: 0;
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff4bf 0%, #e2ad35 48%, #8e5b13 100%);
+  box-shadow: 0 2px 7px rgba(65, 42, 16, 0.24);
+}
+
+.wx-independence-flagpole-base {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1.25rem;
+  height: 0.45rem;
+  border-radius: 50% 50% 0.18rem 0.18rem;
+  background: linear-gradient(180deg, #f2d58b, #99651c);
+  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
+}
+
+.wx-independence-hoisted-flag {
+  position: absolute;
+  left: 0.73rem;
+  bottom: 1.45rem;
+  display: block;
+  width: 4.5rem;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 0 0.08rem 0.08rem 0;
+  background: white;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+  transform: translate3d(0, 0, 0);
+  transition: bottom 1.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wx-independence-axo-ceremony[data-ceremony-state="hoist"] .wx-independence-hoisted-flag,
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-hoisted-flag,
+.wx-independence-axo-ceremony[data-ceremony-state="return"] .wx-independence-hoisted-flag,
+.wx-independence-axo-ceremony[data-ceremony-state="complete"] .wx-independence-hoisted-flag {
+  bottom: 8.7rem;
+}
+
+.wx-independence-ceremonial-ground {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 9.75rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.28)),
+    linear-gradient(90deg, #ff9933 0 32%, #ffffff 32% 66%, #138808 66% 100%);
+  box-shadow: 0 9px 24px rgba(15, 23, 42, 0.17), inset 0 0 0 1px rgba(255,255,255,0.66);
+  transform: perspective(11rem) rotateX(66deg);
+  transform-origin: 50% 100%;
+}
+
+.wx-independence-ceremonial-ground > span {
+  position: absolute;
+  inset: 0.34rem 1.35rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 128, 0.34);
+}
+
+.wx-independence-ceremony-petals {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.1rem;
+  width: 5.25rem;
+  height: 4.25rem;
+  opacity: 0;
+}
+
+.wx-independence-ceremony-petals > span {
+  position: absolute;
+  top: 0;
+  width: 0.38rem;
+  height: 0.7rem;
+  border-radius: 80% 20% 70% 30%;
+  background: #ff9933;
+  opacity: 0;
+}
+
+.wx-independence-ceremony-petals > span:nth-child(1) { left: 8%; }
+.wx-independence-ceremony-petals > span:nth-child(2) { left: 29%; background: #f4f4f5; }
+.wx-independence-ceremony-petals > span:nth-child(3) { left: 49%; background: #138808; }
+.wx-independence-ceremony-petals > span:nth-child(4) { left: 69%; }
+.wx-independence-ceremony-petals > span:nth-child(5) { left: 88%; background: #138808; }
+
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals {
+  opacity: 1;
+}
+
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals > span {
+  animation: wx-independence-petal-fall 1.05s ease-in both;
+}
+
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals > span:nth-child(2) { animation-delay: 90ms; }
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals > span:nth-child(3) { animation-delay: 180ms; }
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals > span:nth-child(4) { animation-delay: 270ms; }
+.wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-ceremony-petals > span:nth-child(5) { animation-delay: 360ms; }
+
+@keyframes wx-independence-petal-fall {
+  0% { opacity: 0; transform: translate3d(0, -0.45rem, 0) rotate(0); }
+  20% { opacity: 0.72; }
+  100% { opacity: 0; transform: translate3d(0.35rem, 3.2rem, 0) rotate(135deg); }
+}
+
+@media (max-width: 767px) {
+  .wx-axo-launcher-shell[data-festival-ceremony="independence-day"] {
+    --wx-axo-ceremony-destination: calc(-100vw + 12.25rem);
+    transition-duration: 1.45s;
+  }
+
+  .wx-independence-axo-ceremony {
+    left: 0.75rem;
+    bottom: calc(5.85rem + env(safe-area-inset-bottom));
+    width: 7.5rem;
+    height: 10rem;
+  }
+
+  .wx-independence-flagpole {
+    left: 0.65rem;
+    width: 4.1rem;
+    height: 8.85rem;
+  }
+
+  .wx-independence-flagpole-shaft {
+    height: 8rem;
+  }
+
+  .wx-independence-hoisted-flag {
+    width: 3.2rem;
+    bottom: 1.2rem;
+  }
+
+  .wx-independence-axo-ceremony[data-ceremony-state="hoist"] .wx-independence-hoisted-flag,
+  .wx-independence-axo-ceremony[data-ceremony-state="honour"] .wx-independence-hoisted-flag,
+  .wx-independence-axo-ceremony[data-ceremony-state="return"] .wx-independence-hoisted-flag,
+  .wx-independence-axo-ceremony[data-ceremony-state="complete"] .wx-independence-hoisted-flag {
+    bottom: 6.2rem;
+  }
+
+  .wx-independence-ceremonial-ground {
+    width: 7.2rem;
+    height: 1.1rem;
+  }
+
+  .wx-independence-ceremony-petals {
+    right: 0.35rem;
+    bottom: 0.85rem;
+    transform: scale(0.78);
+    transform-origin: 50% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-holiday-custom-axo[data-loaded="true"] {
+    animation: none;
+  }
+
+  .wx-axo-launcher-shell[data-festival-ceremony="independence-day"],
+  .wx-independence-axo-ceremony,
+  .wx-independence-hoisted-flag {
+    transition: none !important;
+  }
+
+  .wx-independence-ceremony-petals {
+    display: none;
+  }
+
+  .wx-axo-launcher-shell[data-festival-ceremony="independence-day"] button {
+    animation: none !important;
+  }
+}
 html[data-theme="dark"] footer { background: var(--wx-footer); border-top-color: var(--wx-border-strong); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -641,7 +925,7 @@ select {
 }
 
 .wx-admin-enter {
-  animation: wx-admin-enter var(--wx-duration-slow) var(--wx-ease-premium) both;
+  animation: wx-admin-enter var(--wx-duration-slow) var(--wx-ease-premium) backwards;
 }
 
 .wx-row-hover {
@@ -760,4 +1044,5709 @@ select {
   .wx-axo-entrance,
   .wx-axo-roam,
   .wx-axo-emotion { animation: none !important; }
+}
+
+/* Holiday Experience Engine: token-driven accents only, never structural layout changes. */
+html[data-holiday-theme] {
+  --wx-header-height: 4.5rem;
+  --wx-holiday-accent: var(--wx-violet);
+  --wx-holiday-accent-soft: var(--wx-surface-soft);
+  --wx-holiday-accent-warm: var(--wx-orange);
+  --wx-holiday-text-on-accent: #ffffff;
+  --wx-holiday-surface-tint: var(--wx-bg);
+  --wx-holiday-secondary: var(--wx-pink);
+  --wx-holiday-background-tint: var(--wx-bg);
+  --wx-holiday-border-highlight: var(--wx-violet);
+  --wx-holiday-cta: var(--wx-violet);
+  --wx-holiday-decoration-one: var(--wx-pink);
+  --wx-holiday-decoration-two: var(--wx-orange);
+}
+
+/* Festival interpretation layers. Reference artwork informs these motifs but is
+   never rendered by this system. */
+.wx-festive-region,
+.wx-festive-motif-set {
+  pointer-events: none;
+  user-select: none;
+}
+
+.wx-festive-motif-set {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.wx-festive-header-layer {
+  z-index: 0;
+  height: 4.5rem;
+}
+
+.wx-festive-header-layer::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-secondary),
+    transparent
+  );
+  opacity: 0.72;
+}
+
+/* Shared festival rail. Navigation and decoration occupy separate layout rows,
+   so festive artwork never paints through functional header controls. */
+.wx-festival-decoration-rail {
+  z-index: 0;
+  height: 4.75rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--wx-holiday-border-highlight) 22%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--wx-holiday-surface-tint) 24%, transparent),
+      transparent 88%
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
+  isolation: isolate;
+  transition:
+    height 180ms ease,
+    opacity 180ms ease;
+}
+
+.wx-festival-decoration-rail-stage {
+  top: 0.2rem;
+  height: 4.45rem;
+  overflow: visible;
+  transition:
+    top 180ms ease,
+    height 180ms ease,
+    opacity 180ms ease;
+}
+
+/* Independence Day header quality tiers reuse the same approved composition.
+   Minimal preserves the existing rail, balanced adds restrained polish, and
+   rich remains available for a stronger private-preview comparison. */
+header:has(
+  > .wx-festival-decoration-rail[data-festival="independence-day"][data-header-tier="enhanced"]
+),
+header:has(
+  > .wx-festival-decoration-rail[data-festival="independence-day"][data-header-tier="festival_full"]
+) {
+  border-bottom-color: transparent;
+}
+
+.wx-festival-decoration-rail[data-festival="independence-day"][data-header-tier="enhanced"] {
+  border-top-color: color-mix(in srgb, #ff9933 24%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 0 -1px 0 rgb(19 136 8 / 0.16),
+    0 12px 24px -26px rgb(255 153 51 / 0.75);
+}
+
+.wx-festival-decoration-rail[data-festival="independence-day"][data-header-tier="festival_full"] {
+  height: 5.25rem;
+  border-top-color: color-mix(in srgb, #ff9933 38%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ff9933 9%, var(--wx-holiday-surface-tint)),
+    color-mix(in srgb, #ffffff 4%, transparent) 46%,
+    color-mix(in srgb, #138808 8%, transparent)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    inset 0 -1px 0 rgb(19 136 8 / 0.24),
+    0 14px 28px -24px rgb(0 0 128 / 0.42);
+}
+
+.wx-festival-decoration-rail[data-festival="independence-day"][data-header-tier="festival_full"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.12rem;
+  height: 4.95rem;
+}
+
+.wx-festival-studio-header-assets {
+  overflow: hidden;
+}
+
+.wx-festival-studio-header-asset {
+  height: 100%;
+  width: min(72vw, 45rem);
+  flex: 0 1 min(72vw, 45rem);
+  transform-origin: 50% 50%;
+}
+
+.wx-festival-studio-header-asset[data-size="small"] {
+  width: min(42vw, 28rem);
+  flex-basis: min(42vw, 28rem);
+}
+
+.wx-festival-studio-header-asset[data-size="large"] {
+  width: min(88vw, 68rem);
+  flex-basis: min(88vw, 68rem);
+}
+
+/* Complete festival packs use authored slots. Loose motifs keep the legacy
+   flex layout only inside the Advanced Pack Builder compatibility path. */
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(24vw, 18rem);
+  flex: none;
+}
+
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="full_width"],
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="repeat"] {
+  right: 0;
+  left: 0;
+  width: 100%;
+}
+
+.wx-festival-studio-header-asset[data-connected-canvas="true"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  flex: none;
+}
+
+.wx-festival-header-pack-connected {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The full-width ribbon is intentionally stretched edge to edge. Keep the
+   national emblem in its own square coordinate system so it can never oval. */
+.wx-festival-ashoka-chakra {
+  z-index: 2;
+  top: 46%;
+  left: 50%;
+  display: block;
+  width: clamp(1.65rem, 2.25vw, 2.25rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0.125rem 0.18rem rgb(0 0 128 / 0.18));
+}
+
+.wx-festival-ashoka-chakra svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.wx-festival-header-pack-connected [data-festival-header-viewport] {
+  display: none;
+}
+
+.wx-festival-header-pack-connected [data-festival-header-viewport="desktop"] {
+  display: block;
+}
+
+.wx-festival-studio-header-asset[data-connected-canvas="true"][data-motion="gentle_wind"],
+.wx-festival-studio-header-asset[data-connected-canvas="true"][data-motion="garland_sway"] {
+  animation: wx-festival-connected-rail-glow 6s ease-in-out infinite;
+}
+
+@keyframes wx-festival-connected-rail-glow {
+  0%, 100% {
+    filter: brightness(0.98);
+    opacity: 0.97;
+  }
+  50% {
+    filter: brightness(1.06);
+    opacity: 1;
+  }
+}
+
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="left"] {
+  left: 1rem;
+}
+
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="centre"] {
+  left: 50%;
+  width: min(38vw, 30rem);
+  translate: -50% 0;
+}
+
+.wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="right"] {
+  right: 1rem;
+}
+
+.wx-festival-studio-header-asset[data-motion="gentle_wind"],
+.wx-festival-studio-header-asset[data-motion="garland_sway"] {
+  animation: wx-festival-rail-sway 6s ease-in-out infinite;
+}
+
+@keyframes wx-festival-rail-sway {
+  0%, 100% { transform: translate3d(-0.35rem, 0, 0) rotate(-0.2deg); }
+  50% { transform: translate3d(0.35rem, 0.08rem, 0) rotate(0.2deg); }
+}
+
+.wx-festival-axo-region {
+  right: clamp(5.75rem, 7vw, 7.5rem);
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  min-height: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.wx-festival-axo-region[data-private-preview="true"] {
+  bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+
+.wx-festival-axo-stage {
+  width: auto;
+}
+
+.wx-festival-axo-figure {
+  width: 11rem;
+  height: 11rem;
+  transform-origin: 50% 100%;
+}
+
+.wx-festival-axo-overlay[data-motion="axo_interaction"] {
+  animation: wx-axo-breathe 3.4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.wx-festival-axo-positioned {
+  left: var(--axo-left-desktop);
+  top: var(--axo-top-desktop);
+  width: var(--axo-width-desktop);
+  height: var(--axo-height-desktop);
+  transform: var(--axo-transform-desktop);
+  transform-origin: var(--axo-origin-desktop);
+  z-index: var(--axo-z-desktop);
+}
+
+.wx-festival-ground-region {
+  height: clamp(5.5rem, 9vw, 8.5rem);
+  margin-top: -3.25rem;
+  background: transparent;
+}
+
+.wx-festival-ground-asset {
+  width: min(70vw, 45rem);
+  height: 100%;
+  flex: 0 1 min(70vw, 45rem);
+  transform-origin: 50% 100%;
+}
+
+.wx-festival-ground-asset[data-size="small"] {
+  width: min(38vw, 24rem);
+  flex-basis: min(38vw, 24rem);
+}
+
+.wx-festival-ground-asset[data-size="large"] {
+  width: min(92vw, 70rem);
+  flex-basis: min(92vw, 70rem);
+}
+
+.wx-festival-ground-asset[data-decoration-type="ground_composition"] {
+  position: absolute;
+  bottom: 0;
+  width: min(24vw, 19rem);
+  height: 100%;
+  flex: none;
+}
+
+.wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="left"] {
+  left: 0;
+}
+
+.wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="centre"] {
+  left: 50%;
+  width: min(46vw, 38rem);
+  translate: -50% 0;
+}
+
+.wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="right"] {
+  right: 0;
+}
+
+.wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="full_width"],
+.wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="repeat"] {
+  right: 0;
+  left: 0;
+  width: 100%;
+}
+
+.wx-festival-footer-composition {
+  opacity: 0.72;
+}
+
+.wx-festival-footer-composition[data-festival="independence-day"] {
+  height: clamp(3rem, 5vw, 4.5rem);
+  opacity: 0.88;
+}
+
+.wx-festival-ground-region[data-festival="independence-day"] {
+  height: clamp(4.25rem, 7vw, 6.5rem);
+  margin-top: -2.5rem;
+}
+
+.wx-festival-ground-region[data-festival="independence-day"] > .premium-container {
+  max-width: none;
+  padding-inline: 0;
+}
+
+.wx-independence-site-frame {
+  top: var(--wx-header-height);
+  opacity: 0.1;
+}
+
+.wx-independence-site-frame[data-page-intensity="high"] {
+  opacity: 0.16;
+}
+
+.wx-independence-site-frame[data-page-intensity="medium"] {
+  opacity: 0.12;
+}
+
+.wx-independence-site-frame[data-page-intensity="low-medium"] {
+  opacity: 0.085;
+}
+
+.wx-independence-site-frame[data-page-intensity="low"] {
+  opacity: 0.055;
+}
+
+.wx-independence-site-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(2px, 0.28vw, 4px);
+  background: linear-gradient(
+    180deg,
+    #ff9933 0 31%,
+    #ffffff 31% 35%,
+    #16347a 35% 39%,
+    #ffffff 39% 43%,
+    #138808 43% 74%,
+    transparent 92%
+  );
+}
+
+.wx-independence-site-edge[data-edge="left"] { left: 0; }
+.wx-independence-site-edge[data-edge="right"] { right: 0; }
+
+.wx-independence-site-divider {
+  position: absolute;
+  top: 46%;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background:
+    linear-gradient(90deg, transparent 4%, rgb(255 153 51 / 0.68) 18%, transparent 48%) 0 0 / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 18%, rgb(22 52 122 / 0.58) 48% 52%, transparent 82%) 0 1px / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 52%, rgb(19 136 8 / 0.68) 82%, transparent 96%) 0 2px / 100% 1px no-repeat;
+}
+
+.wx-holiday-ambient[data-festival="independence-day"] .wx-holiday-ambient-particle {
+  width: 0.32rem;
+  height: 0.32rem;
+  opacity: 0.14;
+  background: #ff9933;
+  box-shadow: 0 0 0.8rem rgb(255 153 51 / 0.26);
+}
+
+.wx-holiday-ambient[data-festival="independence-day"] .wx-holiday-ambient-particle:nth-child(3n + 2) {
+  background: #16347a;
+  box-shadow: 0 0 0.8rem rgb(22 52 122 / 0.22);
+}
+
+.wx-holiday-ambient[data-festival="independence-day"] .wx-holiday-ambient-particle:nth-child(3n) {
+  background: #138808;
+  box-shadow: 0 0 0.8rem rgb(19 136 8 / 0.22);
+}
+
+.wx-holiday-feature {
+  animation: wx-holiday-feature-cycle 26s ease-in-out infinite;
+}
+
+@keyframes wx-holiday-feature-cycle {
+  0%, 68%, 100% { opacity: 0; }
+  74%, 88% { opacity: 0.42; }
+}
+
+.wx-festival-pack-preview-component {
+  width: min(28%, 15rem);
+  height: 70%;
+  top: 15%;
+}
+
+.wx-festival-pack-preview-component[data-slot="left"] { left: 2%; }
+.wx-festival-pack-preview-component[data-slot="centre"],
+.wx-festival-pack-preview-component[data-slot="axo_anchor"],
+.wx-festival-pack-preview-component[data-slot="viewport"] {
+  left: 50%;
+  translate: -50% 0;
+}
+.wx-festival-pack-preview-component[data-slot="right"] { right: 2%; }
+.wx-festival-pack-preview-component[data-slot="full_width"],
+.wx-festival-pack-preview-component[data-slot="repeat"] {
+  inset: 8% 2%;
+  width: 96%;
+  height: 84%;
+}
+
+.wx-festival-ground-asset[data-motion="gentle_wind"],
+.wx-festival-ground-asset[data-motion="garland_sway"] {
+  animation: wx-festival-ground-sway 7s ease-in-out infinite;
+}
+
+@keyframes wx-festival-ground-sway {
+  0%, 100% { transform: translate3d(-0.2rem, 0, 0); }
+  50% { transform: translate3d(0.2rem, -0.08rem, 0); }
+}
+
+@media (min-width: 1200px) {
+  [data-festival-region] [data-desktop="false"],
+  .wx-festival-studio-header-asset[data-desktop="false"] {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .wx-festival-header-pack-connected [data-festival-header-viewport="desktop"] {
+    display: none;
+  }
+
+  .wx-festival-header-pack-connected [data-festival-header-viewport="tablet"] {
+    display: block;
+  }
+
+  [data-festival-region] [data-tablet="false"],
+  .wx-festival-studio-header-asset[data-tablet="false"] {
+    display: none;
+  }
+
+  .wx-festival-axo-positioned {
+    left: var(--axo-left-tablet);
+    top: var(--axo-top-tablet);
+    width: var(--axo-width-tablet);
+    height: var(--axo-height-tablet);
+    transform: var(--axo-transform-tablet);
+    transform-origin: var(--axo-origin-tablet);
+    z-index: var(--axo-z-tablet);
+  }
+}
+
+@media (max-width: 767px) {
+  .wx-festival-ashoka-chakra {
+    width: 1.5rem;
+  }
+
+  .wx-festival-header-pack-connected [data-festival-header-viewport="desktop"] {
+    display: none;
+  }
+
+  .wx-festival-header-pack-connected [data-festival-header-viewport="mobile"] {
+    display: block;
+  }
+
+  [data-festival-region] [data-mobile="false"],
+  .wx-festival-studio-header-asset[data-mobile="false"] {
+    display: none;
+  }
+
+  .wx-festival-axo-positioned {
+    left: var(--axo-left-mobile);
+    top: var(--axo-top-mobile);
+    width: var(--axo-width-mobile);
+    height: var(--axo-height-mobile);
+    transform: var(--axo-transform-mobile);
+    transform-origin: var(--axo-origin-mobile);
+    z-index: var(--axo-z-mobile);
+  }
+
+  .wx-festival-studio-header-asset {
+    width: min(88vw, 32rem);
+    flex-basis: min(88vw, 32rem);
+  }
+
+  .wx-festival-studio-header-asset[data-decoration-type="header_pack"] {
+    width: min(34vw, 9rem);
+  }
+
+  .wx-festival-studio-header-asset[data-decoration-type="header_pack"][data-pack-slot="centre"] {
+    width: min(70vw, 24rem);
+  }
+
+  .wx-festival-axo-region {
+    right: 0.75rem;
+    bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .wx-festival-axo-region[data-private-preview="true"] {
+    bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .wx-festival-axo-figure {
+    width: 7.25rem;
+    height: 7.25rem;
+  }
+
+  .wx-festival-ground-region {
+    height: 5.5rem;
+    margin-top: -2rem;
+  }
+
+  .wx-festival-ground-asset {
+    width: 88vw;
+    flex-basis: 88vw;
+  }
+
+  .wx-festival-ground-asset[data-decoration-type="ground_composition"] {
+    width: 28vw;
+  }
+
+  .wx-festival-ground-asset[data-decoration-type="ground_composition"][data-pack-slot="centre"] {
+    width: 78vw;
+  }
+
+  .wx-independence-site-frame {
+    opacity: 0.065;
+  }
+
+  .wx-independence-site-frame[data-page-intensity="high"] {
+    opacity: 0.1;
+  }
+
+  .wx-independence-site-divider {
+    top: 58%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-festival-studio-header-asset,
+  .wx-festival-ground-asset,
+  .wx-festival-axo-overlay {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .wx-holiday-feature {
+    display: none;
+  }
+}
+
+.wx-festival-decoration-rail[data-vertical-placement="slightly_lower"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.7rem;
+}
+
+.wx-festival-decoration-rail[data-vertical-placement="hero_edge"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.95rem;
+}
+
+.wx-festival-decoration-rail[data-compact="true"] {
+  height: 1.8rem;
+  opacity: 0.9;
+}
+
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.22rem;
+  height: 1.5rem;
+}
+
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament:nth-child(n + 5),
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament[data-type="medallion"],
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament[data-type="corner_cluster"],
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament[data-type="text_badge"] {
+  display: none;
+}
+
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament {
+  opacity: 0.68;
+  transform: translateX(-50%) scale(calc(var(--wx-ornament-scale) * 0.78));
+}
+
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament-cord {
+  height: min(var(--wx-ornament-length), 0.72rem);
+}
+
+.wx-festival-decoration-rail[data-compact="true"]
+  .wx-header-ornament-visual {
+  top: min(var(--wx-ornament-length), 0.72rem);
+}
+
+/* Shared festival hanging-header ornament system. */
+.wx-festival-header-ornament-layer {
+  z-index: 0;
+  height: 100%;
+  overflow: visible;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+.wx-festival-decoration-rail[data-length-preset="short"]
+  .wx-header-ornament-cord {
+  height: min(var(--wx-ornament-length), 0.9rem);
+}
+
+.wx-festival-decoration-rail[data-length-preset="short"]
+  .wx-header-ornament-visual {
+  top: min(var(--wx-ornament-length), 0.9rem);
+}
+
+.wx-festival-decoration-rail[data-length-preset="medium"]
+  .wx-header-ornament-cord {
+  height: min(var(--wx-ornament-length), 1.35rem);
+}
+
+.wx-festival-decoration-rail[data-length-preset="medium"]
+  .wx-header-ornament-visual {
+  top: min(var(--wx-ornament-length), 1.35rem);
+}
+
+.wx-festival-decoration-rail[data-length-preset="long"]
+  .wx-header-ornament-cord {
+  height: min(var(--wx-ornament-length), 1.8rem);
+}
+
+.wx-festival-decoration-rail[data-length-preset="long"]
+  .wx-header-ornament-visual {
+  top: min(var(--wx-ornament-length), 1.8rem);
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="far_left"] {
+  left: 7%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="left"] {
+  left: 21%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="left_center"] {
+  left: 35%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="center"] {
+  left: 50%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="right_center"] {
+  left: 65%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="right"] {
+  left: 79%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="safe_auto"]
+  .wx-header-ornament[data-position="far_right"] {
+  left: 93%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="far_left"] {
+  left: 4%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="left"] {
+  left: 19%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="left_center"] {
+  left: 34%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="center"] {
+  left: 50%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="right_center"] {
+  left: 66%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="right"] {
+  left: 81%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="spread"]
+  .wx-header-ornament[data-position="far_right"] {
+  left: 96%;
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="left"]
+  .wx-header-ornament {
+  left: var(--wx-ornament-left-cluster);
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="centre"]
+  .wx-header-ornament {
+  left: var(--wx-ornament-centre-cluster);
+}
+
+.wx-festival-decoration-rail[data-horizontal-placement="right"]
+  .wx-header-ornament {
+  left: var(--wx-ornament-right-cluster);
+}
+
+.wx-admin-header-safe-zone {
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, #f05a28 62%, transparent);
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, #f05a28 8%, transparent);
+  color: color-mix(in srgb, #f05a28 78%, var(--wx-text));
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.wx-festival-decoration-rail[data-preview-device="tablet"] {
+  height: 2.55rem;
+}
+
+.wx-festival-decoration-rail[data-preview-device="tablet"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.38rem;
+  height: 2rem;
+}
+
+.wx-festival-decoration-rail[data-preview-device="tablet"]
+  .wx-header-ornament:nth-child(n + 6) {
+  display: none;
+}
+
+.wx-festival-decoration-rail[data-preview-device="mobile"] {
+  height: 2rem;
+}
+
+.wx-festival-decoration-rail[data-preview-device="desktop"]
+  [data-festival-header-viewport]:not([data-festival-header-viewport="desktop"]),
+.wx-festival-decoration-rail[data-preview-device="tablet"]
+  [data-festival-header-viewport]:not([data-festival-header-viewport="tablet"]),
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  [data-festival-header-viewport]:not([data-festival-header-viewport="mobile"]) {
+  display: none !important;
+}
+
+.wx-festival-decoration-rail[data-preview-device="desktop"]
+  [data-festival-header-viewport="desktop"],
+.wx-festival-decoration-rail[data-preview-device="tablet"]
+  [data-festival-header-viewport="tablet"],
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  [data-festival-header-viewport="mobile"] {
+  display: block !important;
+}
+
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  .wx-festival-decoration-rail-stage {
+  top: 0.28rem;
+  height: 1.6rem;
+}
+
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  .wx-header-ornament:nth-child(n + 4),
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  .wx-header-ornament[data-type="text_badge"],
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  .wx-header-ornament[data-type="ambient_glow"],
+.wx-festival-decoration-rail[data-preview-device="mobile"]
+  .wx-header-ornament[data-type="corner_cluster"] {
+  display: none;
+}
+
+.wx-header-ornament {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 3.25rem;
+  height: 100%;
+  color: var(--wx-ornament-colour);
+  opacity: 0.82;
+  transform: translateX(-50%) scale(var(--wx-ornament-scale));
+  transform-origin: top center;
+}
+
+.wx-header-ornament[data-position="far_left"] {
+  left: max(1rem, calc(50% - 44.5rem));
+}
+
+.wx-header-ornament[data-position="left"] {
+  left: calc(50% - 30rem);
+}
+
+.wx-header-ornament[data-position="left_center"] {
+  left: calc(50% - 30rem);
+}
+
+.wx-header-ornament[data-position="center"] {
+  left: calc(50% + 18.2rem);
+}
+
+.wx-header-ornament[data-position="right_center"] {
+  left: calc(50% + 18.2rem);
+}
+
+.wx-header-ornament[data-position="right"] {
+  left: min(calc(100% - 1rem), calc(50% + 44.5rem));
+}
+
+.wx-header-ornament[data-position="far_right"] {
+  left: min(calc(100% - 1rem), calc(50% + 44.5rem));
+}
+
+.wx-header-ornament-cord {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: min(var(--wx-ornament-length), 2.35rem);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--wx-ornament-colour) 64%, transparent),
+    color-mix(in srgb, var(--wx-ornament-secondary) 72%, transparent)
+  );
+  transform: translateX(-50%);
+}
+
+.wx-header-ornament-visual {
+  position: absolute;
+  top: min(var(--wx-ornament-length), 2.35rem);
+  left: 50%;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -0.08rem);
+  transform-origin: 50% 0;
+}
+
+.wx-header-ornament-custom {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+}
+
+.wx-header-ornament-custom img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.wx-header-ornament-streamer {
+  display: block;
+  width: 0.72rem;
+  height: 2.35rem;
+  border-radius: 0 0 70% 35%;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0 15%,
+      color-mix(in srgb, var(--wx-ornament-colour) 86%, white) 16% 48%,
+      var(--wx-ornament-secondary) 49% 76%,
+      transparent 77%
+    );
+  filter: drop-shadow(0 0.2rem 0.2rem color-mix(in srgb, var(--wx-ornament-colour) 18%, transparent));
+  transform: rotate(4deg);
+}
+
+.wx-header-ornament-medallion {
+  position: relative;
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 0.14rem solid
+    color-mix(in srgb, var(--wx-ornament-secondary) 78%, white);
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      var(--wx-ornament-colour) 0 16deg,
+      color-mix(in srgb, var(--wx-ornament-secondary) 84%, white) 16deg 32deg
+    );
+  box-shadow:
+    inset 0 0 0 0.18rem color-mix(in srgb, white 78%, var(--wx-ornament-secondary)),
+    0 0.25rem 0.7rem color-mix(in srgb, var(--wx-ornament-colour) 24%, transparent);
+}
+
+.wx-header-ornament-medallion-core {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: var(--wx-ornament-secondary);
+  box-shadow: 0 0 0 0.14rem color-mix(in srgb, white 74%, var(--wx-ornament-colour));
+}
+
+.wx-header-ornament-bell {
+  position: relative;
+  display: block;
+  width: 1.45rem;
+  height: 1.18rem;
+  border-radius: 54% 54% 22% 22%;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, white 55%, var(--wx-ornament-secondary)),
+    var(--wx-ornament-secondary) 52%,
+    color-mix(in srgb, var(--wx-ornament-colour) 58%, #7a3f08)
+  );
+  box-shadow: 0 0.25rem 0.65rem color-mix(in srgb, var(--wx-ornament-secondary) 28%, transparent);
+}
+
+.wx-header-ornament-bell::before {
+  position: absolute;
+  inset: -0.19rem 34% auto;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: var(--wx-ornament-colour);
+  content: "";
+}
+
+.wx-header-ornament-bell-clapper {
+  position: absolute;
+  bottom: -0.26rem;
+  left: 50%;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--wx-ornament-colour) 75%, #5f350a);
+  transform: translateX(-50%);
+}
+
+.wx-header-ornament-lantern {
+  position: relative;
+  display: block;
+  width: 1.34rem;
+  height: 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--wx-ornament-colour) 72%, transparent);
+  border-radius: 42% 42% 30% 30%;
+  background:
+    linear-gradient(
+      90deg,
+      var(--wx-ornament-colour),
+      color-mix(in srgb, white 40%, var(--wx-ornament-secondary)),
+      var(--wx-ornament-colour)
+    );
+  box-shadow: 0 0 0.9rem color-mix(in srgb, var(--wx-ornament-secondary) 34%, transparent);
+}
+
+.wx-header-ornament-lantern::before,
+.wx-header-ornament-lantern::after {
+  position: absolute;
+  right: 18%;
+  left: 18%;
+  height: 0.12rem;
+  border-radius: 999px;
+  background: var(--wx-ornament-secondary);
+  content: "";
+}
+
+.wx-header-ornament-lantern::before {
+  top: 0.28rem;
+}
+
+.wx-header-ornament-lantern::after {
+  bottom: 0.28rem;
+}
+
+.wx-header-ornament-lantern-light {
+  position: absolute;
+  inset: 36%;
+  border-radius: 50%;
+  background: #fff7cb;
+  box-shadow: 0 0 0.65rem #fff1a8;
+}
+
+.wx-header-ornament-festival-icon {
+  position: relative;
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, white 82%, var(--wx-ornament-secondary));
+  box-shadow:
+    inset 0 0 0 0.12rem color-mix(in srgb, var(--wx-ornament-colour) 68%, transparent),
+    0 0.24rem 0.72rem color-mix(in srgb, var(--wx-ornament-colour) 19%, transparent);
+}
+
+.wx-header-ornament-icon-core {
+  display: block;
+  width: 1.12rem;
+  height: 1.12rem;
+  border: 0.14rem solid var(--wx-ornament-colour);
+  border-radius: 50%;
+}
+
+.wx-header-ornament-festival-icon[data-icon="star"] .wx-header-ornament-icon-core,
+.wx-header-ornament-festival-icon[data-icon="snowflake"] .wx-header-ornament-icon-core {
+  border: 0;
+  border-radius: 0;
+  background: var(--wx-ornament-secondary);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 94%, 50% 72%, 21% 94%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.wx-header-ornament-festival-icon[data-icon="crescent"] .wx-header-ornament-icon-core {
+  border: 0;
+  background: var(--wx-ornament-secondary);
+  box-shadow: -0.28rem 0 0 color-mix(in srgb, white 82%, var(--wx-ornament-secondary));
+}
+
+.wx-header-ornament-festival-icon[data-icon="diya"] .wx-header-ornament-icon-core,
+.wx-header-ornament-festival-icon[data-icon="matki"] .wx-header-ornament-icon-core,
+.wx-header-ornament-festival-icon[data-icon="modak"] .wx-header-ornament-icon-core {
+  width: 1.18rem;
+  height: 0.7rem;
+  border: 0;
+  border-radius: 18% 18% 55% 55%;
+  background: linear-gradient(90deg, var(--wx-ornament-colour), var(--wx-ornament-secondary));
+}
+
+.wx-header-ornament-festival-icon[data-icon="diya"] .wx-header-ornament-icon-core::before {
+  position: absolute;
+  top: 0.18rem;
+  left: 50%;
+  width: 0.28rem;
+  height: 0.52rem;
+  border-radius: 70% 30% 60% 40%;
+  background: #ffb11f;
+  box-shadow: 0 0 0.5rem #ffb11f;
+  content: "";
+  transform: translateX(-50%) rotate(8deg);
+}
+
+.wx-header-ornament-festival-icon[data-icon="drum"] .wx-header-ornament-icon-core {
+  width: 1.28rem;
+  height: 0.82rem;
+  border-radius: 24%;
+  background: repeating-linear-gradient(90deg, transparent 0 0.18rem, var(--wx-ornament-secondary) 0.19rem 0.27rem);
+  transform: rotate(-12deg);
+}
+
+.wx-header-ornament-festival-icon[data-icon="flute"] .wx-header-ornament-icon-core,
+.wx-header-ornament-festival-icon[data-icon="peacock_feather"] .wx-header-ornament-icon-core {
+  width: 1.5rem;
+  height: 0.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--wx-ornament-colour), var(--wx-ornament-secondary));
+  transform: rotate(-28deg);
+}
+
+.wx-header-ornament-festival-icon[data-icon="flower"] .wx-header-ornament-icon-core,
+.wx-header-ornament-festival-icon[data-icon="colour_drop"] .wx-header-ornament-icon-core {
+  border: 0;
+  border-radius: 65% 35% 65% 35%;
+  background: conic-gradient(
+    var(--wx-ornament-colour),
+    var(--wx-ornament-secondary),
+    var(--wx-ornament-colour)
+  );
+  transform: rotate(45deg);
+}
+
+.wx-header-ornament-festival-icon[data-icon="chakra"] .wx-header-ornament-icon-core {
+  border-width: 0.11rem;
+  background: repeating-conic-gradient(
+    transparent 0 7deg,
+    var(--wx-ornament-colour) 8deg 11deg
+  );
+}
+
+.wx-header-ornament-text-badge {
+  display: inline-flex;
+  max-width: 6.5rem;
+  min-height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--wx-ornament-colour) 46%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, white 88%, var(--wx-ornament-secondary));
+  box-shadow: 0 0.25rem 0.75rem color-mix(in srgb, var(--wx-ornament-colour) 15%, transparent);
+  color: color-mix(in srgb, var(--wx-ornament-colour) 84%, #101942);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.35rem 0.72rem;
+}
+
+.wx-header-ornament[data-type="garland_band"] {
+  right: 16%;
+  left: 16%;
+  width: auto;
+  transform: none;
+}
+
+.wx-header-ornament-garland {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--wx-ornament-colour) 55%, transparent);
+  border-radius: 0 0 50% 50%;
+}
+
+.wx-header-ornament-garland > span:not(.wx-header-ornament-custom) {
+  position: absolute;
+  top: calc(0.5rem + (var(--wx-garland-index) % 3) * 0.13rem);
+  left: calc(4% + var(--wx-garland-index) * 9%);
+  width: 0.44rem;
+  height: 0.44rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    white 0 8%,
+    var(--wx-ornament-secondary) 12% 53%,
+    var(--wx-ornament-colour) 56%
+  );
+}
+
+.wx-header-ornament-corner-cluster {
+  position: relative;
+  display: block;
+  width: 2.3rem;
+  height: 1.8rem;
+}
+
+.wx-header-ornament-corner-cluster > span:not(.wx-header-ornament-custom) {
+  position: absolute;
+  width: 0.88rem;
+  height: 0.88rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--wx-ornament-secondary), var(--wx-ornament-colour));
+}
+
+.wx-header-ornament-corner-cluster > span:nth-child(2) {
+  top: 0.5rem;
+  left: 0.72rem;
+}
+
+.wx-header-ornament-corner-cluster > span:nth-child(3) {
+  right: 0;
+}
+
+.wx-header-ornament[data-type="animated_ribbon"] {
+  right: 17%;
+  left: 17%;
+  width: auto;
+  transform: none;
+}
+
+.wx-header-ornament-ribbon {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.24rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-ornament-colour),
+    var(--wx-ornament-secondary),
+    var(--wx-ornament-colour),
+    transparent
+  );
+  box-shadow: 0 0.25rem 0.8rem color-mix(in srgb, var(--wx-ornament-colour) 18%, transparent);
+}
+
+.wx-header-ornament[data-type="ambient_glow"] {
+  width: 4.75rem;
+  transform: translateX(-50%);
+}
+
+.wx-header-ornament-glow {
+  display: block;
+  width: 4.75rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--wx-ornament-secondary) 22%, transparent),
+    transparent 70%
+  );
+  filter: blur(0.28rem);
+}
+
+.wx-festival-header-ornament-layer[data-density="minimal"]
+  .wx-header-ornament:nth-child(n + 4) {
+  display: none;
+}
+
+.wx-festival-header-ornament-layer[data-density="balanced"]
+  .wx-header-ornament:nth-child(n + 8) {
+  display: none;
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="sway"]
+  .wx-header-ornament-visual {
+  animation: wx-header-ornament-sway 4.6s ease-in-out infinite;
+  animation-delay: calc(var(--wx-ornament-order) * -0.31s);
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="rotate"]
+  .wx-header-ornament-visual {
+  animation: wx-header-ornament-rotate 11s linear infinite;
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="float"]
+  .wx-header-ornament-visual {
+  animation: wx-header-ornament-float 4.8s ease-in-out infinite;
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="glow"]
+  .wx-header-ornament-visual {
+  animation: wx-header-ornament-glow 3.8s ease-in-out infinite;
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="streamer"]
+  .wx-header-ornament-visual {
+  animation: wx-header-ornament-stream 5.2s ease-in-out infinite;
+}
+
+.wx-festival-header-ornament-layer[data-animation="on"]
+  .wx-header-ornament[data-motion="streamer"]
+  .wx-header-ornament-ribbon {
+  animation: wx-header-ornament-ribbon-breathe 5.2s ease-in-out infinite;
+}
+
+@keyframes wx-header-ornament-sway {
+  0%,
+  100% {
+    transform: translate(-50%, -0.08rem) rotate(-3deg);
+  }
+  50% {
+    transform: translate(-50%, -0.08rem) rotate(3deg);
+  }
+}
+
+@keyframes wx-header-ornament-rotate {
+  to {
+    transform: translate(-50%, -0.08rem) rotate(360deg);
+  }
+}
+
+@keyframes wx-header-ornament-float {
+  0%,
+  100% {
+    transform: translate(-50%, -0.08rem);
+  }
+  50% {
+    transform: translate(-50%, -0.22rem);
+  }
+}
+
+@keyframes wx-header-ornament-glow {
+  0%,
+  100% {
+    filter: brightness(1);
+    opacity: 0.72;
+  }
+  50% {
+    filter: brightness(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes wx-header-ornament-stream {
+  0%,
+  100% {
+    transform: translate(-50%, -0.08rem) scaleX(0.98);
+  }
+  50% {
+    transform: translate(-50%, -0.08rem) scaleX(1.03);
+  }
+}
+
+@keyframes wx-header-ornament-ribbon-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scaleX(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scaleX(1.02);
+  }
+}
+
+html[data-theme="dark"] .wx-header-ornament {
+  opacity: 0.7;
+}
+
+html[data-theme="dark"] .wx-header-ornament-text-badge {
+  background: color-mix(in srgb, var(--wx-bg) 88%, var(--wx-ornament-colour));
+  color: var(--wx-text);
+}
+
+.wx-built-in-festival-header-scene {
+  z-index: 0;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+  opacity: 0.66;
+}
+
+.wx-built-in-festival-header-art {
+  opacity: 0.92;
+  filter: saturate(0.92);
+}
+
+.wx-built-in-light-string {
+  position: absolute;
+  inset: 0 10% auto;
+  height: 2.05rem;
+  border-top: 1px solid color-mix(in srgb, var(--wx-holiday-secondary) 56%, transparent);
+  border-radius: 50%;
+}
+
+.wx-built-in-light-string > span {
+  position: absolute;
+  top: calc(0.22rem + (var(--wx-built-in-index) % 3) * 0.22rem);
+  left: calc(4% + var(--wx-built-in-index) * 10%);
+  width: 0.35rem;
+  height: 0.48rem;
+  border-radius: 50% 50% 45% 45%;
+  background: var(--wx-holiday-accent-warm);
+  box-shadow:
+    0 0 0.45rem color-mix(in srgb, var(--wx-holiday-accent-warm) 74%, transparent),
+    0 0 0.9rem color-mix(in srgb, var(--wx-holiday-accent) 28%, transparent);
+  animation: wx-built-in-light-twinkle 3.8s ease-in-out infinite;
+  animation-delay: calc(var(--wx-built-in-index) * -0.27s);
+}
+
+.wx-built-in-streamer-ribbon {
+  position: absolute;
+  inset: 0 8% auto;
+  height: 0.26rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #f58220 15%,
+    #f58220 32%,
+    #f8f8f2 44% 56%,
+    #168b55 68%,
+    #168b55 85%,
+    transparent
+  );
+  box-shadow: 0 0.2rem 0.7rem rgba(36, 89, 166, 0.16);
+  animation: wx-built-in-ribbon-breathe 6.8s ease-in-out infinite;
+}
+
+.wx-built-in-particle-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.wx-built-in-particle-layer > span {
+  position: absolute;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--wx-holiday-accent);
+  opacity: 0.22;
+  animation: wx-built-in-particle-float 6.4s ease-in-out infinite;
+  animation-delay: calc(var(--wx-built-in-index) * -0.41s);
+}
+
+.wx-built-in-particle-layer > span:nth-child(3n + 2) {
+  width: 0.32rem;
+  height: 0.32rem;
+  background: var(--wx-holiday-accent-warm);
+}
+
+.wx-built-in-particle-layer > span:nth-child(3n) {
+  background: var(--wx-holiday-secondary);
+}
+
+.wx-built-in-particle-layer[data-kind="confetti"] > span {
+  border-radius: 0.08rem 65% 0.08rem 65%;
+  animation-name: wx-built-in-confetti-drift;
+}
+
+.wx-built-in-particle-layer[data-kind="sparkle"] > span {
+  width: 0.22rem;
+  height: 0.22rem;
+  box-shadow: 0 0 0.8rem var(--wx-holiday-accent-warm);
+  animation-name: wx-built-in-sparkle;
+}
+
+.wx-built-in-holi-spray {
+  position: absolute;
+  top: 1rem;
+  right: 8%;
+  width: 7.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 8% 50%, #ec4899 0 0.18rem, transparent 0.23rem),
+    radial-gradient(circle at 34% 25%, #22b8cf 0 0.24rem, transparent 0.31rem),
+    radial-gradient(circle at 62% 58%, #f59e0b 0 0.22rem, transparent 0.3rem),
+    radial-gradient(circle at 86% 28%, #6d28d9 0 0.18rem, transparent 0.26rem);
+  opacity: 0.34;
+  filter: blur(0.4px);
+  transform: rotate(-7deg);
+  animation: wx-built-in-holi-spray 5.8s ease-in-out infinite;
+}
+
+.wx-built-in-reindeer-run {
+  position: absolute;
+  top: 0.25rem;
+  left: -10rem;
+  display: block;
+  width: 8rem;
+  height: 4rem;
+  opacity: 0.58;
+  animation: wx-built-in-reindeer-run 18s linear infinite;
+}
+
+.wx-built-in-reindeer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 7rem;
+  height: auto;
+}
+
+.wx-built-in-reindeer-gift {
+  position: absolute;
+  top: 1.55rem;
+  right: -0.1rem;
+  width: 1.55rem;
+  height: auto;
+  animation: wx-built-in-gift-offer 18s ease-in-out infinite;
+}
+
+.wx-built-in-festival-hero {
+  height: min(49rem, calc(100svh - var(--wx-header-height)));
+  contain: layout paint;
+}
+
+.wx-built-in-festival-hero-art {
+  position: absolute;
+  right: -2.5rem;
+  bottom: -4.5rem;
+  width: min(42rem, 47vw);
+  height: auto;
+  opacity: 0.42;
+  filter: saturate(0.88);
+  animation: wx-built-in-hero-breathe 9s ease-in-out infinite;
+}
+
+.wx-built-in-festival-hero[data-intensity="low"] .wx-built-in-festival-hero-art {
+  opacity: 0.3;
+}
+
+.wx-built-in-festival-login {
+  opacity: 0.74;
+  mix-blend-mode: multiply;
+}
+
+html[data-theme="dark"] .wx-built-in-festival-header-scene {
+  opacity: 0.48;
+}
+
+html[data-theme="dark"] .wx-built-in-festival-hero-art {
+  opacity: 0.28;
+  filter: saturate(0.78) brightness(0.92);
+}
+
+html[data-theme="dark"] .wx-built-in-festival-login {
+  opacity: 0.46;
+  mix-blend-mode: screen;
+}
+
+@keyframes wx-built-in-light-twinkle {
+  0%,
+  100% {
+    filter: brightness(0.9);
+    opacity: 0.58;
+  }
+  50% {
+    filter: brightness(1.15);
+    opacity: 0.95;
+  }
+}
+
+@keyframes wx-built-in-ribbon-breathe {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scaleX(0.985);
+  }
+  50% {
+    opacity: 0.82;
+    transform: scaleX(1.01);
+  }
+}
+
+@keyframes wx-built-in-particle-float {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: translate3d(0, 0, 0) scale(0.75);
+  }
+  50% {
+    opacity: 0.34;
+    transform: translate3d(0.55rem, -0.7rem, 0) scale(1.12);
+  }
+}
+
+@keyframes wx-built-in-confetti-drift {
+  0%,
+  100% {
+    opacity: 0.09;
+    transform: translate3d(0, -0.4rem, 0) rotate(-18deg);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate3d(0.7rem, 1.7rem, 0) rotate(22deg);
+  }
+}
+
+@keyframes wx-built-in-sparkle {
+  0%,
+  100% {
+    opacity: 0.08;
+    transform: scale(0.45);
+  }
+  50% {
+    opacity: 0.48;
+    transform: scale(1.28);
+  }
+}
+
+@keyframes wx-built-in-holi-spray {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translateX(-0.35rem) rotate(-7deg) scaleX(0.9);
+  }
+  50% {
+    opacity: 0.42;
+    transform: translateX(0.55rem) rotate(-4deg) scaleX(1.08);
+  }
+}
+
+@keyframes wx-built-in-reindeer-run {
+  0% {
+    transform: translate3d(-10rem, 0.4rem, 0);
+  }
+  45% {
+    transform: translate3d(52vw, -0.1rem, 0);
+  }
+  55% {
+    transform: translate3d(61vw, 0.15rem, 0);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 12rem), 0.4rem, 0);
+  }
+}
+
+@keyframes wx-built-in-gift-offer {
+  0%,
+  43%,
+  57%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -0.3rem, 0) rotate(-8deg) scale(0.8);
+  }
+  48%,
+  52% {
+    opacity: 1;
+    transform: translate3d(0.25rem, 0.3rem, 0) rotate(7deg) scale(1);
+  }
+}
+
+@keyframes wx-built-in-hero-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-0.4rem, -0.35rem, 0);
+  }
+}
+
+.wx-festive-hero-layer {
+  height: min(49rem, calc(100svh - var(--wx-header-height)));
+  background:
+    radial-gradient(
+      circle at 8% 19%,
+      color-mix(in srgb, var(--wx-holiday-accent-warm) 13%, transparent),
+      transparent 23rem
+    ),
+    radial-gradient(
+      circle at 92% 28%,
+      color-mix(in srgb, var(--wx-holiday-accent) 10%, transparent),
+      transparent 24rem
+    );
+}
+
+.wx-festive-section-layer {
+  opacity: 0.58;
+}
+
+.wx-festive-footer-layer {
+  z-index: 1;
+  height: 8rem;
+}
+
+.wx-festive-footer-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    transparent
+  );
+}
+
+.wx-festive-login-layer {
+  background:
+    radial-gradient(
+      circle at 8% 10%,
+      color-mix(in srgb, var(--wx-holiday-accent-warm) 12%, transparent),
+      transparent 20rem
+    ),
+    radial-gradient(
+      circle at 93% 84%,
+      color-mix(in srgb, var(--wx-holiday-accent) 10%, transparent),
+      transparent 23rem
+    );
+}
+
+.wx-festive-garland {
+  position: absolute;
+  inset: 0 4% auto;
+  height: 4.25rem;
+  transform-origin: top center;
+}
+
+.wx-festive-garland-cord {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2.2rem;
+  border-bottom: 2px solid
+    color-mix(in srgb, var(--wx-holiday-accent) 54%, #2c743f);
+  border-radius: 0 0 50% 50%;
+  opacity: 0.78;
+}
+
+.wx-festive-marigold {
+  position: absolute;
+  top: 1rem;
+  left: calc(5% + var(--wx-festive-index) * 8%);
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 30%, #fff4b0 0 8%, transparent 9%),
+    radial-gradient(circle, var(--wx-holiday-accent-warm) 0 42%, #f59e0b 44% 68%, #c2410c 70%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--wx-holiday-accent-warm) 22%, transparent),
+    0 4px 10px color-mix(in srgb, var(--wx-holiday-accent-warm) 28%, transparent);
+}
+
+.wx-festive-marigold:nth-of-type(3n) {
+  top: 1.32rem;
+}
+
+.wx-festive-marigold:nth-of-type(3n + 1) {
+  top: 1.16rem;
+}
+
+.wx-festive-garland[data-density="subtle"] .wx-festive-marigold {
+  left: calc(9% + var(--wx-festive-index) * 18%);
+}
+
+.wx-festive-garland[data-density="rich"] .wx-festive-marigold {
+  left: calc(3% + var(--wx-festive-index) * 8%);
+  width: 0.68rem;
+  height: 0.68rem;
+}
+
+.wx-festive-garland-compact {
+  inset-inline: 2%;
+  height: 3rem;
+  opacity: 0.86;
+}
+
+.wx-festive-bell-cluster {
+  position: absolute;
+  top: 0;
+  left: clamp(1rem, 4vw, 5rem);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.wx-festive-bells-right {
+  right: clamp(1rem, 4vw, 5rem);
+  left: auto;
+  transform: scaleX(-1);
+}
+
+.wx-festive-bell-string {
+  display: block;
+  width: 0.7rem;
+  height: calc(1.4rem + var(--wx-festive-index) * 0.33rem);
+  border-left: 1px solid
+    color-mix(in srgb, var(--wx-holiday-accent) 50%, #7f1d1d);
+}
+
+.wx-festive-bell {
+  position: absolute;
+  bottom: -0.45rem;
+  left: -0.32rem;
+  width: 0.66rem;
+  height: 0.54rem;
+  border-radius: 55% 55% 18% 18%;
+  background: linear-gradient(135deg, #fff0a3, #f59e0b 48%, #b45309);
+  box-shadow: 0 3px 8px rgba(180, 83, 9, 0.2);
+}
+
+.wx-festive-bell::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  bottom: -0.18rem;
+  width: 0.18rem;
+  height: 0.18rem;
+  border-radius: 50%;
+  background: #92400e;
+}
+
+.wx-festive-bell-cluster-compact {
+  transform: scale(0.82);
+  transform-origin: top left;
+}
+
+.wx-festive-bells-right.wx-festive-bell-cluster-compact {
+  transform: scale(-0.82, 0.82);
+  transform-origin: top right;
+}
+
+.wx-festive-paper-fans {
+  position: absolute;
+  right: clamp(0.75rem, 4vw, 4rem);
+  top: clamp(4.5rem, 12vh, 8rem);
+  width: clamp(7rem, 13vw, 11rem);
+  height: clamp(7rem, 13vw, 11rem);
+  opacity: 0.72;
+}
+
+.wx-festive-paper-fan {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--wx-holiday-surface-tint) 0 11%, transparent 12%),
+    repeating-conic-gradient(
+      from 6deg,
+      var(--wx-holiday-accent) 0 11deg,
+      var(--wx-holiday-accent-warm) 11deg 22deg,
+      var(--wx-holiday-secondary) 22deg 33deg,
+      color-mix(in srgb, white 72%, var(--wx-holiday-accent-soft)) 33deg 44deg
+    );
+  border: 3px solid
+    color-mix(in srgb, var(--wx-holiday-accent-warm) 46%, white);
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--wx-holiday-accent) 15%, transparent);
+}
+
+.wx-festive-paper-fan-one {
+  inset: 0 auto auto 0;
+  width: 72%;
+  aspect-ratio: 1;
+}
+
+.wx-festive-paper-fan-two {
+  right: 0;
+  bottom: 0;
+  width: 54%;
+  aspect-ratio: 1;
+}
+
+.wx-festive-paper-fan-three {
+  left: 7%;
+  bottom: -14%;
+  width: 42%;
+  aspect-ratio: 1;
+}
+
+.wx-festive-paper-fans-compact {
+  top: 1rem;
+  right: 1.5rem;
+  width: 4rem;
+  height: 4rem;
+  opacity: 0.42;
+}
+
+.wx-festive-leaf-vine {
+  position: absolute;
+  left: 0;
+  bottom: 6%;
+  width: clamp(7rem, 14vw, 12rem);
+  height: clamp(10rem, 24vh, 17rem);
+  transform: rotate(-9deg);
+  transform-origin: bottom left;
+  opacity: 0.55;
+}
+
+.wx-festive-vine-right {
+  right: 0;
+  left: auto;
+  transform: scaleX(-1) rotate(-9deg);
+  transform-origin: bottom right;
+}
+
+.wx-festive-vine-stem {
+  position: absolute;
+  inset: 3% auto 0 18%;
+  width: 56%;
+  border-right: 2px solid
+    color-mix(in srgb, var(--wx-holiday-accent) 48%, #23834a);
+  border-radius: 50%;
+  transform: rotate(19deg);
+}
+
+.wx-festive-vine-leaf {
+  position: absolute;
+  left: 13%;
+  bottom: calc(var(--wx-festive-index) * 12%);
+  width: 1.05rem;
+  height: 0.54rem;
+  border-radius: 100% 0 100% 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--wx-holiday-accent) 42%, #2d8b51),
+    #17653a
+  );
+  transform: rotate(-38deg);
+}
+
+.wx-festive-vine-leaf:nth-of-type(2n) {
+  left: 41%;
+  transform: rotate(54deg);
+}
+
+.wx-festive-leaf-vine-compact {
+  bottom: auto;
+  top: 0.3rem;
+  width: 5rem;
+  height: 4rem;
+  opacity: 0.42;
+}
+
+.wx-festive-diya-line {
+  position: absolute;
+  inset: auto 8% 2.2rem;
+  height: 2.8rem;
+}
+
+.wx-festive-diya-rule {
+  position: absolute;
+  inset: auto 0 0.56rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--wx-holiday-accent-warm) 72%, white),
+    transparent
+  );
+}
+
+.wx-festive-diya {
+  position: absolute;
+  left: calc(8% + var(--wx-festive-index) * 20%);
+  bottom: 0.36rem;
+  width: 1rem;
+  height: 0.45rem;
+  border-radius: 0 0 52% 52%;
+  background: linear-gradient(90deg, #b45309, #f59e0b, #9a3412);
+  box-shadow: 0 0 1.1rem color-mix(in srgb, #f59e0b 36%, transparent);
+}
+
+.wx-festive-diya-flame {
+  position: absolute;
+  left: 0.36rem;
+  bottom: 0.34rem;
+  width: 0.28rem;
+  height: 0.58rem;
+  border-radius: 72% 28% 65% 35%;
+  background: linear-gradient(to top, #fb923c, #fde68a 66%, white);
+  transform: rotate(7deg);
+  transform-origin: bottom;
+}
+
+.wx-festive-diya-line-compact {
+  inset-inline: 14%;
+  bottom: 0.2rem;
+  opacity: 0.68;
+}
+
+.wx-festive-warm-particles {
+  position: absolute;
+  inset: 0;
+}
+
+.wx-festive-warm-particle {
+  position: absolute;
+  width: 0.32rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--wx-holiday-accent-warm) 72%, #fff6bf);
+  box-shadow:
+    0 0 0.7rem color-mix(in srgb, var(--wx-holiday-accent-warm) 44%, transparent),
+    0 0 1.8rem color-mix(in srgb, var(--wx-holiday-accent) 16%, transparent);
+  opacity: 0.42;
+}
+
+.wx-festive-warm-particle:nth-child(3n) {
+  width: 0.22rem;
+}
+
+.wx-festive-warm-particle:nth-child(3n + 2) {
+  width: 0.43rem;
+}
+
+html[data-holiday-motion="subtle"] .wx-festive-warm-particle,
+html[data-holiday-motion="festive"] .wx-festive-warm-particle {
+  animation: wx-festive-light-breathe 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--wx-festive-index) * -0.37s);
+}
+
+html[data-holiday-motion="festive"] .wx-festive-bell {
+  animation: wx-festive-bell-sway 3.6s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.wx-festive-warm-particles-compact .wx-festive-warm-particle {
+  opacity: 0.28;
+}
+
+.wx-holiday-explicit-banner {
+  opacity: 0.16;
+  mask-image: linear-gradient(to bottom, black 0 58%, transparent);
+}
+
+.wx-festive-axo-crown {
+  position: absolute;
+  top: -0.12rem;
+  left: 50%;
+  display: flex;
+  gap: 0.04rem;
+  transform: translateX(-50%) rotate(-4deg);
+}
+
+.wx-festive-axo-crown span {
+  width: 0.33rem;
+  height: 0.52rem;
+  border-radius: 50% 50% 35% 35%;
+  background: linear-gradient(
+    to bottom,
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent)
+  );
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--wx-holiday-accent) 24%, transparent);
+}
+
+.wx-festive-axo-crown span:nth-child(2) {
+  transform: translateY(-0.18rem);
+}
+
+.wx-festive-axo-bell {
+  position: absolute;
+  top: 30%;
+  right: 5%;
+  width: 0.52rem;
+  height: 0.45rem;
+  border-radius: 55% 55% 18% 18%;
+  background: linear-gradient(135deg, #fde68a, #f59e0b, #b45309);
+  filter: drop-shadow(0 2px 4px rgba(146, 64, 14, 0.22));
+}
+
+.wx-festive-axo-glow {
+  position: absolute;
+  inset: -0.35rem;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--wx-holiday-accent-warm) 17%, transparent),
+    transparent 68%
+  );
+}
+
+@keyframes wx-festive-light-breathe {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 0.58;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes wx-festive-bell-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+html[data-holiday-theme][data-holiday-website-palette="on"]:not([data-holiday-level="accent_only"]):not([data-holiday-scope="header_only"]):not([data-holiday-scope="login_screens"]) body {
+  background-color: color-mix(
+    in srgb,
+    var(--wx-holiday-background-tint) 16%,
+    var(--wx-bg)
+  );
+}
+
+html[data-holiday-theme][data-holiday-website-palette="on"]:not([data-holiday-level="accent_only"]):not([data-holiday-scope="header_only"]):not([data-holiday-scope="login_screens"]) .wx-gradient-action,
+html[data-holiday-theme][data-holiday-website-palette="on"]:not([data-holiday-level="accent_only"]):not([data-holiday-scope="header_only"]):not([data-holiday-scope="login_screens"]) .bg-brand-spectrum {
+  background: linear-gradient(
+    105deg,
+    var(--wx-holiday-cta),
+    color-mix(
+      in srgb,
+      var(--wx-holiday-cta) 62%,
+      var(--wx-holiday-accent-warm)
+    ),
+    var(--wx-holiday-accent-warm)
+  );
+  color: var(--wx-holiday-text-on-accent);
+}
+
+.wx-holiday-announcement {
+  border-color: color-mix(
+    in srgb,
+    var(--wx-holiday-accent) 24%,
+    transparent
+  );
+  background: linear-gradient(
+    90deg,
+    var(--wx-holiday-accent-soft),
+    color-mix(
+      in srgb,
+      var(--wx-holiday-surface-tint) 76%,
+      white
+    ),
+    var(--wx-holiday-accent-soft)
+  );
+  color: color-mix(in srgb, var(--wx-holiday-accent) 76%, #071f33);
+}
+
+.wx-holiday-header-decoration,
+.wx-holiday-footer-decoration,
+.wx-holiday-login-accent {
+  background: linear-gradient(
+    90deg,
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent)
+  );
+}
+
+html[data-holiday-motif="diya-lights"] .wx-holiday-header-decoration,
+html[data-holiday-motif="winter-lights"] .wx-holiday-header-decoration {
+  height: 4px;
+  background:
+    radial-gradient(circle at 8px 2px, var(--wx-holiday-accent-warm) 0 2px, transparent 2.5px)
+      0 0 / 22px 4px repeat-x,
+    linear-gradient(90deg, var(--wx-holiday-accent), var(--wx-holiday-accent-warm));
+}
+
+html[data-holiday-motif="colour-dots"] .wx-holiday-header-decoration {
+  height: 5px;
+  background:
+    radial-gradient(circle, var(--wx-holiday-accent) 0 2px, transparent 2.5px)
+      0 0 / 18px 5px repeat-x,
+    radial-gradient(circle, var(--wx-holiday-accent-warm) 0 2px, transparent 2.5px)
+      9px 0 / 18px 5px repeat-x;
+}
+
+html[data-holiday-motif="tricolour-ribbon"] .wx-holiday-header-decoration {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    #e87516 0 33.33%,
+    #ffffff 33.33% 66.66%,
+    #0a6a3a 66.66%
+  );
+  box-shadow: 0 1px 0 rgba(7, 31, 51, 0.08);
+}
+
+html[data-holiday-motif="crescent-lanterns"] .wx-holiday-header-decoration,
+html[data-holiday-motif="alpana"] .wx-holiday-header-decoration,
+html[data-holiday-motif="thread"] .wx-holiday-header-decoration,
+html[data-holiday-motif="soft-stars"] .wx-holiday-header-decoration {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent),
+    transparent
+  );
+}
+
+.wx-holiday-axo-accessory {
+  border-color: color-mix(
+    in srgb,
+    var(--wx-holiday-accent) 30%,
+    transparent
+  );
+  color: var(--wx-holiday-accent);
+}
+
+.wx-holiday-login-art {
+  background: var(--wx-holiday-background-tint);
+  opacity: 1;
+}
+
+.wx-holiday-login-overlay {
+  opacity: 0.2;
+  mix-blend-mode: multiply;
+}
+
+.wx-holiday-login-logo-overlay {
+  filter: drop-shadow(0 8px 20px rgba(48, 35, 112, 0.12));
+}
+
+html[data-holiday-login-asset="on"] .wx-auth-unified-background {
+  opacity: 0.18;
+}
+
+html[data-holiday-login-asset="on"] .wx-auth-global-facets {
+  opacity: 0.3;
+}
+
+.wx-designer-login-pack {
+  z-index: 0;
+  overflow: hidden;
+  background: #eadfda;
+}
+
+.wx-designer-login-pack-scene {
+  --wx-designer-pack-active-scene: var(
+    --wx-designer-pack-hero-desktop,
+    var(--wx-designer-pack-four-three)
+  );
+  background-color: #eadfda;
+  background-image: var(--wx-designer-pack-active-scene);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: brightness(var(--wx-designer-brightness, 1.04));
+}
+
+.wx-designer-login-pack-tone {
+  left: calc(
+    var(--wx-designer-canvas-balance, 58%) -
+      var(--wx-designer-edge-fade, 16%)
+  );
+  opacity: var(--wx-designer-form-ambience, 0.24);
+  background:
+    radial-gradient(
+      circle at 76% 18%,
+      rgba(249, 115, 22, var(--wx-designer-highlight-glow, 0.14)),
+      transparent 44%
+    ),
+    radial-gradient(
+      circle at 78% 82%,
+      rgba(21, 128, 61, var(--wx-designer-highlight-glow, 0.14)),
+      transparent 48%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0),
+      rgba(255, 250, 246, var(--wx-designer-contrast-protection, 0.72))
+    );
+  -webkit-backdrop-filter: blur(
+    calc(var(--wx-designer-blur, 28px) * 0.18)
+  );
+  backdrop-filter: blur(calc(var(--wx-designer-blur, 28px) * 0.18));
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, var(--wx-designer-seam-smoothing, 0.86))
+      var(--wx-designer-edge-fade, 16%),
+    #000 calc(var(--wx-designer-edge-fade, 16%) + 10%)
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, var(--wx-designer-seam-smoothing, 0.86))
+      var(--wx-designer-edge-fade, 16%),
+    #000 calc(var(--wx-designer-edge-fade, 16%) + 10%)
+  );
+}
+
+.wx-designer-login-pack[data-background-strategy="extend_hero_background"]
+  .wx-designer-login-pack-tone {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.wx-designer-login-pack[data-background-strategy="blurred_artwork_continuation"]
+  .wx-designer-login-pack-tone {
+  -webkit-backdrop-filter: blur(
+    calc(var(--wx-designer-blur, 28px) * 0.12)
+  );
+  backdrop-filter: blur(calc(var(--wx-designer-blur, 28px) * 0.12));
+}
+
+.wx-designer-login-pack[data-background-strategy="clean_ambient_surface"]
+  .wx-designer-login-pack-tone {
+  opacity: calc(var(--wx-designer-form-ambience, 0.24) * 1.5);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 250, 246, 0.76),
+    rgba(244, 248, 242, 0.7)
+  );
+}
+
+.wx-designer-login-pack[data-overlay-grain="on"]
+  .wx-designer-login-pack-tone::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.16;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(17, 29, 98, 0.32) 0.7px,
+    transparent 0.8px
+  );
+  background-size: 5px 5px;
+}
+
+@media (min-width: 1024px) and (min-aspect-ratio: 16 / 10) {
+  .wx-designer-login-pack-scene {
+    --wx-designer-pack-active-scene: var(
+      --wx-designer-pack-hero-desktop,
+      var(--wx-designer-pack-wide)
+    );
+  }
+}
+
+@media (min-width: 1024px) and (min-aspect-ratio: 19 / 9) {
+  .wx-designer-login-pack-scene {
+    --wx-designer-pack-active-scene: var(
+      --wx-designer-pack-hero-desktop,
+      var(--wx-designer-pack-ultrawide)
+    );
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .wx-designer-login-pack-scene {
+    --wx-designer-pack-active-scene: var(
+      --wx-designer-pack-hero-tablet,
+      var(--wx-designer-pack-four-three)
+    );
+  }
+}
+
+@media (max-width: 640px) {
+  .wx-designer-login-pack-scene {
+    --wx-designer-pack-active-scene: var(
+      --wx-designer-pack-hero-mobile,
+      var(--wx-designer-pack-four-three)
+    );
+  }
+}
+
+html[data-theme="dark"] .wx-designer-login-pack {
+  background: #10162c;
+}
+
+html[data-theme="dark"] .wx-designer-login-pack-tone {
+  background:
+    linear-gradient(90deg, rgba(9, 15, 36, 0.08), rgba(9, 15, 36, 0.58)),
+    radial-gradient(circle at 78% 44%, rgba(20, 27, 58, 0.12), transparent 44%);
+}
+
+.wx-designer-login-pack[data-composition-mode="full_natural_background"] {
+  background: #f7f0ea;
+}
+
+.wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  .wx-designer-login-pack-scene {
+  background-position: left center;
+  background-size: cover;
+  filter: brightness(var(--wx-designer-brightness, 1));
+}
+
+.wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  .wx-designer-login-pack-tone {
+  left: calc(
+    var(--wx-designer-canvas-balance, 58%) -
+      var(--wx-designer-edge-fade, 14%)
+  );
+  opacity: 1;
+  background:
+    radial-gradient(
+      circle at 76% 14%,
+      rgba(249, 115, 22, 0.05),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(21, 128, 61, 0.05),
+      transparent 46%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 250, 246, 0),
+      rgba(255, 252, 248, 0.32) 38%,
+      rgba(255, 252, 248, 0.48)
+    );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.32) 22%,
+    #000 52%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.32) 22%,
+    #000 52%
+  );
+}
+
+html[data-theme="dark"]
+  .wx-designer-login-pack[data-composition-mode="full_natural_background"] {
+  background: #11152a;
+}
+
+html[data-theme="dark"]
+  .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  .wx-designer-login-pack-tone {
+  background:
+    radial-gradient(
+      circle at 78% 16%,
+      rgba(249, 115, 22, 0.08),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 82% 88%,
+      rgba(21, 128, 61, 0.08),
+      transparent 46%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(10, 15, 36, 0),
+      rgba(10, 15, 36, 0.74) 38%,
+      rgba(10, 15, 36, 0.88)
+    );
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-unified-background,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-facets,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-holiday-login-hero,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-art-stage,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-crystal-cluster,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-left-elements,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-panel-transition {
+  display: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel {
+  background: transparent;
+}
+
+html[data-holiday-login-form-anchor="right"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-form-stage {
+  margin-left: auto;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+  filter: none;
+}
+
+@media (min-width: 1024px) {
+  .wx-auth-shell:has(
+      .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+    )
+    .wx-auth-form-panel {
+    padding-inline: clamp(2rem, 3vw, 4.5rem);
+  }
+
+  .wx-auth-shell:has(
+      .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+    )
+    .wx-auth-card {
+    padding: clamp(2rem, 2.25vw, 2.65rem) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.06);
+    backdrop-filter: blur(12px) saturate(1.06);
+    box-shadow:
+      0 30px 90px rgba(42, 36, 80, 0.18),
+      0 10px 28px rgba(31, 41, 55, 0.08);
+  }
+
+  .wx-auth-shell:has(
+      .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+    )
+    .wx-auth-card-logo-mark {
+    width: 18rem !important;
+  }
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(
+    .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  )
+  .wx-auth-card-logo {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(
+    .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  )
+  .wx-auth-card-logo-mark {
+  opacity: 1;
+  filter: none;
+}
+
+@media (max-width: 1023px) {
+  .wx-designer-login-pack[data-mobile-mode="form_only"] {
+    background:
+      radial-gradient(circle at 16% 12%, rgba(249, 115, 22, 0.12), transparent 30%),
+      radial-gradient(circle at 86% 88%, rgba(22, 163, 74, 0.1), transparent 32%),
+      #f8f7fb;
+  }
+
+  .wx-designer-login-pack[data-mobile-mode="form_only"]
+    .wx-designer-login-pack-scene {
+    display: none;
+  }
+
+  html[data-theme="dark"]
+    .wx-designer-login-pack[data-mobile-mode="form_only"] {
+    background:
+      radial-gradient(circle at 16% 12%, rgba(249, 115, 22, 0.12), transparent 30%),
+      radial-gradient(circle at 86% 88%, rgba(22, 163, 74, 0.1), transparent 32%),
+      #0d1329;
+  }
+
+  .wx-designer-login-pack[data-mobile-mode="compact_hero_form"]
+    .wx-designer-login-pack-scene {
+    height: min(34svh, 22rem);
+    background-position: center 58%;
+    background-size: contain;
+    mask-image: linear-gradient(#000 0 72%, transparent 100%);
+  }
+
+  .wx-auth-shell:has(
+      .wx-designer-login-pack[data-mobile-mode="compact_hero_form"]
+    )
+    .wx-auth-form-panel {
+    min-height: 100svh;
+    padding-top: min(38svh, 25rem);
+  }
+
+  .wx-designer-login-pack[data-mobile-mode="background_form"]
+    .wx-designer-login-pack-scene {
+    background-position: 52% center;
+    background-size: contain;
+  }
+
+  .wx-designer-login-pack[data-composition-mode="full_canvas_uniform"][data-mobile-mode="background_form"]
+    .wx-designer-login-pack-scene,
+  .wx-designer-login-pack[data-composition-mode="full_canvas_floating_form"][data-mobile-mode="background_form"]
+    .wx-designer-login-pack-scene,
+  .wx-designer-login-pack[data-composition-mode="full_natural_background"][data-mobile-mode="background_form"]
+    .wx-designer-login-pack-scene {
+    background-position: 43% center;
+    background-size: cover;
+  }
+
+  .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+    .wx-designer-login-pack-tone {
+    left: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 250, 246, 0.1),
+      rgba(255, 252, 248, 0.46) 44%,
+      rgba(255, 252, 248, 0.62)
+    );
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  html[data-theme="dark"]
+    .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+    .wx-designer-login-pack-tone {
+    background: linear-gradient(
+      180deg,
+      rgba(8, 12, 31, 0.26),
+      rgba(8, 12, 31, 0.68) 44%,
+      rgba(8, 12, 31, 0.82)
+    );
+  }
+
+  .wx-designer-login-pack[data-mobile-mode="background_form"]
+    .wx-designer-login-pack-tone {
+    background: rgba(255, 255, 255, 0.36);
+  }
+
+  html[data-theme="dark"]
+    .wx-designer-login-pack[data-mobile-mode="background_form"]
+    .wx-designer-login-pack-tone {
+    background: rgba(7, 11, 28, 0.56);
+  }
+}
+
+html[data-holiday-login-columns="55_45"] .wx-auth-layout {
+  grid-template-columns: minmax(0, 55fr) minmax(28rem, 45fr);
+}
+
+html[data-holiday-login-columns="50_50"] .wx-auth-layout {
+  grid-template-columns: minmax(0, 50fr) minmax(28rem, 50fr);
+}
+
+.wx-auth-form-panel {
+  isolation: isolate;
+}
+
+.wx-auth-shell:not(:has(.wx-holiday-login-hero))
+  .wx-auth-form-ambience {
+  background: transparent;
+}
+
+.wx-auth-shell:not(:has(.wx-holiday-login-hero))
+  .wx-auth-form-ambience::after,
+.wx-auth-shell:not(:has(.wx-holiday-login-hero))
+  .wx-auth-panel-transition {
+  display: none;
+}
+
+.wx-auth-form-ambience {
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 10% 28%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-light-pattern, #6d28d9)
+          calc(var(--wx-login-background-intensity, 0.22) * 48%),
+        transparent
+      ),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      var(--wx-login-ambience-light-start, #f7f3ff),
+      var(--wx-login-ambience-light-end, #fff7fb)
+    );
+  background-color: var(--wx-login-ambience-light-start, #f7f3ff);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.wx-auth-form-ambience::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: calc(var(--wx-login-background-intensity, 0.22) * 0.62);
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      var(--wx-login-ambience-light-pattern, #6d28d9) 1px,
+      transparent 1.2px
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0 48%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-light-pattern, #6d28d9) 12%,
+        transparent
+      ) 49% 51%,
+      transparent 52%
+    );
+  background-repeat: repeat, no-repeat;
+  background-size: 28px 28px, cover;
+  mask-image: linear-gradient(135deg, transparent 3%, #000 32%, #000 100%);
+}
+
+html[data-holiday-login-pattern="none"] .wx-auth-form-ambience::after {
+  display: none;
+}
+
+html[data-holiday-login-pattern="soft_facets"] .wx-auth-form-ambience::after {
+  background-image:
+    linear-gradient(
+      120deg,
+      transparent 0 35%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-light-pattern, #6d28d9) 10%,
+        transparent
+      ) 36% 36.5%,
+      transparent 37% 64%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-light-pattern, #6d28d9) 8%,
+        transparent
+      ) 65% 65.5%,
+      transparent 66%
+    );
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+html[data-holiday-login-background="default_writex_surface"]
+  .wx-auth-form-ambience {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.78), rgba(247, 248, 255, 0.96)),
+    url("/images/backgrounds/writex-spectrum-bg-login.webp") center / cover
+      no-repeat;
+}
+
+html[data-holiday-login-background="soft_derived_blur"]
+  .wx-auth-form-ambience,
+html[data-holiday-login-background="extended_artwork_ambience"]
+  .wx-auth-form-ambience {
+  background:
+    radial-gradient(
+      circle at 5% 50%,
+      color-mix(
+        in srgb,
+        var(--wx-holiday-accent, #6d28d9) 28%,
+        transparent
+      ),
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      var(--wx-login-ambience-light-start, #f7f3ff),
+      var(--wx-login-ambience-light-end, #fff7fb)
+    );
+}
+
+.wx-auth-form-ambience-image {
+  opacity: calc(var(--wx-login-background-intensity, 0.22) * 1.35);
+  filter: blur(34px) saturate(0.82);
+  transform: scale(1.12);
+}
+
+html[data-holiday-login-background="uploaded_form_background"]
+  .wx-auth-form-ambience-image {
+  opacity: calc(var(--wx-login-background-intensity, 0.22) * 1.8);
+  filter: saturate(0.72) brightness(1.08);
+  transform: scale(1.02);
+}
+
+.wx-auth-panel-transition {
+  z-index: 1;
+  width: clamp(2.5rem, 6vw, 7rem);
+  transform: translateX(-55%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(
+      in srgb,
+      var(--wx-login-ambience-light-start, #f7f3ff) 82%,
+      transparent
+    ),
+    var(--wx-login-ambience-light-start, #f7f3ff)
+  );
+}
+
+html[data-holiday-login-transition="straight"] .wx-auth-panel-transition,
+html[data-holiday-login-transition="none"] .wx-auth-panel-transition {
+  display: none;
+}
+
+html[data-holiday-login-transition="curved"] .wx-auth-panel-transition {
+  width: clamp(3rem, 7vw, 8rem);
+  border-radius: 50% 0 0 50%;
+  transform: translateX(-62%) scaleY(1.06);
+}
+
+html[data-theme="dark"] .wx-auth-form-ambience {
+  background:
+    radial-gradient(
+      circle at 8% 30%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-dark-pattern, #a78bfa)
+          calc(var(--wx-login-background-intensity, 0.22) * 60%),
+        transparent
+      ),
+      transparent 36%
+    ),
+    linear-gradient(
+      145deg,
+      var(--wx-login-ambience-dark-start, #0d1230),
+      var(--wx-login-ambience-dark-end, #211447)
+    );
+  background-color: var(--wx-login-ambience-dark-start, #0d1230);
+}
+
+html[data-theme="dark"] .wx-auth-form-ambience::after {
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      var(--wx-login-ambience-dark-pattern, #a78bfa) 1px,
+      transparent 1.2px
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0 48%,
+      color-mix(
+        in srgb,
+        var(--wx-login-ambience-dark-pattern, #a78bfa) 15%,
+        transparent
+      ) 49% 51%,
+      transparent 52%
+    );
+}
+
+html[data-theme="dark"] .wx-auth-panel-transition {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(
+      in srgb,
+      var(--wx-login-ambience-dark-start, #0d1230) 82%,
+      transparent
+    ),
+    var(--wx-login-ambience-dark-start, #0d1230)
+  );
+}
+
+html[data-holiday-login-asset="on"] .wx-auth-art-stage,
+html[data-holiday-login-asset="on"] .wx-auth-crystal-cluster,
+html[data-holiday-login-asset="on"] .wx-auth-left-elements {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.wx-holiday-login-hero-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+.wx-holiday-login-hero[data-fit-mode="fit_entire_artwork"]
+  .wx-holiday-login-hero-image {
+  object-fit: contain;
+  background: var(--wx-holiday-background-tint);
+}
+
+@media (max-width: 1023px) {
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-layout {
+    grid-template-rows: minmax(15rem, 34svh) minmax(0, 1fr);
+  }
+
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-brand-panel,
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-holiday-login-hero {
+    display: block;
+    min-height: min(34svh, 24rem);
+  }
+
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-brand-copy,
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-art-stage,
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-crystal-cluster,
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-left-elements {
+    display: none;
+  }
+
+  html[data-holiday-login-asset="on"][data-holiday-login-mobile="compact_hero"]
+    .wx-auth-form-panel {
+    min-height: 66svh;
+    padding-top: 4.75rem;
+  }
+
+  .wx-auth-panel-transition {
+    inset: 0 0 auto;
+    width: 100%;
+    height: 3.5rem;
+    transform: translateY(-52%);
+    background: linear-gradient(
+      180deg,
+      transparent,
+      var(--wx-login-ambience-light-start, #f7f3ff)
+    );
+  }
+
+  html[data-theme="dark"] .wx-auth-panel-transition {
+    background: linear-gradient(
+      180deg,
+      transparent,
+      var(--wx-login-ambience-dark-start, #0d1230)
+    );
+  }
+}
+
+@media (min-width: 1024px) {
+  .wx-auth-layout {
+    grid-template-columns: minmax(0, 58fr) minmax(28rem, 42fr);
+  }
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-card {
+  border-width: var(--wx-login-card-border-width, 1px);
+  border-radius: var(--wx-login-card-radius, 28px);
+  border-color: color-mix(
+    in srgb,
+    var(--wx-login-focus-light, #6d28d9) 24%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--wx-login-card-light, #ffffff)
+      calc(var(--wx-login-card-opacity, 0.9) * 100%),
+    transparent
+  );
+  -webkit-backdrop-filter: blur(var(--wx-login-card-blur, 24px))
+    saturate(1.12);
+  backdrop-filter: blur(var(--wx-login-card-blur, 24px)) saturate(1.12);
+  box-shadow:
+    0 30px 90px
+      color-mix(
+        in srgb,
+        var(--wx-login-focus-light, #6d28d9)
+          calc(var(--wx-login-card-glow, 0.18) * 100%),
+        transparent
+      ),
+    0 8px 24px rgba(29, 23, 79, 0.1);
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-form h1,
+html[data-holiday-login-skin="themed"] .wx-auth-form label {
+  color: var(--wx-login-heading-light, #111d62);
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-form h1 + p,
+html[data-holiday-login-skin="themed"] .wx-auth-form > p {
+  color: var(--wx-login-body-light, #4d5b89);
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-field {
+  border-color: var(--wx-login-input-border-light, #d8d7ef);
+  background: var(--wx-login-input-light, #ffffff);
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-field:focus {
+  border-color: var(--wx-login-focus-light, #6d28d9);
+  box-shadow: 0 0 0 4px
+    color-mix(
+      in srgb,
+      var(--wx-login-focus-light, #6d28d9) 14%,
+      transparent
+    );
+}
+
+html[data-holiday-login-skin="themed"] .wx-auth-form .wx-gradient-action {
+  background: linear-gradient(
+    105deg,
+    var(--wx-login-cta-start-light, #6d28d9),
+    var(--wx-login-cta-end-light, #e83874)
+  );
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"] .wx-auth-card {
+  border-color: color-mix(
+    in srgb,
+    var(--wx-login-focus-dark, #a78bfa) 26%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--wx-login-card-dark, #111632)
+      calc(var(--wx-login-card-opacity, 0.9) * 100%),
+    transparent
+  );
+  box-shadow:
+    0 32px 96px
+      color-mix(
+        in srgb,
+        var(--wx-login-focus-dark, #a78bfa)
+          calc(var(--wx-login-card-glow, 0.18) * 100%),
+        transparent
+      ),
+    0 12px 30px rgba(0, 0, 0, 0.34);
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"]
+  .wx-auth-form
+  h1,
+html[data-theme="dark"][data-holiday-login-skin="themed"]
+  .wx-auth-form
+  label {
+  color: var(--wx-login-heading-dark, #f7f8ff);
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"]
+  .wx-auth-form
+  h1
+  + p,
+html[data-theme="dark"][data-holiday-login-skin="themed"]
+  .wx-auth-form
+  > p {
+  color: var(--wx-login-body-dark, #c4cae5);
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"] .wx-auth-field {
+  border-color: var(--wx-login-input-border-dark, #353b68);
+  background: var(--wx-login-input-dark, #080b20);
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"] .wx-auth-field:focus {
+  border-color: var(--wx-login-focus-dark, #a78bfa);
+  box-shadow: 0 0 0 4px
+    color-mix(
+      in srgb,
+      var(--wx-login-focus-dark, #a78bfa) 16%,
+      transparent
+    );
+}
+
+html[data-theme="dark"][data-holiday-login-skin="themed"]
+  .wx-auth-form
+  .wx-gradient-action {
+  background: linear-gradient(
+    105deg,
+    var(--wx-login-cta-start-dark, #7c3aed),
+    var(--wx-login-cta-end-dark, #f43f7d)
+  );
+}
+
+html[data-holiday-custom-axo-loaded="on"] .wx-auth-art-stage {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html[data-theme="dark"] .wx-holiday-login-art {
+  opacity: 0.94;
+}
+
+html[data-theme="dark"] .wx-holiday-login-overlay {
+  opacity: 0.16;
+  mix-blend-mode: screen;
+}
+
+.wx-festival-light-string {
+  position: absolute;
+  inset: 0.35rem 3.5% auto;
+  height: 2.5rem;
+  opacity: 0.78;
+}
+
+.wx-festival-light-cord {
+  position: absolute;
+  inset: 0.35rem 0 auto;
+  height: 1px;
+  background: color-mix(in srgb, var(--wx-holiday-accent) 38%, transparent);
+  transform: rotate(-0.4deg);
+}
+
+.wx-festival-light {
+  position: absolute;
+  left: calc(3% + var(--wx-festive-index) * 6.3%);
+  top: calc(0.15rem + (var(--wx-festive-index) % 3) * 0.28rem);
+  width: 0.42rem;
+  height: 0.58rem;
+  border-radius: 50% 50% 60% 60%;
+  background: var(--wx-holiday-accent-warm);
+  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--wx-holiday-accent-warm) 65%, transparent);
+}
+
+.wx-festival-lantern-cluster {
+  position: absolute;
+  left: 3.5rem;
+  top: 0.4rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  opacity: 0.72;
+}
+
+.wx-festival-lantern {
+  width: 0.85rem;
+  height: calc(1.15rem + (var(--wx-festive-index) % 2) * 0.45rem);
+  border: 1px solid color-mix(in srgb, var(--wx-holiday-accent) 58%, transparent);
+  border-radius: 0.28rem 0.28rem 0.4rem 0.4rem;
+  background: linear-gradient(
+    90deg,
+    var(--wx-holiday-accent-soft),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent-soft)
+  );
+  box-shadow: 0 0 0.8rem color-mix(in srgb, var(--wx-holiday-accent-warm) 34%, transparent);
+}
+
+.wx-festival-dot-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.54;
+}
+
+.wx-festival-dot-field > span {
+  position: absolute;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: var(--wx-holiday-decoration-one);
+  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--wx-holiday-decoration-two) 44%, transparent);
+}
+
+.wx-festival-dot-field[data-kind="stars"] > span {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 61% 36%, 100% 50%, 61% 64%, 50% 100%, 39% 64%, 0 50%, 39% 36%);
+}
+
+.wx-festival-dot-field[data-kind="snow"] > span {
+  background: white;
+  opacity: 0.7;
+}
+
+.wx-festival-dot-field[data-kind="colour-burst"] > span {
+  width: 0.62rem;
+  height: 0.62rem;
+  background: color-mix(
+    in srgb,
+    var(--wx-holiday-accent) calc(42% + (var(--wx-festive-index) % 3) * 16%),
+    var(--wx-holiday-accent-warm)
+  );
+  filter: blur(0.5px);
+}
+
+.wx-festival-dot-field[data-kind="fireworks"] > span {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px dotted var(--wx-holiday-accent-warm);
+  background: transparent;
+}
+
+.wx-festival-dot-field[data-kind="confetti"] > span {
+  width: 0.2rem;
+  height: 0.62rem;
+  border-radius: 0.08rem;
+  background: color-mix(
+    in srgb,
+    var(--wx-holiday-accent) 50%,
+    var(--wx-holiday-accent-warm)
+  );
+  transform: rotate(calc(var(--wx-festive-index) * 23deg));
+}
+
+.wx-festival-dot-field[data-kind="kites"] > span {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--wx-holiday-accent), var(--wx-holiday-accent-warm));
+  transform: rotate(45deg);
+}
+
+.wx-festival-alpana-corner,
+.wx-festival-floral-corner,
+.wx-festival-harvest-accent,
+.wx-festival-header-silhouette,
+.wx-festival-dhol-accent {
+  position: absolute;
+  left: -2.25rem;
+  bottom: -2.25rem;
+  width: 7rem;
+  height: 7rem;
+  opacity: 0.32;
+}
+
+.wx-festival-alpana-corner {
+  border: 2px solid var(--wx-holiday-accent-warm);
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 22.5deg,
+      transparent 0 11deg,
+      color-mix(in srgb, var(--wx-holiday-accent) 46%, transparent) 12deg 17deg,
+      transparent 18deg 45deg
+    );
+}
+
+.wx-festival-floral-corner {
+  border-radius: 52% 48% 55% 45%;
+  background:
+    radial-gradient(circle at 50% 18%, var(--wx-holiday-accent-warm) 0 13%, transparent 14%),
+    radial-gradient(circle at 82% 50%, var(--wx-holiday-accent) 0 13%, transparent 14%),
+    radial-gradient(circle at 50% 82%, var(--wx-holiday-accent-warm) 0 13%, transparent 14%),
+    radial-gradient(circle at 18% 50%, var(--wx-holiday-accent) 0 13%, transparent 14%);
+}
+
+.wx-festival-harvest-accent {
+  width: 3.8rem;
+  height: 8rem;
+  border-left: 2px solid var(--wx-holiday-accent-warm);
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(
+      ellipse at 0 50%,
+      var(--wx-holiday-accent-warm) 0 0.28rem,
+      transparent 0.3rem 0.8rem
+    );
+}
+
+.wx-festival-header-silhouette {
+  left: auto;
+  right: 1rem;
+  bottom: 0;
+  width: 9rem;
+  height: 2.5rem;
+  background:
+    linear-gradient(135deg, transparent 44%, var(--wx-holiday-accent) 45% 55%, transparent 56%)
+      0 100% / 2.5rem 1.4rem repeat-x;
+  opacity: 0.18;
+}
+
+.wx-festival-dhol-accent {
+  left: auto;
+  right: 1.5rem;
+  width: 3.4rem;
+  height: 2.35rem;
+  border: 2px solid var(--wx-holiday-accent-warm);
+  border-radius: 38%;
+  transform: rotate(-12deg);
+}
+
+.wx-festival-ribbon-wave {
+  position: absolute;
+  inset: auto 0 0;
+  height: 0.34rem;
+  background: linear-gradient(
+    90deg,
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-surface-tint),
+    var(--wx-holiday-accent)
+  );
+  opacity: 0.72;
+}
+
+.wx-festival-moon-lantern {
+  position: absolute;
+  top: 0.25rem;
+  right: 2.5rem;
+  width: 8rem;
+  height: 5rem;
+  opacity: 0.64;
+}
+
+.wx-festival-crescent {
+  position: absolute;
+  right: 0.4rem;
+  top: 0.3rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 50%;
+  box-shadow: -0.55rem 0 0 var(--wx-holiday-accent-warm);
+}
+
+.wx-festival-moon-lantern .wx-festival-lantern-cluster {
+  left: 0.25rem;
+}
+
+html[data-holiday-motion="festive"] .wx-festival-light,
+html[data-holiday-motion="festive"] .wx-festival-lantern {
+  animation: wx-festive-light-breathe 3.8s ease-in-out infinite;
+}
+
+html[data-holiday-motion="festive"] .wx-festival-dot-field[data-kind="snow"] > span,
+html[data-holiday-motion="festive"] .wx-festival-dot-field[data-kind="confetti"] > span {
+  animation: wx-holiday-fall 12s linear infinite;
+  animation-delay: calc(var(--wx-festive-index) * -0.42s);
+}
+
+html[data-holiday-theme] .wx-auth-card {
+  border-color: color-mix(
+    in srgb,
+    var(--wx-holiday-border-highlight) 28%,
+    var(--wx-border)
+  );
+}
+
+html[data-holiday-theme] .wx-auth-shell::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 10rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--wx-holiday-accent-soft) 48%, transparent),
+    transparent
+  );
+}
+
+html[data-holiday-animation="standard"] .wx-holiday-axo-accessory {
+  animation: wx-holiday-soft-pulse 3.8s ease-in-out infinite;
+}
+
+html[data-holiday-header-preset="diya_lights"] .wx-holiday-header-decoration,
+html[data-holiday-header-preset="festive_lights"] .wx-holiday-header-decoration {
+  height: 5px;
+  background:
+    radial-gradient(circle at 7px 2px, var(--wx-holiday-accent-warm) 0 2px, transparent 2.6px)
+      0 0 / 22px 5px repeat-x,
+    linear-gradient(90deg, var(--wx-holiday-accent), var(--wx-holiday-secondary));
+}
+
+html[data-holiday-header-preset="alpana"] .wx-holiday-header-decoration,
+html[data-holiday-header-preset="floral"] .wx-holiday-header-decoration,
+html[data-holiday-header-preset="lanterns"] .wx-holiday-header-decoration,
+html[data-holiday-header-preset="stars"] .wx-holiday-header-decoration {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-accent),
+    transparent
+  );
+}
+
+html[data-holiday-header-preset="colour_powder"] .wx-holiday-header-decoration {
+  height: 5px;
+  background:
+    radial-gradient(circle, var(--wx-holiday-accent) 0 2px, transparent 2.7px)
+      0 0 / 18px 5px repeat-x,
+    radial-gradient(circle, var(--wx-holiday-accent-warm) 0 2px, transparent 2.7px)
+      9px 0 / 18px 5px repeat-x;
+}
+
+.wx-holiday-ambient-particle {
+  position: absolute;
+  top: -2rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  opacity: 0.22;
+  background: var(--wx-holiday-decoration-one);
+  box-shadow: 0 0 0.85rem color-mix(in srgb, var(--wx-holiday-decoration-two) 40%, transparent);
+  animation: wx-holiday-fall 11s linear infinite;
+}
+
+.wx-holiday-ambient-particle:nth-child(2n) {
+  width: 0.38rem;
+  height: 0.38rem;
+  background: var(--wx-holiday-decoration-two);
+}
+
+.wx-holiday-feature {
+  opacity: 0.68;
+}
+
+.wx-holiday-ambient[data-preset="floating_decorations"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="floating_motifs"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="kite_movement"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="lantern_glow"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="sparkles"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="star_field"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="subtle_glow"] .wx-holiday-ambient-particle {
+  top: auto;
+  bottom: 10%;
+  animation-name: wx-holiday-float;
+  animation-timing-function: ease-in-out;
+}
+
+.wx-holiday-ambient[data-preset="snow"] .wx-holiday-ambient-particle {
+  background: #ffffff;
+  box-shadow: 0 0 0.7rem rgba(255, 255, 255, 0.5);
+  opacity: 0.42;
+}
+
+.wx-holiday-ambient[data-preset="colour_burst"] .wx-holiday-ambient-particle {
+  opacity: 0.18;
+  animation-name: wx-holiday-colour-drift;
+  animation-timing-function: ease-in-out;
+}
+
+.wx-holiday-ambient[data-preset="pichkari_spray"] .wx-holiday-ambient-particle {
+  opacity: 0.17;
+  animation-name: wx-holiday-colour-drift;
+  animation-timing-function: ease-in-out;
+}
+
+.wx-holiday-ambient[data-preset="controlled_fireworks"] .wx-holiday-ambient-particle {
+  top: 16%;
+  opacity: 0.16;
+  animation-name: wx-holiday-safe-spark;
+  animation-timing-function: ease-in-out;
+}
+
+.wx-holiday-ambient[data-preset="confetti"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="falling_petals"] .wx-holiday-ambient-particle {
+  border-radius: 0.12rem 70% 0.12rem 70%;
+  animation-name: wx-holiday-fall;
+}
+
+.wx-holiday-ambient[data-preset="reindeer_movement"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="header_procession"] .wx-holiday-ambient-particle,
+.wx-holiday-ambient[data-preset="procession_silhouette"] .wx-holiday-ambient-particle {
+  top: 5rem;
+  animation-name: wx-holiday-horizontal-drift;
+  animation-timing-function: linear;
+}
+
+.wx-holiday-ambient[data-intensity="medium"] .wx-holiday-ambient-particle {
+  opacity: 0.26;
+}
+
+.wx-holiday-ambient[data-intensity="high"] .wx-holiday-ambient-particle {
+  opacity: 0.3;
+}
+
+@keyframes wx-holiday-fall {
+  from {
+    transform: translate3d(0, -4vh, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(2.5rem, 108vh, 0) rotate(180deg);
+  }
+}
+
+@keyframes wx-holiday-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate3d(1rem, -18vh, 0);
+    opacity: 0.28;
+  }
+}
+
+@keyframes wx-holiday-colour-drift {
+  0%,
+  100% {
+    transform: translate3d(-1rem, 6vh, 0) scale(0.7);
+  }
+  50% {
+    transform: translate3d(2rem, 54vh, 0) scale(1.4);
+  }
+}
+
+@keyframes wx-holiday-safe-spark {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.4);
+    opacity: 0.08;
+  }
+  50% {
+    transform: translate3d(1rem, 16vh, 0) scale(1.35);
+    opacity: 0.24;
+  }
+}
+
+@keyframes wx-holiday-horizontal-drift {
+  from {
+    transform: translate3d(-12vw, 0, 0);
+    opacity: 0.08;
+  }
+  45% {
+    opacity: 0.2;
+  }
+  to {
+    transform: translate3d(112vw, 0, 0);
+    opacity: 0.08;
+  }
+}
+
+@keyframes wx-holiday-soft-pulse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 1199px) {
+  .wx-festival-decoration-rail {
+    height: 2.55rem;
+  }
+
+  .wx-festival-decoration-rail-stage {
+    top: 0.38rem;
+    height: 2rem;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-festival-header-ornament-layer
+    .wx-header-ornament:nth-child(n + 6) {
+    display: none;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament-cord {
+    height: min(var(--wx-ornament-length), 1.1rem);
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament-visual {
+    top: min(var(--wx-ornament-length), 1.1rem);
+  }
+
+  .wx-festival-header-ornament-layer {
+    opacity: 0.82;
+  }
+
+  .wx-header-ornament-cord {
+    height: min(var(--wx-ornament-length), 1.9rem);
+  }
+
+  .wx-header-ornament-visual {
+    top: min(var(--wx-ornament-length), 1.9rem);
+  }
+
+  .wx-festival-header-ornament-layer
+    .wx-header-ornament:nth-child(n + 6) {
+    display: none;
+  }
+
+  .wx-header-ornament[data-position="far_left"] {
+    left: 30%;
+  }
+
+  .wx-header-ornament[data-position="left"] {
+    left: 38%;
+  }
+
+  .wx-header-ornament[data-position="left_center"] {
+    left: 46%;
+  }
+
+  .wx-header-ornament[data-position="center"] {
+    left: 54%;
+  }
+
+  .wx-header-ornament[data-position="right_center"] {
+    left: 62%;
+  }
+
+  .wx-header-ornament[data-position="right"] {
+    left: 70%;
+  }
+
+  .wx-header-ornament[data-position="far_right"] {
+    left: 78%;
+  }
+
+  .wx-header-ornament[data-type="garland_band"],
+  .wx-header-ornament[data-type="animated_ribbon"] {
+    right: 15%;
+    left: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  .wx-festival-decoration-rail {
+    height: 2rem;
+  }
+
+  .wx-festival-decoration-rail-stage,
+  .wx-festival-decoration-rail[data-vertical-placement="slightly_lower"]
+    .wx-festival-decoration-rail-stage,
+  .wx-festival-decoration-rail[data-vertical-placement="hero_edge"]
+    .wx-festival-decoration-rail-stage {
+    top: 0.28rem;
+    height: 1.6rem;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-festival-header-ornament-layer
+    .wx-header-ornament:nth-child(n + 4) {
+    display: none;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament:nth-child(1):not([data-type="garland_band"]):not([data-type="animated_ribbon"]) {
+    left: 18%;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament:nth-child(2):not([data-type="garland_band"]):not([data-type="animated_ribbon"]) {
+    left: 50%;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament:nth-child(3):not([data-type="garland_band"]):not([data-type="animated_ribbon"]) {
+    left: 82%;
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament-cord {
+    height: min(var(--wx-ornament-length), 0.82rem);
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament-visual {
+    top: min(var(--wx-ornament-length), 0.82rem);
+  }
+
+  .wx-festival-decoration-rail
+    .wx-header-ornament[data-type="text_badge"],
+  .wx-festival-decoration-rail
+    .wx-header-ornament[data-type="ambient_glow"],
+  .wx-festival-decoration-rail
+    .wx-header-ornament[data-type="corner_cluster"] {
+    display: none;
+  }
+
+  .wx-built-in-festival-header-scene {
+    opacity: 0.5;
+  }
+
+  .wx-built-in-festival-header-art {
+    object-position: 72% top;
+  }
+
+  .wx-built-in-light-string {
+    right: 14%;
+    left: 52%;
+  }
+
+  .wx-built-in-light-string > span:nth-child(n + 6),
+  .wx-built-in-particle-layer > span:nth-child(n + 5),
+  .wx-built-in-reindeer-run,
+  .wx-built-in-holi-spray {
+    display: none;
+  }
+
+  .wx-built-in-streamer-ribbon {
+    right: 14%;
+    left: 50%;
+  }
+
+  .wx-built-in-festival-hero-art {
+    right: -4.2rem;
+    bottom: -1rem;
+    width: 18rem;
+    opacity: 0.2;
+  }
+
+  .wx-built-in-festival-login {
+    opacity: 0.5;
+  }
+
+  .wx-holiday-login-art {
+    background: var(--wx-holiday-background-tint);
+  }
+
+  .wx-holiday-ambient[data-desktop-only="true"] {
+    display: none;
+  }
+
+  .wx-holiday-ambient[data-mobile-simplified="true"]
+    .wx-holiday-ambient-particle:nth-child(n + 5) {
+    display: none;
+  }
+
+  .wx-festival-header-ornament-layer {
+    opacity: 0.68;
+  }
+
+  .wx-festival-header-ornament-layer[data-mobile-simplified="true"]
+    .wx-header-ornament:nth-child(n + 4),
+  .wx-festival-header-ornament-layer
+    .wx-header-ornament[data-mobile-visible="false"],
+  .wx-festival-header-ornament-layer
+    .wx-header-ornament[data-type="text_badge"],
+  .wx-festival-header-ornament-layer
+    .wx-header-ornament[data-type="ambient_glow"] {
+    display: none;
+  }
+
+  .wx-header-ornament {
+    transform: translateX(-50%) scale(calc(var(--wx-ornament-scale) * 0.72));
+  }
+
+  .wx-header-ornament-cord {
+    height: min(var(--wx-ornament-length), 1.35rem);
+  }
+
+  .wx-header-ornament-visual {
+    top: min(var(--wx-ornament-length), 1.35rem);
+  }
+
+  .wx-header-ornament[data-position="far_left"],
+  .wx-header-ornament[data-position="left"] {
+    left: 58%;
+  }
+
+  .wx-header-ornament[data-position="left_center"] {
+    left: 68%;
+  }
+
+  .wx-header-ornament[data-position="center"] {
+    left: 76%;
+  }
+
+  .wx-header-ornament[data-position="right_center"] {
+    left: 76%;
+  }
+
+  .wx-header-ornament[data-position="right"],
+  .wx-header-ornament[data-position="far_right"] {
+    left: 76%;
+  }
+
+  .wx-header-ornament[data-type="garland_band"],
+  .wx-header-ornament[data-type="animated_ribbon"] {
+    right: 18%;
+    left: 48%;
+  }
+
+  .wx-festive-header-layer {
+    height: 4.5rem;
+  }
+
+  .wx-festive-garland {
+    inset-inline: 1.5rem;
+    transform: scaleY(0.82);
+  }
+
+  .wx-festive-garland .wx-festive-marigold:nth-of-type(n + 8),
+  .wx-festive-bells-right,
+  .wx-festive-vine-right {
+    display: none;
+  }
+
+  .wx-festive-bell-cluster {
+    left: 0.55rem;
+    transform: scale(0.72);
+    transform-origin: top left;
+  }
+
+  .wx-festive-paper-fans {
+    top: 5.25rem;
+    right: -0.5rem;
+    width: 5.8rem;
+    height: 5.8rem;
+    opacity: 0.42;
+  }
+
+  .wx-festive-hero-layer .wx-festive-paper-fans {
+    display: none;
+  }
+
+  .wx-festive-leaf-vine {
+    width: 5.5rem;
+    height: 8.5rem;
+    opacity: 0.34;
+  }
+
+  .wx-festive-diya-line {
+    inset-inline: 4%;
+  }
+
+  .wx-festive-diya:nth-of-type(n + 5) {
+    display: none;
+  }
+
+  .wx-festive-section-layer {
+    opacity: 0.38;
+  }
+
+  .wx-festive-login-layer .wx-festive-paper-fans {
+    top: 4.8rem;
+  }
+
+  .wx-festive-login-layer .wx-festive-leaf-vine {
+    bottom: 1rem;
+  }
+
+  .wx-festive-warm-particle:nth-child(n + 8) {
+    display: none;
+  }
+
+  .wx-festival-dot-field > span:nth-child(n + 7),
+  .wx-festival-lantern:nth-child(n + 3),
+  .wx-festival-dhol-accent,
+  .wx-festival-header-silhouette {
+    display: none;
+  }
+
+  .wx-festival-light-string {
+    inset-inline: 1.75rem;
+    opacity: 0.58;
+  }
+
+  .wx-festival-alpana-corner,
+  .wx-festival-floral-corner {
+    width: 4.8rem;
+    height: 4.8rem;
+    opacity: 0.22;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-built-in-festival-header-scene *,
+  .wx-built-in-festival-hero *,
+  .wx-built-in-festival-login * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .wx-built-in-reindeer-run,
+  .wx-built-in-holi-spray {
+    display: none;
+  }
+
+  .wx-holiday-axo-accessory,
+  .wx-holiday-ambient-particle {
+    animation: none !important;
+  }
+
+  .wx-holiday-ambient {
+    opacity: 0.35;
+  }
+
+  .wx-festive-warm-particle,
+  .wx-festive-bell,
+  .wx-festival-light,
+  .wx-festival-lantern,
+  .wx-festival-dot-field > span {
+    animation: none !important;
+  }
+
+  .wx-festival-header-ornament-layer *,
+  .wx-festival-header-ornament-layer *::before,
+  .wx-festival-header-ornament-layer *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-holiday-motion="off"] .wx-festive-warm-particle,
+html[data-holiday-motion="off"] .wx-festive-bell,
+html[data-holiday-motion="off"] .wx-festival-light,
+html[data-holiday-motion="off"] .wx-festival-lantern,
+html[data-holiday-motion="off"] .wx-festival-dot-field > span {
+  animation: none !important;
+}
+
+.wx-festival-header-ornament-layer[data-motion="off"] *,
+.wx-festival-header-ornament-layer[data-animation="off"] * {
+  animation: none !important;
+}
+
+.wx-built-in-festival-header-scene[data-motion="off"] *,
+.wx-built-in-festival-header-scene[data-animation="off"] * {
+  animation: none !important;
+}
+
+.wx-built-in-festival-header-scene[data-motion="off"] .wx-built-in-reindeer-run,
+.wx-built-in-festival-header-scene[data-animation="off"] .wx-built-in-reindeer-run,
+.wx-built-in-festival-header-scene[data-motion="off"] .wx-built-in-holi-spray,
+.wx-built-in-festival-header-scene[data-animation="off"] .wx-built-in-holi-spray {
+  display: none;
+}
+
+html[data-holiday-density="subtle"] .wx-festive-paper-fan-two,
+html[data-holiday-density="subtle"] .wx-festive-bells-right,
+html[data-holiday-density="subtle"] .wx-festive-vine-right,
+html[data-holiday-density="subtle"] .wx-festival-dot-field > span:nth-child(n + 6) {
+  display: none;
+}
+
+html[data-holiday-hero-preset="ambient_frame"] .wx-festive-hero-layer,
+html[data-holiday-hero-preset="soft_tint"] .wx-festive-hero-layer {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--wx-holiday-surface-tint) 34%, transparent),
+      transparent 76%
+    );
+}
+
+html[data-holiday-hero-preset="corner_cluster"] .wx-festive-hero-layer {
+  mask-image: linear-gradient(90deg, #000 0 32%, transparent 48% 52%, #000 68%);
+}
+
+html[data-holiday-hero-preset="festive_ribbon"] .wx-festive-hero-layer::after {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.26rem;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    var(--wx-holiday-accent),
+    var(--wx-holiday-accent-warm),
+    var(--wx-holiday-secondary)
+  );
+  opacity: 0.68;
+}
+
+html[data-holiday-inner-page-preset="card_tint"][data-holiday-region-inner-pages="on"]
+  .rounded-md,
+html[data-holiday-inner-page-preset="card_tint"][data-holiday-region-inner-pages="on"]
+  .rounded-lg {
+  border-color: color-mix(
+    in srgb,
+    var(--wx-holiday-border-highlight) 22%,
+    var(--wx-border)
+  );
+}
+
+html[data-holiday-inner-page-preset="divider_motif"]
+  .wx-festive-section-layer::after {
+  position: absolute;
+  inset: auto 8% 0;
+  height: 1px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wx-holiday-accent),
+    transparent
+  );
+  opacity: 0.32;
+}
+
+html[data-holiday-footer-preset="accent_ribbon"] .wx-festive-footer-layer,
+html[data-holiday-footer-preset="motif_band"] .wx-festive-footer-layer,
+html[data-holiday-footer-preset="light_trim"] .wx-festive-footer-layer {
+  border-top: 1px solid
+    color-mix(in srgb, var(--wx-holiday-accent) 30%, transparent);
+}
+
+html[data-holiday-footer-preset="light_trim"] .wx-festive-footer-layer {
+  filter: drop-shadow(
+    0 -0.25rem 0.5rem
+      color-mix(in srgb, var(--wx-holiday-accent-warm) 18%, transparent)
+  );
+}
+
+html[data-theme="dark"] .wx-festive-paper-fan {
+  opacity: 0.72;
+  filter: saturate(0.86) brightness(0.9);
+}
+
+html[data-theme="dark"] .wx-festive-garland,
+html[data-theme="dark"] .wx-festive-diya-line {
+  opacity: 0.82;
+}
+
+html[data-theme="dark"] .wx-festive-hero-layer {
+  background:
+    radial-gradient(
+      circle at 8% 19%,
+      color-mix(in srgb, var(--wx-holiday-accent-warm) 10%, transparent),
+      transparent 23rem
+    ),
+    radial-gradient(
+      circle at 92% 28%,
+      color-mix(in srgb, var(--wx-holiday-accent) 9%, transparent),
+      transparent 24rem
+    );
+}
+
+/* Semantic interaction states. These tokens remain authoritative when a
+   holiday palette is active so selection, focus and disabled states keep
+   predictable contrast in every theme. */
+.wx-interactive-state {
+  border-color: var(--wx-border);
+  background: var(--wx-surface-default);
+  color: var(--wx-text-primary);
+  outline: none;
+}
+
+.wx-interactive-state[data-state="default"]:not(:disabled):hover {
+  border-color: var(--wx-border-strong);
+  background: var(--wx-surface-hover);
+}
+
+.wx-interactive-state[data-state="selected"],
+.wx-interactive-state[aria-selected="true"],
+.wx-interactive-state[aria-pressed="true"],
+.wx-interactive-state[aria-checked="true"] {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-selected);
+  color: var(--wx-text-selected);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--wx-border-selected) 22%, transparent),
+    0 10px 26px color-mix(in srgb, var(--wx-border-selected) 12%, transparent);
+}
+
+.wx-checkable-state:has(input:checked) {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-selected);
+  color: var(--wx-text-selected);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--wx-border-selected) 22%, transparent);
+}
+
+.wx-checkable-state:has(input:disabled) {
+  background: var(--wx-surface-disabled);
+  color: var(--wx-text-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.wx-interactive-state:focus-visible,
+.wx-interactive-tab:focus-visible,
+.wx-interactive-row:focus-within,
+.wx-checkable-state:focus-within {
+  outline: 2px solid var(--wx-focus-ring);
+  outline-offset: 2px;
+}
+
+.wx-interactive-state:disabled,
+.wx-interactive-state[aria-disabled="true"] {
+  border-color: var(--wx-border);
+  background: var(--wx-surface-disabled);
+  color: var(--wx-text-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.wx-interactive-state .wx-state-muted {
+  color: var(--wx-text-secondary);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-muted,
+.wx-interactive-state[aria-selected="true"] .wx-state-muted,
+.wx-interactive-state[aria-pressed="true"] .wx-state-muted,
+.wx-interactive-state[aria-checked="true"] .wx-state-muted {
+  color: var(--wx-text-selected-muted);
+}
+
+.wx-interactive-state .wx-state-icon-surface {
+  border-color: var(--wx-border);
+  background: var(--wx-surface-soft);
+  color: var(--wx-icon-default);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-icon-surface,
+.wx-interactive-state[aria-selected="true"] .wx-state-icon-surface,
+.wx-interactive-state[aria-pressed="true"] .wx-state-icon-surface,
+.wx-interactive-state[aria-checked="true"] .wx-state-icon-surface {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-active);
+  color: var(--wx-icon-selected);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--wx-border-selected) 14%, transparent);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-accent,
+.wx-interactive-state[aria-selected="true"] .wx-state-accent,
+.wx-interactive-state[aria-pressed="true"] .wx-state-accent,
+.wx-interactive-state[aria-checked="true"] .wx-state-accent {
+  color: var(--wx-icon-selected);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-dot,
+.wx-interactive-state[aria-selected="true"] .wx-state-dot,
+.wx-interactive-state[aria-pressed="true"] .wx-state-dot,
+.wx-interactive-state[aria-checked="true"] .wx-state-dot {
+  background: var(--wx-icon-selected);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-action,
+.wx-interactive-state[aria-selected="true"] .wx-state-action,
+.wx-interactive-state[aria-pressed="true"] .wx-state-action,
+.wx-interactive-state[aria-checked="true"] .wx-state-action {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-active);
+  color: var(--wx-text-selected);
+}
+
+.wx-interactive-state[data-state="selected"] .wx-state-action:hover,
+.wx-interactive-state[aria-selected="true"] .wx-state-action:hover,
+.wx-interactive-state[aria-pressed="true"] .wx-state-action:hover,
+.wx-interactive-state[aria-checked="true"] .wx-state-action:hover {
+  background: color-mix(in srgb, var(--wx-surface-active) 86%, var(--wx-border-selected));
+}
+
+.wx-interactive-nav[data-state="default"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--wx-text-secondary);
+}
+
+.wx-interactive-nav[data-state="default"]:hover {
+  background: var(--wx-surface-hover);
+  color: var(--wx-text-primary);
+}
+
+.wx-interactive-tab {
+  border-color: transparent;
+  background: transparent;
+  color: var(--wx-text-secondary);
+  outline: none;
+}
+
+.wx-interactive-tab:hover {
+  color: var(--wx-text-primary);
+}
+
+.wx-interactive-tab[data-state="selected"],
+.wx-interactive-tab[aria-selected="true"] {
+  border-color: var(--wx-border-selected);
+  color: var(--wx-icon-selected);
+}
+
+.wx-interactive-row {
+  border-color: var(--wx-border);
+  background: var(--wx-surface-default);
+  color: var(--wx-text-primary);
+}
+
+.wx-interactive-row[data-state="selected"] {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-selected);
+  color: var(--wx-text-selected);
+  box-shadow: inset 3px 0 0 var(--wx-border-selected);
+}
+
+html[data-holiday-theme] .wx-interactive-state[data-state="selected"],
+html[data-holiday-theme] .wx-interactive-state[aria-selected="true"],
+html[data-holiday-theme] .wx-interactive-state[aria-pressed="true"],
+html[data-holiday-theme] .wx-interactive-state[aria-checked="true"],
+html[data-holiday-theme] .wx-interactive-row[data-state="selected"],
+html[data-holiday-theme] .wx-checkable-state:has(input:checked) {
+  border-color: var(--wx-border-selected);
+  background: var(--wx-surface-selected);
+  color: var(--wx-text-selected);
+}
+
+/* Festival login artwork is one authoritative canvas. Only the functional
+   form card receives glass treatment; the surrounding right side stays clear. */
+.wx-festival-login-canvas,
+.wx-festival-login-canvas img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wx-festival-login-canvas img {
+  object-fit: cover;
+  object-position: center;
+  filter: none !important;
+  transform: none !important;
+}
+
+.wx-festival-login-overlay {
+  background: transparent;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .wx-festival-login-overlay {
+  background: rgb(8 12 35 / 0.18);
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-panel-transition {
+  background: transparent !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-panel-transition {
+  display: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+  border-color: rgb(255 255 255 / 0.7) !important;
+  background: rgb(255 255 255 / 0.76) !important;
+  box-shadow:
+    0 1.5rem 4rem rgb(36 25 82 / 0.2),
+    inset 0 0 0 1px rgb(255 255 255 / 0.45);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  backdrop-filter: blur(18px) saturate(1.1);
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card {
+  border-color: rgb(180 170 255 / 0.28) !important;
+  background: rgb(10 16 45 / 0.58) !important;
+  box-shadow:
+    0 1.5rem 4.375rem rgb(3 6 24 / 0.38),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+  display: flex;
+  justify-content: center;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+  width: min(15rem, 72%) !important;
+  max-height: 5.25rem;
+  object-fit: contain;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card-logo
+  .wx-brand-logo-image {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card-logo {
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.14);
+  padding: 0.45rem 0.85rem;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand {
+  width: min(24rem, 42vw);
+  border: 1px solid rgb(255 255 255 / 0.38);
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    105deg,
+    rgb(255 255 255 / 0.86),
+    rgb(255 255 255 / 0.64) 72%,
+    transparent
+  );
+  box-shadow: 0 1rem 3rem rgb(33 20 76 / 0.12);
+  padding: 1rem 1.15rem 1.1rem;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand
+  .wx-brand-logo-image {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand h2 {
+  color: #111d62 !important;
+  text-shadow: 0 1px 1px rgb(255 255 255 / 0.48);
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand p {
+  color: #4d5b89 !important;
+}
+
+html[data-holiday-login-brand-size="compact"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  width: min(19rem, 36vw);
+  padding: 0.75rem 0.9rem 0.85rem;
+}
+
+html[data-holiday-login-brand-size="compact"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand
+  .wx-auth-hero-logo {
+  width: min(14rem, 100%) !important;
+}
+
+html[data-holiday-login-brand-placement="upper_left"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  left: 4.5%;
+  top: 4.5%;
+}
+
+html[data-holiday-login-brand-placement="compact_top"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  left: 4.5%;
+  top: 2.5%;
+  width: min(19rem, 36vw);
+  padding: 0.7rem 0.85rem 0.8rem;
+}
+
+html[data-holiday-login-brand-light-contrast="text_shadow"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  border-color: rgb(255 255 255 / 0.22);
+  background: linear-gradient(
+    105deg,
+    rgb(8 12 35 / 0.72),
+    rgb(8 12 35 / 0.48) 72%,
+    transparent
+  );
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.2);
+}
+
+/* Festival artwork may theme the canvas and functional card, never the official
+   logo wrappers. Keep this after all festival light/dark brand presets. */
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo,
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand,
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card-logo,
+html[data-theme="dark"]
+  .wx-auth-shell:has(
+    .wx-designer-login-pack[data-composition-mode="full_natural_background"]
+  )
+  .wx-auth-card-logo {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand::before,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand::after,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo::before,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo::after {
+  content: none !important;
+  display: none !important;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand
+  .wx-brand-logo-image,
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card-logo
+  .wx-brand-logo-image {
+  filter: grayscale(1) brightness(0) invert(1) !important;
+  opacity: 0.94 !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand
+  > a[aria-label="WriteX trademark home"],
+.wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-auth-card-logo
+  a[aria-label="WriteX trademark home"] {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand h2 {
+  color: #f7f8ff !important;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.44);
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand p {
+  color: #d8dcf2 !important;
+}
+
+html[data-theme="dark"][data-holiday-login-brand-dark-contrast="text_shadow"]
+  .wx-auth-shell:has(.wx-designer-login-pack)
+  .wx-protected-login-brand {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (min-width: 64rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-layout {
+    grid-template-columns: minmax(0, 64fr) minmax(26rem, 36fr) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    width: 100%;
+    max-width: min(var(--wx-login-form-max-width, 30rem), 30rem);
+    padding-inline: clamp(0.75rem, 1.3vw, 1.25rem);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    width: 100%;
+    padding: clamp(1.35rem, 1.7vw, 1.85rem) !important;
+  }
+}
+
+@media (max-width: 63.999rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-brand-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    display: block !important;
+    min-height: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand {
+    position: absolute;
+    top: max(1rem, env(safe-area-inset-top));
+    left: 1rem;
+    width: min(12.5rem, calc(100vw - 5.5rem));
+    max-width: none;
+    padding: 0.65rem 0.75rem 0.7rem;
+    pointer-events: auto;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-protected-login-brand
+    .wx-auth-hero-logo {
+    width: min(9rem, 100%) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand h2 {
+    margin-top: 0.55rem;
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand p {
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    line-height: 1.15rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-protected-login-brand
+    > span:last-child {
+    margin-top: 0.5rem;
+    height: 0.15rem;
+    width: 4rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-layout {
+    min-height: 100svh;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel {
+    min-height: 100svh;
+    padding-top: max(10.5rem, calc(env(safe-area-inset-top) + 9.5rem));
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    width: min(100%, 30rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-festival-login-canvas,
+  .wx-festival-login-canvas img {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Founder-approved festival login numeric contract. This remains last so that
+   earlier theme presets cannot reintroduce split panels or viewport overflow. */
+@media (min-width: 64rem) {
+  html:has(.wx-auth-shell:has(.wx-designer-login-pack)),
+  body:has(.wx-auth-shell:has(.wx-designer-login-pack)) {
+    width: 100%;
+    height: 100%;
+    overflow: hidden !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) {
+    width: 100vw;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-layout {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-brand-panel {
+    position: absolute;
+    inset: 0;
+    display: block !important;
+    min-height: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel {
+    position: absolute;
+    inset: 0;
+    display: block;
+    min-height: 0;
+    overflow: visible;
+    padding: 0 !important;
+    pointer-events: none;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    position: absolute;
+    top: 50%;
+    right: clamp(2rem, 4.2vw, 4.5rem);
+    width: clamp(28.75rem, 31.5vw, 35rem);
+    max-width: none;
+    padding: 0;
+    transform: translateY(-50%);
+    pointer-events: auto;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    width: 100%;
+    max-height: calc(100dvh - 28px);
+    padding: 30px 34px 24px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+    margin-bottom: 14px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+    width: clamp(205px, 12.5vw, 225px) !important;
+    max-height: none;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 {
+    font-size: clamp(29px, 2vw, 34px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 + p {
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-7 {
+    margin-top: 22px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-5 {
+    margin-top: 17px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-6 {
+    margin-top: 16px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form label {
+    font-size: 15px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form label > span {
+    margin-top: 7px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-field {
+    height: 56px;
+    border-radius: 10px;
+    padding-right: 22px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-gradient-action {
+    min-height: 56px;
+    height: 56px;
+    border-radius: 10px;
+  }
+}
+
+@media (min-width: 90rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    width: clamp(28.75rem, 31.5vw, 35rem);
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 59.375rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    padding: 26px 32px 20px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+    margin-bottom: 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+    width: 184px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 {
+    font-size: 26px !important;
+    line-height: 1.1 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 + p {
+    margin-top: 5px !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-7 {
+    margin-top: 14px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-4 {
+    margin-top: 12px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-field,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-gradient-action {
+    height: 52px;
+    min-height: 52px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 44px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 6px;
+    padding-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 44px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 30px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-6 {
+    flex-wrap: nowrap;
+    margin-top: 8px !important;
+    gap: 6px;
+    font-size: 11.5px;
+    line-height: 1.15rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-4:last-child {
+    margin-top: 4px !important;
+    font-size: 10.5px;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 51.25rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    right: clamp(2rem, 4.7vw, 5rem);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    max-height: calc(100dvh - 20px);
+    padding: 22px 34px 18px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+    margin-bottom: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+    width: clamp(195px, 13vw, 210px) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 + p {
+    margin-top: 6px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-7 {
+    margin-top: 15px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-4 {
+    margin-top: 12px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-field,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-gradient-action {
+    height: 53px;
+    min-height: 53px;
+  }
+}
+
+/* A short Chrome content viewport needs its own visual proportions. Keep the
+   artwork dominant while preserving every functional login action. */
+@media (min-width: 64rem) and (max-height: 42.5rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    right: clamp(52px, 4vw, 64px);
+    width: clamp(430px, 32.5vw, 460px);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    max-height: calc(100dvh - 16px);
+    justify-content: flex-start;
+    border-radius: 24px;
+    padding: 10px 24px 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+    margin-bottom: 3px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+    width: 156px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 {
+    font-size: 23px !important;
+    line-height: 1.08 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 + p {
+    margin-top: 3px !important;
+    font-size: 13px !important;
+    line-height: 1.28 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-7,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-4 {
+    margin-top: 6px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form label {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form label > span {
+    margin-top: 4px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-field {
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-gradient-action {
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 6px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 40px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 6px;
+    padding-top: 6px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 40px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 28px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-6 {
+    margin-top: 5px !important;
+    font-size: 11.5px;
+    line-height: 1.1rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack)
+    .wx-auth-form
+    > p.mt-4:last-child {
+    margin-top: 2px !important;
+    font-size: 10.5px;
+    line-height: 1rem;
+  }
+}
+
+@media not all {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    padding: 13px 24px 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo {
+    margin-bottom: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo-mark {
+    width: 144px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1 {
+    font-size: 22px !important;
+    line-height: 1.08 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1
+    + p {
+    margin-top: 3px !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-7 {
+    margin-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4 {
+    margin-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label
+    > span {
+    margin-top: 4px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-field {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-gradient-action {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 4px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 30px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 4px;
+    padding-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 32px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 23px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-6 {
+    margin-top: 4px !important;
+    font-size: 10.5px;
+    line-height: 1rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4:last-child {
+    margin-top: 1px !important;
+    font-size: 9.5px;
+  }
+}
+
+/* The full-scene canvas is artwork-only. Keep the official code-controlled
+   logo and tagline visible over it. */
+@media (min-width: 48rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-protected-login-brand {
+    display: block;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-festival-login-canvas
+    img {
+    object-position: center top;
+  }
+}
+
+@media (min-width: 48rem) and (max-width: 63.999rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel {
+    align-items: center;
+    min-height: 100dvh;
+    padding: 0 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+    width: min(440px, calc(100vw - 32px));
+    max-width: none;
+    margin-left: auto;
+    margin-right: 16px;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  body:has(.wx-designer-login-pack) {
+    padding-bottom: 0 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel {
+    align-items: flex-start;
+    min-height: auto;
+    padding: clamp(18rem, 71vw, 20rem) 12px 16px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-protected-login-brand {
+    display: none;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas {
+    height: clamp(21rem, 88vw, 24rem);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas img {
+    object-fit: contain;
+    object-position: left top;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-overlay {
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(255 250 245 / 0.18) 60%,
+      rgb(255 250 245 / 0.92) 86%,
+      rgb(255 250 245) 100%
+    ) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    width: min(calc(100vw - 24px), 520px);
+    max-width: 520px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card {
+    padding: 24px 20px 20px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo {
+    margin-bottom: 16px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-card-logo-mark {
+    width: min(190px, 62vw) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 {
+    font-size: clamp(26px, 7.2vw, 30px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form h1 + p {
+    margin-top: 10px !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-7 {
+    margin-top: 22px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form > .mt-4 {
+    margin-top: 16px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-field,
+  .wx-auth-shell:has(.wx-designer-login-pack) .wx-gradient-action {
+    min-height: 52px;
+  }
+}
+
+/* Superseded by the final 1366x768 approval rule below. */
+@media not all {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    padding: 13px 24px 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo {
+    margin-bottom: 4px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo-mark {
+    width: 144px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1 {
+    font-size: 22px !important;
+    line-height: 1.08 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1
+    + p {
+    margin-top: 3px !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-7 {
+    margin-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4 {
+    margin-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label
+    > span {
+    margin-top: 4px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-field {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-gradient-action {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 4px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 30px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 4px;
+    padding-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 32px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 23px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-6 {
+    margin-top: 4px !important;
+    font-size: 10.5px;
+    line-height: 1rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4:last-child {
+    margin-top: 1px !important;
+    font-size: 9.5px;
+  }
+}
+
+/* Local approval composition: place the functional form inside the calm area
+   designed into the clean 8K canvas. The master canvas itself is never tinted,
+   blurred, shaded, duplicated, or extended by a generated surface. */
+@media (min-width: 64rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form-stage {
+    right: clamp(4.5rem, 7.2vw, 7.5rem);
+    width: clamp(26.25rem, 29vw, 30rem);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    border: 1px solid rgb(225 228 237) !important;
+    border-radius: 24px;
+    background: rgb(255 255 255) !important;
+    box-shadow: none !important;
+    padding: 24px 28px 20px !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme="dark"]
+    .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    border-color: rgb(53 61 92) !important;
+    background: rgb(12 18 48) !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo {
+    margin-bottom: 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo-mark {
+    width: clamp(170px, 11vw, 190px) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1 {
+    font-size: clamp(26px, 1.75vw, 30px) !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1
+    + p {
+    margin-top: 6px !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-7 {
+    margin-top: 17px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4 {
+    margin-top: 12px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-field,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-gradient-action {
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 8px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 36px;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 6px;
+    padding-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 38px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 26px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-6 {
+    margin-top: 7px !important;
+    gap: 5px;
+    font-size: 11.5px;
+    line-height: 1.1rem;
+  }
+}
+
+/* Locked single-canvas contract. Keep this final so later theme and breakpoint
+   rules cannot reintroduce a form-side wash, dark overlay, blur, or filler. */
+.wx-auth-shell:has(.wx-designer-login-pack) {
+  background: transparent !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-designer-login-pack,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas img {
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-overlay,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-unified-background,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-facets,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-panel-transition {
+  display: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-layout,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-brand-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+  .wx-auth-card {
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (min-width: 64rem) and (max-height: 42.5rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form-stage {
+    right: clamp(4.5rem, 7.2vw, 6.5rem);
+    width: clamp(24.5rem, 29vw, 25.75rem);
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    padding: 12px 22px 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo-mark {
+    width: 146px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1 {
+    font-size: 22px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-7,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4 {
+    margin-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-field {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-gradient-action {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t
+    button,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 34px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 24px;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    padding: 20px 16px 17px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 12px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    grid-column: 1 / -1;
+    min-height: 36px;
+  }
+}
+
+/* 1366x768 approval target. This must remain the final desktop rule. */
+@media (min-width: 64rem) and (min-height: 42.501rem) and (max-height: 51.25rem) {
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card {
+    padding: 13px 24px 10px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo {
+    margin-bottom: 4px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-card-logo-mark {
+    width: 144px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1 {
+    font-size: 22px !important;
+    line-height: 1.08 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    h1
+    + p {
+    margin-top: 3px !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-7 {
+    margin-top: 9px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-6,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4 {
+    margin-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    label
+    > span {
+    margin-top: 4px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-field {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-gradient-action {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t {
+    padding-top: 4px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-4.border-t
+    button {
+    min-height: 30px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid {
+    gap: 4px;
+    padding-top: 5px !important;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a {
+    min-height: 32px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > .mt-5.grid
+    a:last-child {
+    min-height: 23px;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4,
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-6 {
+    margin-top: 4px !important;
+    font-size: 10.5px;
+    line-height: 1rem;
+  }
+
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+    .wx-auth-form
+    > p.mt-4:last-child {
+    margin-top: 1px !important;
+    font-size: 9.5px;
+  }
+}
+
+/* Final festival login invariant: one untouched image owns every canvas pixel.
+   No page layer or functional surface may blur, tint, shade, or extend it. */
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-designer-login-pack,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-canvas img {
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-festival-login-overlay,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-unified-background,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-facets,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-global-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-ambience,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-panel-transition {
+  display: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-layout,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-brand-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-panel,
+.wx-auth-shell:has(.wx-designer-login-pack) .wx-auth-form-stage {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+  .wx-auth-card {
+  background: rgb(255 255 255) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="dark"]
+  .wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+  .wx-auth-card {
+  background: rgb(12 18 48) !important;
+}
+
+.wx-auth-shell:has(.wx-designer-login-pack[data-layout-contract="single-canvas-v1"])
+  .wx-festival-login-canvas
+  img {
+  object-position: center top !important;
 }

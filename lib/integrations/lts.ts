@@ -35,6 +35,13 @@ export type LtsInvoice = {
   deliveryStatus?: string;
   createdAt?: string;
   updatedAt?: string;
+  assignedRepresentative?: {
+    name?: string;
+    designation?: string;
+    department?: string;
+    status?: string;
+    approved: boolean;
+  };
 };
 
 export type LtsWorkJourneyStage = {
@@ -254,6 +261,26 @@ function normalizeInvoiceValidation(payload: unknown, fallbackInvoiceId: string)
 
 function normalizeInvoice(payload: unknown, fallbackInvoiceId: string) {
   const source = toObject(payload);
+  const representative = toObject(
+    source.assignedRepresentative ||
+      source.assigned_representative ||
+      source.representative
+  );
+  const representativeName = readString(representative, [
+    "publicDisplayName",
+    "public_display_name",
+    "name",
+    "fullName",
+    "full_name"
+  ]);
+  const representativeApproved =
+    readBoolean(representative, [
+      "verified",
+      "isVerified",
+      "is_verified",
+      "isPubliclyVerifiable",
+      "is_publicly_verifiable"
+    ]);
   return {
     invoiceId: readString(source, ["invoiceId", "invoice_id", "id"]) || fallbackInvoiceId,
     orderId: readString(source, ["orderId", "order_id"]),
@@ -268,7 +295,16 @@ function normalizeInvoice(payload: unknown, fallbackInvoiceId: string) {
     orderStatus: readString(source, ["orderStatus", "order_status", "workStatus", "status"]),
     deliveryStatus: readString(source, ["deliveryStatus", "delivery_status"]),
     createdAt: readString(source, ["createdAt", "created_at"]),
-    updatedAt: readString(source, ["updatedAt", "updated_at"])
+    updatedAt: readString(source, ["updatedAt", "updated_at"]),
+    assignedRepresentative: representativeName
+      ? {
+          name: representativeName,
+          designation: readString(representative, ["designation"]),
+          department: readString(representative, ["department"]),
+          status: readString(representative, ["status"]),
+          approved: representativeApproved
+        }
+      : undefined
   } satisfies LtsInvoice;
 }
 

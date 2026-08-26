@@ -13,7 +13,7 @@ import { quoteTrackingEvents } from "@/lib/tracking";
 export const metadata: Metadata = buildMetadata({
   title: "Samples & Work Quality",
   description:
-    "Anonymised sample categories that show WriteX work quality across coursework structure, dissertation editing, SOP transformation, referencing, and proposal refinement.",
+    "Anonymised sample categories showing WriteX support quality across coursework structure, dissertation editing, SOP improvement, referencing, and proposals.",
   path: "/samples",
   keywords: [
     "academic samples",

@@ -1,12 +1,96 @@
 import "server-only";
 
+import nodemailer, { type Transporter } from "nodemailer";
 import { isProduction } from "@/lib/security";
 
 type NotificationPayload = {
   subject: string;
   text: string;
   to: string;
+  replyTo?: string;
 };
+
+function smtpFrom() {
+  const address = process.env.SMTP_FROM_EMAIL;
+  const name = process.env.SMTP_FROM_NAME?.trim();
+
+  if (!address) return undefined;
+  return name ? { name, address } : address;
+}
+
+function resendFrom() {
+  const address = process.env.SMTP_FROM_EMAIL;
+  const name = process.env.SMTP_FROM_NAME?.trim();
+
+  if (address) return name ? `${name} <${address}>` : address;
+  return process.env.RESEND_FROM_EMAIL || "WriteX <noreply@writex.co.in>";
+}
+
+const globalForMail = globalThis as typeof globalThis & {
+  writexSmtpTransport?: Transporter;
+};
+
+function smtpEnabled() {
+  const hasAuthUser = Boolean(process.env.SMTP_USER);
+  const hasAuthPassword = Boolean(
+    process.env.SMTP_PASSWORD || process.env.SMTP_PASS
+  );
+
+  return Boolean(
+    process.env.SMTP_HOST &&
+      process.env.SMTP_FROM_EMAIL &&
+      hasAuthUser === hasAuthPassword
+  );
+}
+
+export function isEmailConfigured() {
+  return smtpEnabled() || Boolean(process.env.RESEND_API_KEY);
+}
+
+export async function verifyEmailTransport() {
+  const smtp = getSmtpTransport();
+  if (!smtp) {
+    return {
+      configured: false,
+      reachable: false,
+      provider: process.env.RESEND_API_KEY ? "resend" : "none"
+    };
+  }
+  try {
+    await smtp.verify();
+    return { configured: true, reachable: true, provider: "smtp" };
+  } catch {
+    return { configured: true, reachable: false, provider: "smtp" };
+  }
+}
+
+function getSmtpTransport() {
+  if (!smtpEnabled()) return null;
+  if (globalForMail.writexSmtpTransport) return globalForMail.writexSmtpTransport;
+
+  const secure = process.env.SMTP_SECURE === "true";
+  const port = Number(process.env.SMTP_PORT || (secure ? 465 : 587));
+  const smtpPassword = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+  const auth = process.env.SMTP_USER && smtpPassword
+    ? { user: process.env.SMTP_USER, pass: smtpPassword }
+    : undefined;
+
+  globalForMail.writexSmtpTransport = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure,
+    requireTLS: !secure && process.env.SMTP_REQUIRE_TLS !== "false",
+    auth,
+    tls: {
+      rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== "false"
+    },
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 10000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 15000)
+  });
+
+  return globalForMail.writexSmtpTransport;
+}
 
 export type QuoteNotification = {
   leadId: string;
@@ -26,7 +110,27 @@ export type QuoteNotification = {
   fileAssetId?: string;
 };
 
-async function sendEmail({ subject, text, to }: NotificationPayload) {
+async function sendEmail({ subject, text, to, replyTo }: NotificationPayload) {
+  const smtp = getSmtpTransport();
+  if (smtp) {
+    const result = await smtp.sendMail({
+      from: smtpFrom(),
+      to,
+      replyTo: replyTo || process.env.SMTP_REPLY_TO || undefined,
+      subject,
+      text,
+      headers: process.env.SES_CONFIGURATION_SET
+        ? { "X-SES-CONFIGURATION-SET": process.env.SES_CONFIGURATION_SET }
+        : undefined
+    });
+
+    return {
+      sent: true,
+      provider: "smtp",
+      messageId: result.messageId
+    };
+  }
+
   if (!process.env.RESEND_API_KEY) {
     if (isProduction()) {
       return {
@@ -48,8 +152,9 @@ async function sendEmail({ subject, text, to }: NotificationPayload) {
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || "WriteX <noreply@writex.co.in>",
+      from: resendFrom(),
       to,
+      reply_to: replyTo || process.env.SMTP_REPLY_TO || undefined,
       subject,
       text
     })
@@ -57,6 +162,7 @@ async function sendEmail({ subject, text, to }: NotificationPayload) {
 
   return {
     sent: response.ok,
+    provider: "resend",
     status: response.status
   };
 }
@@ -71,6 +177,7 @@ export async function notifyNewLead(lead: QuoteNotification) {
 
   return sendEmail({
     to,
+    replyTo: lead.email,
     subject: `New WriteX Quote Request - ${lead.serviceRequired}`,
     text: [
       `Lead ID: ${lead.leadId}`,
@@ -94,6 +201,72 @@ export async function notifyNewLead(lead: QuoteNotification) {
       "Instructions:",
       lead.instructions
     ].join("\n")
+  });
+}
+
+export async function notifyQuoteAcknowledgement(lead: QuoteNotification) {
+  if (!lead.email) return { sent: false, reason: "client_email_not_provided" };
+
+  return sendEmail({
+    to: lead.email,
+    subject: "WriteX quote request received",
+    text: [
+      `Hello ${lead.name},`,
+      "",
+      "Thank you for sharing your academic support requirement with WriteX.",
+      `Reference: ${lead.leadId}`,
+      `Service: ${lead.serviceRequired}`,
+      `Deadline: ${lead.deadline}`,
+      "",
+      "The team will review the brief and confirm the support scope before quoting.",
+      "",
+      "WriteX Academic Support"
+    ].join("\n")
+  });
+}
+
+export type ContactNotification = {
+  intent: string;
+  name: string;
+  email: string;
+  whatsapp?: string;
+  reference?: string;
+  message: string;
+};
+
+export async function notifyContactEnquiry(contact: ContactNotification) {
+  const to = process.env.CONTACT_NOTIFICATION_EMAIL || process.env.QUOTE_NOTIFICATION_EMAIL;
+  if (!to) return { sent: false, reason: "contact_email_not_configured" };
+
+  return sendEmail({
+    to,
+    replyTo: contact.email,
+    subject: `WriteX contact enquiry - ${contact.intent}`,
+    text: [
+      `Intent: ${contact.intent}`,
+      `Name: ${contact.name}`,
+      `Email: ${contact.email}`,
+      `WhatsApp: ${contact.whatsapp || "Not provided"}`,
+      `Reference: ${contact.reference || "Not provided"}`,
+      "",
+      "Message:",
+      contact.message
+    ].join("\n")
+  });
+}
+
+export async function notifyContactAcknowledgement(contact: ContactNotification) {
+  return sendEmail({
+    to: contact.email,
+    subject: "WriteX enquiry received",
+    text: [
+      `Hello ${contact.name},`,
+      "",
+      "Thank you for contacting WriteX. Your enquiry has reached the team and will be routed to the appropriate support function.",
+      contact.reference ? `Reference shared: ${contact.reference}` : "",
+      "",
+      "WriteX Academic Support"
+    ].filter(Boolean).join("\n")
   });
 }
 

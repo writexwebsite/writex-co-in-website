@@ -4,6 +4,13 @@ import { AxoLoginTransition } from "@/components/auth/axo/AxoLoginTransition";
 import { AxoStaticFallback } from "@/components/auth/axo/AxoStaticFallback";
 import type { AxoStoryVariant } from "@/lib/auth/axoStoryConfig";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LoginPreviewAppearance } from "@/components/auth/LoginPreviewAppearance";
+import { DesignerLoginThemeRenderer } from "@/components/auth/DesignerLoginThemeRenderer";
+import {
+  HolidayLoginDecoration,
+  HolidayLoginFormBackground,
+  HolidayLoginHero
+} from "@/components/holiday/HolidayDecorations";
 
 type AuthShellProps = {
   variant: AxoStoryVariant;
@@ -23,6 +30,9 @@ export function AuthShell({ variant, children }: AuthShellProps) {
 
   return (
     <main className="wx-auth-shell relative min-h-[100svh] overflow-hidden text-wxIndigo900">
+      <LoginPreviewAppearance />
+      <HolidayLoginDecoration />
+      <DesignerLoginThemeRenderer />
       <a href="#auth-first-input" className="sr-only z-[100] rounded-md bg-wxSurface px-4 py-3 font-semibold text-wxIndigo900 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Skip to login form
       </a>
@@ -34,16 +44,20 @@ export function AuthShell({ variant, children }: AuthShellProps) {
       <div aria-hidden className="wx-auth-global-ambience pointer-events-none absolute inset-0" />
       <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6"><ThemeMenu /></div>
 
-      <div className="relative z-10 mx-auto grid min-h-[100svh] w-full min-w-0 max-w-[120rem] grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,58fr)_minmax(28rem,42fr)]">
+      <div className="wx-auth-layout relative z-10 mx-auto grid min-h-[100svh] w-full min-w-0 max-w-[120rem] grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,58fr)_minmax(28rem,42fr)]">
         <section
           aria-label="WriteX brand"
           className="wx-auth-brand-panel relative hidden min-h-[100svh] overflow-hidden lg:block"
         >
+          <HolidayLoginHero />
           <div aria-hidden className="wx-auth-left-elements pointer-events-none absolute inset-0">
             <span className="wx-auth-platform-light" />
           </div>
-          <div className="wx-auth-brand-copy absolute left-[9.5%] top-[5.5%] z-20 max-w-[24rem]">
-            <BrandLogo markClassName="wx-auth-hero-logo h-[4.5rem] w-[18rem] xl:h-20 xl:w-[22.5rem]" />
+          <div className="wx-protected-login-brand wx-auth-brand-copy absolute left-[9.5%] top-[5.5%] z-20 max-w-[24rem]">
+            <BrandLogo
+              markClassName="wx-auth-hero-logo w-[18rem] xl:w-[22.5rem]"
+              sizes="(min-width: 1280px) 360px, 288px"
+            />
             <h2 className="mt-5 max-w-[22rem] text-[clamp(1.65rem,2.1vw,2.2rem)] font-medium leading-[1.12] text-wxIndigo900">
               {copy.title}
             </h2>
@@ -64,8 +78,21 @@ export function AuthShell({ variant, children }: AuthShellProps) {
             <span className="wx-auth-crystal wx-auth-crystal-e" />
           </div>
         </section>
-        <aside aria-label={variant === "client" ? "Client login" : "Employee login"} className="relative flex min-h-[100svh] min-w-0 items-start justify-center px-4 pb-8 pt-20 sm:px-8 sm:pt-24 lg:items-center lg:px-6 lg:py-7 xl:px-8 2xl:px-10">
-          <div className="w-full min-w-0 max-w-[32rem]">
+        <aside
+          aria-label={variant === "client" ? "Client login" : "Employee login"}
+          className="wx-auth-form-panel relative flex min-h-[100svh] min-w-0 items-start justify-center overflow-hidden px-4 pb-8 pt-20 sm:px-8 sm:pt-24 lg:items-center lg:px-6 lg:py-7 xl:px-8 2xl:px-10"
+        >
+          <div
+            aria-hidden
+            className="wx-auth-form-ambience pointer-events-none absolute inset-0"
+          >
+            <HolidayLoginFormBackground />
+          </div>
+          <div
+            aria-hidden
+            className="wx-auth-panel-transition pointer-events-none absolute inset-y-0 left-0"
+          />
+          <div className="wx-auth-form-stage relative z-10 w-full min-w-0 max-w-[var(--wx-login-form-max-width,32rem)]">
             <AxoLoginTransition>{children}</AxoLoginTransition>
           </div>
         </aside>

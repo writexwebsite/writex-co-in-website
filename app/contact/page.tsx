@@ -9,10 +9,10 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { WhatsAppCTA } from "@/components/WhatsAppCTA";
 import { SpectrumBackground } from "@/components/visual/SpectrumBackground";
 import { breadcrumbSchema } from "@/lib/schema";
-import { buildMetadata, getOfficeMapUrl, getPhoneUrl, getWhatsAppUrl, siteConfig } from "@/lib/site";
+import { buildMetadata, getPhoneUrl, getWhatsAppUrl, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contact",
+  title: "Contact WriteX for Academic Support",
   description:
     "Contact WriteX for academic support, quote requests, WhatsApp enquiries, academic editing, dissertation support, SOP admissions support, and originality review.",
   path: "/contact",
@@ -39,7 +39,7 @@ const contactCards = [
   },
   {
     title: "Office",
-    links: [{ label: siteConfig.address, href: getOfficeMapUrl(), external: true }],
+    text: siteConfig.address,
     icon: MapPin
   },
   {

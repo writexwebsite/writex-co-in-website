@@ -1,16 +1,26 @@
+import type { ReactNode } from "react";
 import { CTAButton } from "./CTAButton";
+import { HeroActions } from "./hero/HeroActions";
+import { HeroEyebrow } from "./hero/HeroEyebrow";
+import { HeroSupportPanel } from "./hero/HeroSupportPanel";
+import type { HeroSupportCardData } from "./hero/HeroSupportCard";
 import { WhatsAppCTA } from "./WhatsAppCTA";
 import { SpectrumBackground } from "./visual/SpectrumBackground";
 
 type PageHeroProps = {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   description: string;
   primaryCta?: string;
   secondaryCta?: string;
   primaryAction?: "quote" | "whatsapp";
+  primaryHref?: string;
   secondaryHref?: string;
-  supportingCards?: Array<{ title: string; description: string }>;
+  supportingCards?: HeroSupportCardData[];
+  actions?: ReactNode;
+  microcopy?: ReactNode;
+  supportVisual?: ReactNode;
+  animateBackground?: boolean;
 };
 
 const defaultSupportingCards = [
@@ -33,14 +43,20 @@ export function PageHero({
   primaryCta = "Get Quote",
   secondaryCta = "Send Brief on WhatsApp",
   primaryAction = "quote",
+  primaryHref,
   secondaryHref,
-  supportingCards = defaultSupportingCards
+  supportingCards = defaultSupportingCards,
+  actions,
+  microcopy,
+  supportVisual,
+  animateBackground = false
 }: PageHeroProps) {
   return (
     <SpectrumBackground
       variant="hero"
       overlayStrength="hero"
       position="center bottom"
+      animate={animateBackground}
       className="text-wxIndigo900"
     >
       <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-brand-spectrum" />
@@ -48,38 +64,47 @@ export function PageHero({
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(232,56,116,0.12),transparent_30%),radial-gradient(circle_at_62%_78%,rgba(85,22,242,0.10),transparent_36%)]"
       />
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-12">
-        <div className="relative">
-          <p className="inline-flex rounded-full border border-wxBorder bg-white/90 px-3 py-2 text-sm font-semibold uppercase text-wxViolet700 shadow-sm backdrop-blur">{eyebrow}</p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight sm:text-5xl">
+      <div
+        data-page-hero
+        className="relative mx-auto grid max-w-7xl items-center gap-7 px-4 py-9 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,0.96fr)] lg:gap-10 lg:px-8 lg:py-12"
+      >
+        <div className="relative max-w-[42rem]">
+          <HeroEyebrow>{eyebrow}</HeroEyebrow>
+          <h1 className="mt-5 max-w-[42rem] text-4xl font-semibold leading-tight text-wxIndigo900 sm:text-5xl">
             {title}
           </h1>
-          <p className="mt-5 max-w-3xl text-base leading-8 text-wxIndigo500">
+          <p className="mt-5 max-w-[38rem] text-base leading-8 text-wxIndigo500">
             {description}
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            {primaryAction === "whatsapp" ? (
-              <WhatsAppCTA label={primaryCta} />
-            ) : (
-              <CTAButton href="/pricing#quote">{primaryCta}</CTAButton>
+          <HeroActions>
+            {actions ?? (
+              <>
+                {primaryHref ? (
+                  <CTAButton href={primaryHref}>{primaryCta}</CTAButton>
+                ) : primaryAction === "whatsapp" ? (
+                  <WhatsAppCTA label={primaryCta} />
+                ) : (
+                  <CTAButton href="/pricing#quote">{primaryCta}</CTAButton>
+                )}
+                {secondaryHref ? (
+                  <CTAButton href={secondaryHref} variant="secondary">
+                    {secondaryCta}
+                  </CTAButton>
+                ) : (
+                  <WhatsAppCTA label={secondaryCta} variant="secondary" />
+                )}
+              </>
             )}
-            {secondaryHref ? (
-              <CTAButton href={secondaryHref} variant="secondary">
-                {secondaryCta}
-              </CTAButton>
-            ) : (
-              <WhatsAppCTA label={secondaryCta} variant="secondary" />
-            )}
-          </div>
-        </div>
-        <div className="relative grid content-end gap-4">
-          {supportingCards.map((card) => (
-            <div key={card.title} className="rounded-md border border-wxBorder bg-white/90 p-5 shadow-sm backdrop-blur">
-              <p className="text-sm font-semibold text-wxViolet700">{card.title}</p>
-              <p className="mt-3 text-sm leading-7 text-wxIndigo500">{card.description}</p>
+          </HeroActions>
+          {microcopy ? (
+            <div className="mt-4 max-w-[36rem] text-sm font-semibold leading-6 text-wxIndigo500">
+              {microcopy}
             </div>
-          ))}
+          ) : null}
         </div>
+        <HeroSupportPanel cards={supportingCards}>
+          {supportVisual}
+        </HeroSupportPanel>
       </div>
     </SpectrumBackground>
   );

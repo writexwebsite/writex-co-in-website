@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { AdminDataTable } from "@/components/admin/AdminDataTable";
+import { AdminPanel } from "@/components/admin/AdminPrimitives";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getAuditLogs } from "@/lib/admin/audit";
 import { requireAdminSession } from "@/lib/admin/session";
@@ -7,52 +9,69 @@ export const metadata: Metadata = {
   title: "Audit Logs | WriteX Admin",
   robots: { index: false, follow: false }
 };
-
-function formatDate(value: string | Date) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
-}
+export const dynamic = "force-dynamic";
 
 export default async function AuditLogsPage() {
   const session = await requireAdminSession();
   const logs = await getAuditLogs();
-
   return (
-    <AdminShell session={session} eyebrow="Security visibility" title="Audit logs">
-      <section className="overflow-hidden rounded-lg border border-sageBorder bg-white shadow-soft">
-        {logs.length ? (
-          <div className="divide-y divide-sageBorder">
-            {logs.map((log) => (
-              <article
-                key={log.id}
-                className="grid gap-3 p-5 text-sm lg:grid-cols-[0.75fr_0.7fr_1fr_0.8fr]"
-              >
-                <div>
-                  <p className="font-bold">{formatDate(log.created_at)}</p>
-                  <p className="mt-1 text-slateText">{log.ip_address || "No IP"}</p>
-                </div>
-                <div>
-                  <p className="font-semibold capitalize">{log.actor_type}</p>
-                  <p className="mt-1 text-slateText">{log.actor_email || "System/client"}</p>
-                </div>
-                <div>
-                  <p className="font-bold">{log.action}</p>
-                  <p className="mt-1 text-slateText">
-                    {log.entity_type} {log.entity_id || ""}
-                  </p>
-                </div>
-                <pre className="max-h-24 overflow-auto rounded-md bg-paleSage p-2 text-xs text-slateText">
-                  {JSON.stringify(log.metadata || {}, null, 2)}
-                </pre>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="p-6 text-sm text-slateText">No audit logs are available yet.</p>
-        )}
-      </section>
+    <AdminShell
+      session={session}
+      eyebrow="System"
+      title="Audit logs"
+      description="Searchable security and operational history. Safe summaries replace raw JSON as the primary presentation."
+    >
+      <AdminPanel
+        title="Recorded activity"
+        description="Filter by actor, action or module. Sensitive values are not introduced into this browser view."
+      >
+        <AdminDataTable
+          caption="Administrator audit logs"
+          rows={logs.map((log) => ({
+            id: log.id,
+            timestamp: new Date(log.created_at).toISOString(),
+            actor: log.actor_email || log.actor_type || "System",
+            action: log.action,
+            module: log.entity_type,
+            severity:
+              /failed|blocked|revoked|denied|deleted/i.test(log.action)
+                ? "Action Required"
+                : /approved|success|created|updated/i.test(log.action)
+                  ? "Recorded"
+                  : "Information",
+            record: log.entity_id || "Not recorded",
+            source: log.ip_address ? "Recorded network" : "System"
+          }))}
+          columns={[
+            { key: "timestamp", label: "Time", type: "date" },
+            { key: "actor", label: "Actor", primary: true },
+            { key: "action", label: "Action" },
+            { key: "module", label: "Module" },
+            {
+              key: "severity",
+              label: "Severity",
+              type: "status",
+              defaultVisible: false
+            },
+            { key: "record", label: "Record" },
+            { key: "source", label: "Source" }
+          ]}
+          filters={[
+            { key: "module", label: "module" },
+            { key: "action", label: "action" },
+            { key: "actor", label: "user" },
+            { key: "severity", label: "severity" },
+            { key: "record", label: "record ID" },
+            {
+              key: "timestamp",
+              label: "date",
+              type: "date-range"
+            }
+          ]}
+          searchPlaceholder="Search actor, action, module or record"
+          canExport={session.role === "super_admin"}
+        />
+      </AdminPanel>
     </AdminShell>
   );
 }

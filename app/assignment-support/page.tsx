@@ -8,7 +8,7 @@ import { buildMetadata } from "@/lib/site";
 const page = servicePages.assignment;
 
 export const metadata: Metadata = buildMetadata({
-  title: "Coursework & Assignment Support for University Students",
+  title: "Coursework Support for University Students",
   description:
     "Get academic support for coursework briefs, research guidance, structure review, editing, referencing, and model solutions for learning.",
   path: page.path,

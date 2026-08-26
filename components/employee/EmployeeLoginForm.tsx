@@ -9,6 +9,9 @@ import { navigateWithAxoTransition } from "@/lib/auth/axoLoginTransition";
 
 type Workspace = { key: string; label: string; defaultRoute: string; role?: string; description?: string };
 
+const GENERIC_LOGIN_ERROR = "Unable to sign in with those details. Please try again or contact WriteX IT Support.";
+const AUTH_SERVICE_UNAVAILABLE = "Employee sign-in is temporarily unavailable while the secure employee directory connection is being completed. Please contact WriteX IT Support.";
+
 export function EmployeeLoginForm() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
@@ -20,21 +23,46 @@ export function EmployeeLoginForm() {
   useEffect(() => { const frame = requestAnimationFrame(() => setIdentifier(localStorage.getItem("writexRememberedEmployeeIdentifier") || "")); return () => cancelAnimationFrame(frame); }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(""); setLoading(true);
+    event.preventDefault();
+    setError("");
+    setLoading(true);
     const data = new FormData(event.currentTarget);
     const remember = data.get("remember") === "on";
-    const response = await fetch("/api/employee/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: data.get("identifier"), password: data.get("password") }) });
-    const payload = await response.json().catch(() => null); setLoading(false);
-    if (!response.ok) { setError(payload?.error?.message || "Unable to sign in with those details. Please try again or contact WriteX IT Support."); return; }
-    if (remember) localStorage.setItem("writexRememberedEmployeeIdentifier", identifier); else localStorage.removeItem("writexRememberedEmployeeIdentifier");
-    const available = Array.isArray(payload?.data?.availableWorkspaces) ? payload.data.availableWorkspaces : [];
-    if (available.length > 1) { setWorkspaces(available); return; }
-    const defaultRoute = available[0]?.defaultRoute || payload?.data?.defaultRoute;
-    if (!defaultRoute || !defaultRoute.startsWith("/employee/")) {
-      setError("Your account is active, but no authorised workspace is assigned. Please contact WriteX IT Support.");
-      return;
+    try {
+      const response = await fetch("/api/employee/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: data.get("identifier"), password: data.get("password") }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const code = payload?.error?.code;
+        const unavailable = response.status === 503 || code === "NOT_CONFIGURED" || code === "EMPLOYEE_DIRECTORY_UNAVAILABLE";
+        setError(unavailable ? AUTH_SERVICE_UNAVAILABLE : GENERIC_LOGIN_ERROR);
+        return;
+      }
+
+      if (remember) localStorage.setItem("writexRememberedEmployeeIdentifier", identifier);
+      else localStorage.removeItem("writexRememberedEmployeeIdentifier");
+
+      const available = Array.isArray(payload?.data?.availableWorkspaces) ? payload.data.availableWorkspaces : [];
+      if (available.length > 1) {
+        setWorkspaces(available);
+        return;
+      }
+
+      const defaultRoute = available[0]?.defaultRoute || payload?.data?.defaultRoute;
+      if (!defaultRoute || !defaultRoute.startsWith("/employee/")) {
+        setError("Your account is active, but no authorised workspace is assigned. Please contact WriteX IT Support.");
+        return;
+      }
+      navigateWithAxoTransition(defaultRoute, router.push);
+    } catch {
+      setError(AUTH_SERVICE_UNAVAILABLE);
+    } finally {
+      setLoading(false);
     }
-    navigateWithAxoTransition(defaultRoute, router.push);
   }
 
   if (workspaces.length > 1) return (
@@ -51,7 +79,7 @@ export function EmployeeLoginForm() {
       {error ? <p id="employee-login-error" role="alert" aria-live="polite" className="mt-4 rounded-lg border border-deepCrimson/20 bg-deepCrimson/5 p-3 text-sm font-semibold text-deepCrimson">{error}</p> : null}
       <button disabled={loading} className="wx-gradient-action mt-6 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-lg px-5 font-semibold text-white disabled:opacity-60">{loading ? "Preparing Workspace..." : "Sign In"}{loading ? null : <ArrowRight className="h-5 w-5" />}</button>
       <DemoEmployeeLogin />
-      <p className="mt-6 flex items-center justify-center gap-2 text-sm text-wxIndigo500"><Headphones className="h-5 w-5" />Need help? <a href="mailto:customer@writex.co.in" className="font-semibold text-wxViolet700">Contact IT Support</a></p>
+      <p className="mt-6 flex items-center justify-center gap-2 text-sm text-wxIndigo500"><Headphones className="h-5 w-5" />Need help? <a href="mailto:business@writex.co.in" className="font-semibold text-wxViolet700">Contact IT Support</a></p>
     </form>
   );
 }

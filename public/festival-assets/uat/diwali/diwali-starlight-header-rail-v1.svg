@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 220" role="img" aria-labelledby="title desc">
+  <title id="title">Diwali starlight lantern header rail</title>
+  <desc id="desc">A transparent warm-gold light rail with small lanterns and restrained jewel accents.</desc>
+  <path d="M82 24C410 86 1190 86 1518 24" fill="none" stroke="#a34f64" stroke-width="5" stroke-linecap="round"/>
+  <path d="M168 40v18M418 65v20M800 75v24M1182 65v20M1432 40v18" fill="none" stroke="#8a315f" stroke-width="3"/>
+  <g transform="translate(168 58)">
+    <circle cy="69" r="38" fill="#ffc857" opacity=".16"/>
+    <circle cy="69" r="25" fill="#ffc857" opacity=".18"/>
+    <path d="M-10 0h20l-3 10H-7Z" fill="#7c2f56"/>
+    <path d="M-17 11 0 4l17 7-5 34L0 54l-12-9Z" fill="#f5b93d" stroke="#8f3b3b" stroke-width="2"/>
+    <path d="M-10 17H10M-12 40H12M0 7v44" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M-7 54 0 65l7-11" fill="#8a315f"/><circle cy="30" r="4" fill="#fff7c7"/>
+  </g>
+  <g transform="translate(418 85) scale(.78)">
+    <circle cy="69" r="38" fill="#ffc857" opacity=".16"/><path d="M-10 0h20l-3 10H-7Z" fill="#7c2f56"/>
+    <path d="M-17 11 0 4l17 7-5 34L0 54l-12-9Z" fill="#f5b93d" stroke="#8f3b3b" stroke-width="2"/>
+    <path d="M-10 17H10M-12 40H12M0 7v44" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M-7 54 0 65l7-11" fill="#8a315f"/><circle cy="30" r="4" fill="#fff7c7"/>
+  </g>
+  <g transform="translate(800 99)">
+    <circle cy="69" r="42" fill="#ffc857" opacity=".18"/><path d="M-10 0h20l-3 10H-7Z" fill="#7c2f56"/>
+    <path d="M-17 11 0 4l17 7-5 34L0 54l-12-9Z" fill="#f5b93d" stroke="#8f3b3b" stroke-width="2"/>
+    <path d="M-10 17H10M-12 40H12M0 7v44" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M-7 54 0 65l7-11" fill="#8a315f"/><circle cy="30" r="4" fill="#fff7c7"/>
+  </g>
+  <g transform="translate(1182 85) scale(.78)">
+    <circle cy="69" r="38" fill="#ffc857" opacity=".16"/><path d="M-10 0h20l-3 10H-7Z" fill="#7c2f56"/>
+    <path d="M-17 11 0 4l17 7-5 34L0 54l-12-9Z" fill="#f5b93d" stroke="#8f3b3b" stroke-width="2"/>
+    <path d="M-10 17H10M-12 40H12M0 7v44" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M-7 54 0 65l7-11" fill="#8a315f"/><circle cy="30" r="4" fill="#fff7c7"/>
+  </g>
+  <g transform="translate(1432 58)">
+    <circle cy="69" r="38" fill="#ffc857" opacity=".16"/><circle cy="69" r="25" fill="#ffc857" opacity=".18"/>
+    <path d="M-10 0h20l-3 10H-7Z" fill="#7c2f56"/><path d="M-17 11 0 4l17 7-5 34L0 54l-12-9Z" fill="#f5b93d" stroke="#8f3b3b" stroke-width="2"/>
+    <path d="M-10 17H10M-12 40H12M0 7v44" fill="none" stroke="#fff2ad" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M-7 54 0 65l7-11" fill="#8a315f"/><circle cy="30" r="4" fill="#fff7c7"/>
+  </g>
+  <g fill="#f6c85f">
+    <path d="m286 80 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
+    <path d="m602 102 4 8 9 1-7 7 2 9-8-4-8 4 2-9-7-7 9-1Z"/>
+    <path d="m998 102 4 8 9 1-7 7 2 9-8-4-8 4 2-9-7-7 9-1Z"/>
+    <path d="m1314 80 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
+  </g>
+  <g fill="#ad3b73" opacity=".86"><circle cx="342" cy="71" r="5"/><circle cx="514" cy="92" r="4"/><circle cx="1086" cy="92" r="4"/><circle cx="1258" cy="71" r="5"/></g>
+</svg>

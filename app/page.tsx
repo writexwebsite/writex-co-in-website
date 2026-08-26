@@ -11,14 +11,14 @@ import { WhyWriteX } from "@/components/WhyWriteX";
 import { Reveal } from "@/components/animations/Reveal";
 import { SpectrumBackground } from "@/components/visual/SpectrumBackground";
 import { homeFaqs } from "@/lib/content";
-import { breadcrumbSchema, faqSchema, serviceSchema, websiteSchema } from "@/lib/schema";
+import { breadcrumbSchema, faqSchema, serviceSchema } from "@/lib/schema";
 import { buildMetadata } from "@/lib/site";
 
 export const metadata: Metadata = buildMetadata({
   title: "Academic Support & Review",
   brandFirst: true,
   description:
-    "WriteX provides confidential academic support, dissertation and thesis guidance, academic editing, SOP support, originality review, formatting, and referencing for university students worldwide.",
+    "Confidential academic support, dissertation guidance, editing, SOP support, originality review, formatting, and referencing for university students.",
   path: "/",
   keywords: [
     "premium academic support",
@@ -38,7 +38,6 @@ export default function HomePage() {
       <JsonLd
         data={[
           breadcrumbSchema([{ name: "Home", path: "/" }]),
-          websiteSchema(),
           serviceSchema({
             name: "WriteX Academic Support & Review",
             description:

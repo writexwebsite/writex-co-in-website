@@ -4,18 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { UserRound, UsersRound } from "lucide-react";
+import {
+  getPrimaryPublicNavigation,
+  isPublicNavigationActive
+} from "@/lib/public-navigation";
 import { serviceNavItems } from "@/lib/site";
-import { cn } from "@/lib/utils";
 import { QuoteCTA } from "./QuoteCTA";
 import { WhatsAppCTA } from "./WhatsAppCTA";
 import { ThemeToggle } from "./theme/ThemeToggle";
-
-const primaryMobileLinks = [
-  { label: "Home", href: "/" },
-  { label: "About Us", href: "/about-us" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Contact", href: "/contact" }
-];
 
 const resourceMobileLinks = [
   { label: "Help Centre", href: "/help" },
@@ -26,15 +22,16 @@ const resourceMobileLinks = [
 type MobileMenuProps = {
   open: boolean;
   onClose: () => void;
+  showCareers: boolean;
 };
 
-function isActivePath(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
-
-export function MobileMenu({ open, onClose }: MobileMenuProps) {
+export function MobileMenu({ open, onClose, showCareers }: MobileMenuProps) {
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
+  const primaryMobileLinks = getPrimaryPublicNavigation({
+    includeHome: true,
+    showCareers
+  });
 
   return (
     <AnimatePresence initial={false}>
@@ -49,7 +46,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
         >
           <nav className="grid gap-2" aria-label="Mobile">
             {primaryMobileLinks.map((item, index) => {
-              const active = isActivePath(pathname, item.href);
+              const active = isPublicNavigationActive(pathname, item.href);
 
               return (
                 <motion.div
@@ -64,10 +61,9 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
                 >
                   <Link
                     href={item.href}
-                    className={cn(
-                      "block min-h-12 rounded-md px-3 py-3 text-base font-semibold text-wxIndigo700 transition duration-200 hover:bg-wxSurfaceSoft hover:text-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700",
-                      active && "bg-wxSurfaceSoft text-wxViolet700"
-                    )}
+                    aria-current={active ? "page" : undefined}
+                    data-state={active ? "selected" : "default"}
+                    className="wx-interactive-nav wx-interactive-state block min-h-12 rounded-md border border-transparent px-3 py-3 text-base font-semibold transition duration-200"
                     onClick={onClose}
                   >
                     {item.label}
@@ -82,20 +78,22 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
               Resources
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {resourceMobileLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex min-h-12 items-center rounded-md border border-wxBorder bg-wxSurfaceSoft/70 px-3 py-3 text-sm font-semibold text-wxIndigo700 transition hover:border-wxViolet700/70 hover:bg-white hover:text-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700",
-                    isActivePath(pathname, item.href) &&
-                      "border-wxViolet700/70 bg-white text-wxViolet700"
-                  )}
-                  onClick={onClose}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {resourceMobileLinks.map((item) => {
+                const active = isPublicNavigationActive(pathname, item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    data-state={active ? "selected" : "default"}
+                    className="wx-interactive-state flex min-h-12 items-center rounded-md border px-3 py-3 text-sm font-semibold transition"
+                    onClick={onClose}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
@@ -107,9 +105,22 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
                   { label: "CV Builder", href: "/tools/cv-builder" },
                   { label: "SOP Builder", href: "/tools/sop-builder" },
                   { label: "Templates", href: "/templates" }
-                ].map((item) => (
-                  <Link key={item.href} href={item.href} className={cn("flex min-h-12 items-center rounded-md border border-wxBorder bg-wxSurfaceSoft/70 px-3 py-3 text-sm font-semibold text-wxIndigo700 transition hover:border-wxViolet700/70 hover:bg-white hover:text-wxViolet700", isActivePath(pathname, item.href) && "border-wxViolet700/70 bg-white text-wxViolet700")} onClick={onClose}>{item.label}</Link>
-                ))}
+                ].map((item) => {
+                  const active = isPublicNavigationActive(pathname, item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      data-state={active ? "selected" : "default"}
+                      className="wx-interactive-state flex min-h-12 items-center rounded-md border px-3 py-3 text-sm font-semibold transition"
+                      onClick={onClose}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -120,7 +131,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
             </p>
             <div className="mt-3 grid gap-2">
               {serviceNavItems.map((item, index) => {
-                const active = isActivePath(pathname, item.href);
+                const active = isPublicNavigationActive(pathname, item.href);
 
                 return (
                   <motion.div
@@ -135,10 +146,9 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
                   >
                     <Link
                       href={item.href}
-                      className={cn(
-                        "block min-h-12 rounded-md border border-wxBorder bg-wxSurfaceSoft/70 px-3 py-3 text-sm font-semibold text-wxIndigo700 transition duration-200 hover:border-wxViolet700/70 hover:bg-white hover:text-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700",
-                        active && "border-wxViolet700/70 bg-white text-wxViolet700"
-                      )}
+                      aria-current={active ? "page" : undefined}
+                      data-state={active ? "selected" : "default"}
+                      className="wx-interactive-state block min-h-12 rounded-md border px-3 py-3 text-sm font-semibold transition duration-200"
                       onClick={onClose}
                     >
                       {item.label}

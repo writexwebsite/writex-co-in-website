@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 48" role="img" aria-labelledby="title">
+  <title id="title">Premium Independence Day section divider</title>
+  <defs>
+    <linearGradient id="saffron" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#ff9933" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#ff9933" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#ff9933" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="green" x1="1" y1="0" x2="0" y2="0">
+      <stop stop-color="#138808" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#138808" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#138808" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 23H668" stroke="url(#saffron)" stroke-width="2"/>
+  <path d="M772 25H1440" stroke="url(#green)" stroke-width="2"/>
+  <path d="M666 24L694 14H746L774 24L746 34H694Z" fill="none" stroke="#16347a" stroke-opacity="0.72" stroke-width="1.5"/>
+  <circle cx="720" cy="24" r="4" fill="#16347a"/>
+  <circle cx="698" cy="24" r="2" fill="#ff9933"/>
+  <circle cx="742" cy="24" r="2" fill="#138808"/>
+</svg>

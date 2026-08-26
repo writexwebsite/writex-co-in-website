@@ -7,6 +7,8 @@ import { organizationSchema, websiteSchema } from "@/lib/schema";
 import { buildMetadata, siteConfig } from "@/lib/site";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeScript } from "@/components/theme/ThemeScript";
+import { isHiringFeatureEnabled } from "@/lib/hiring/feature-flags";
+import { HolidayExperienceProvider } from "@/components/holiday/HolidayExperienceProvider";
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -35,6 +37,8 @@ export default function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const showCareers = isHiringFeatureEnabled("applications");
+
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
@@ -56,14 +60,16 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <JsonLd data={[organizationSchema(), websiteSchema()]} />
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-wxViolet700 focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white"
-          >
-            Skip to content
-          </a>
-          <AppChrome>{children}</AppChrome>
+          <HolidayExperienceProvider>
+            <JsonLd data={[organizationSchema(), websiteSchema()]} />
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-wxViolet700 focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white"
+            >
+              Skip to content
+            </a>
+            <AppChrome showCareers={showCareers}>{children}</AppChrome>
+          </HolidayExperienceProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -21,6 +21,7 @@ import { motionDurations, motionEase } from "@/lib/motion";
 import { getWhatsAppUrl } from "@/lib/site";
 import { quoteTrackingEvents, trackQuoteEvent } from "@/lib/tracking";
 import { FAQ } from "./FAQ";
+import { PageHero } from "./PageHero";
 import { QuoteForm } from "./QuoteForm";
 import { TermPlanInterest } from "./pricing/TermPlanInterest";
 import { SectionReveal } from "./SectionReveal";
@@ -322,55 +323,13 @@ export function QuoteCommandCenter() {
 
   return (
     <div className="overflow-hidden bg-wxBg">
-      <SpectrumBackground
-        variant="hero"
-        overlayStrength="hero"
-        animate
-        position="center bottom"
-        className="text-wxIndigo900"
-      >
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-[var(--wx-page-canvas)]"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-1 bg-brand-spectrum"
-        />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-7 px-4 py-7 sm:px-6 sm:py-9 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-          <div>
-            <motion.p
-              className="inline-flex items-center gap-2 rounded-full border border-wxBorder bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-wxViolet700 shadow-sm backdrop-blur"
-              initial={false}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-            >
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-              WriteX Quote Workflow
-            </motion.p>
-            <motion.h1
-              className="mt-5 max-w-4xl text-4xl font-semibold leading-tight text-wxIndigo900 sm:text-5xl"
-              initial={false}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-            >
-              Get a Scope-Based Quote for Your Academic Brief
-            </motion.h1>
-            <motion.p
-              className="mt-5 max-w-2xl text-base leading-8 text-wxIndigo500 sm:text-lg"
-              initial={false}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ delay: 0.16 }}
-            >
-              Share your service type, deadline, academic level, word count,
-              and files. WriteX reviews the scope before confirming the quote.
-            </motion.p>
-            <motion.div
-              className="mt-6 flex flex-col gap-3 sm:flex-row"
-              initial={false}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ delay: 0.22 }}
-            >
+      <PageHero
+        eyebrow="WriteX Quote Workflow"
+        title="Get a Scope-Based Quote for Your Academic Brief"
+        description="Share your service type, deadline, academic level, word count, and files. WriteX reviews the scope before confirming the quote."
+        animateBackground
+        actions={
+          <>
               <a
                 href={getWhatsAppUrl()}
                 target="_blank"
@@ -402,22 +361,13 @@ export function QuoteCommandCenter() {
                 Get Quote
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-            </motion.div>
-
-            <motion.p
-              className="mt-4 max-w-xl text-sm font-semibold leading-6 text-wxIndigo500"
-              initial={false}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ delay: 0.26 }}
-            >
-              Confidential review. No fake fixed pricing. Academic
-              integrity-safe support.
-            </motion.p>
-          </div>
-
+          </>
+        }
+        microcopy="Confidential review. No fake fixed pricing. Academic integrity-safe support."
+        supportVisual={
           <QuoteJourneyVisual shouldReduceMotion={Boolean(shouldReduceMotion)} />
-        </div>
-      </SpectrumBackground>
+        }
+      />
 
       <section className="border-y border-wxBorder bg-wxSurfaceSoft text-wxIndigo900">
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">

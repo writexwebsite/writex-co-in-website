@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, Menu, UserRound, UsersRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import {
+  getPrimaryPublicNavigation,
+  isPublicNavigationActive
+} from "@/lib/public-navigation";
 import { serviceNavItems } from "@/lib/site";
 import { quoteTrackingEvents, trackQuoteEvent } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
@@ -12,12 +16,7 @@ import { BrandLogo } from "./BrandLogo";
 import { MobileMenu } from "./MobileMenu";
 import { WhatsAppCTA } from "./WhatsAppCTA";
 import { ThemeMenu } from "./theme/ThemeMenu";
-
-const desktopNavItems = [
-  { label: "About Us", href: "/about-us" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Contact", href: "/contact" }
-];
+import { HolidayHeaderDecoration } from "./holiday/HolidayDecorations";
 
 const resourceNavItems = [
   { label: "Help Centre", description: "Read practical, evergreen guidance", href: "/help" },
@@ -25,11 +24,7 @@ const resourceNavItems = [
   { label: "Reviews", description: "See why students trust the process", href: "/reviews" }
 ];
 
-function isActivePath(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
-
-export function Header() {
+export function Header({ showCareers }: { showCareers: boolean }) {
   const [open, setOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
@@ -38,6 +33,10 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
+  const primaryNavigation = useMemo(
+    () => getPrimaryPublicNavigation({ showCareers }),
+    [showCareers]
+  );
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 18);
@@ -49,14 +48,17 @@ export function Header() {
   }, []);
 
   const servicesActive = useMemo(
-    () => serviceNavItems.some((item) => isActivePath(pathname, item.href)),
+    () =>
+      serviceNavItems.some((item) =>
+        isPublicNavigationActive(pathname, item.href)
+      ),
     [pathname]
   );
 
   return (
     <motion.header
       className={cn(
-        "sticky top-0 z-50 border-b text-wxIndigo700 backdrop-blur-xl transition-all duration-200",
+        "relative sticky top-0 z-50 border-b text-wxIndigo700 backdrop-blur-xl transition-all duration-200",
         scrolled
           ? "border-wxBorder bg-[var(--wx-header)] shadow-[0_16px_45px_rgba(85,22,242,0.12)]"
           : "border-wxBorder/80 bg-[var(--wx-header)]"
@@ -66,8 +68,9 @@ export function Header() {
       transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
     >
       <div
+        data-festival-safe-zone="functional-navigation"
         className={cn(
-          "mx-auto flex min-h-[4.5rem] max-w-[90rem] items-center justify-between gap-3 px-4 transition-all duration-200 sm:px-6 lg:px-8",
+          "relative z-10 isolate mx-auto flex min-h-[4.5rem] max-w-[90rem] items-center justify-between gap-3 px-4 transition-all duration-200 sm:px-6 lg:px-8",
           scrolled ? "py-2" : "py-2.5"
         )}
       >
@@ -75,8 +78,9 @@ export function Header() {
           className="shrink-0"
           markClassName={cn(
             "transition-all duration-200",
-            scrolled ? "h-10 w-36" : "h-11 w-40"
+            scrolled ? "w-36" : "w-40"
           )}
+          sizes="160px"
         />
 
         <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Main">
@@ -134,7 +138,7 @@ export function Header() {
                   onMouseLeave={() => setServicesOpen(false)}
                 >
                   {serviceNavItems.map((item) => {
-                    const active = isActivePath(pathname, item.href);
+                    const active = isPublicNavigationActive(pathname, item.href);
 
                     return (
                       <Link
@@ -175,7 +179,9 @@ export function Header() {
               type="button"
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-wxIndigo700 transition duration-200 hover:-translate-y-0.5 hover:bg-wxSurfaceSoft hover:text-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700",
-                resourceNavItems.some((item) => isActivePath(pathname, item.href)) && "bg-wxSurfaceSoft text-wxViolet700"
+                resourceNavItems.some((item) =>
+                  isPublicNavigationActive(pathname, item.href)
+                ) && "bg-wxSurfaceSoft text-wxViolet700"
               )}
               aria-expanded={resourcesOpen}
               aria-haspopup="menu"
@@ -245,17 +251,16 @@ export function Header() {
             </div>
           ) : null}
 
-          {desktopNavItems.map((item) => {
-            const active = isActivePath(pathname, item.href);
+          {primaryNavigation.map((item) => {
+            const active = isPublicNavigationActive(pathname, item.href);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium text-wxIndigo700 transition duration-200 hover:-translate-y-0.5 hover:bg-wxSurfaceSoft hover:text-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700",
-                  active && "bg-wxSurfaceSoft text-wxViolet700"
-                )}
+                aria-current={active ? "page" : undefined}
+                data-state={active ? "selected" : "default"}
+                className="wx-interactive-nav wx-interactive-state rounded-md border border-transparent px-3 py-2 text-sm font-medium transition duration-200 hover:-translate-y-0.5"
               >
                 {item.label}
               </Link>
@@ -278,7 +283,7 @@ export function Header() {
           >
             <button
               type="button"
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-wxViolet700/20 bg-wxSurfaceSoft px-3 text-sm font-semibold text-wxViolet700 transition hover:-translate-y-0.5 hover:border-wxViolet700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-wxViolet700/20 bg-wxSurfaceSoft px-3 text-sm font-semibold text-wxIndigo700 transition hover:-translate-y-0.5 hover:border-wxViolet700 hover:text-wxIndigo900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700"
               aria-expanded={loginOpen}
               aria-haspopup="menu"
               onClick={() => setLoginOpen((value) => !value)}
@@ -327,8 +332,13 @@ export function Header() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
+      <HolidayHeaderDecoration compact={scrolled} />
 
-      <MobileMenu open={open} onClose={() => setOpen(false)} />
+      <MobileMenu
+        open={open}
+        onClose={() => setOpen(false)}
+        showCareers={showCareers}
+      />
     </motion.header>
   );
 }

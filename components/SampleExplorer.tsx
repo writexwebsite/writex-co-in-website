@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { sampleCards } from "@/lib/content";
 import { quoteTrackingEvents, trackQuoteEvent } from "@/lib/tracking";
-import { cn } from "@/lib/utils";
 import { SampleCard } from "./SampleCard";
 
 const filters = [
@@ -72,12 +71,8 @@ export function SampleExplorer() {
               type="button"
               role="tab"
               aria-selected={active}
-              className={cn(
-                "min-h-10 shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mutedCopper",
-                active
-                  ? "border-wxViolet700 bg-wxViolet700 text-white"
-                  : "border-sageBorder bg-white text-slateText hover:border-softTeal hover:bg-paleSage"
-              )}
+              data-state={active ? "selected" : "default"}
+              className="wx-interactive-state min-h-10 shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition"
               onClick={() => {
                 setActiveFilter(filter);
                 trackQuoteEvent(quoteTrackingEvents.sampleInteraction, {

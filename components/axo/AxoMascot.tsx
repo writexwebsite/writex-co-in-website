@@ -33,6 +33,7 @@ export function AxoMascot({ state = "idle", compact = false }: { state?: AxoStat
           src={mascotByState[state]}
           alt=""
           fill
+          loading={compact ? "lazy" : "eager"}
           sizes={compact ? "48px" : "96px"}
           className="object-contain object-center drop-shadow-[0_10px_14px_rgba(49,46,129,.24)]"
         />

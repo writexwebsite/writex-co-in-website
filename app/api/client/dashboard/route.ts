@@ -1,6 +1,9 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk } from "@/lib/api/response";
-import { verifyClientSessionFromRequest } from "@/lib/auth";
+import {
+  assertNotTestClientSession,
+  verifyClientSessionFromRequest
+} from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
 import { getClientRevisionRequests } from "@/lib/admin/revisions";
 import { optionalDbQuery } from "@/lib/db";
@@ -13,6 +16,8 @@ import {
 import { getWhatsAppUrl, siteConfig } from "@/lib/site";
 import { clientDemoData } from "@/lib/demo/clientDemoData";
 import { getDemoClientSessionFromRequest } from "@/lib/demo/session";
+import { createClientPortalTrustSummary } from "@/lib/trust/client-portal";
+import { buildClientPortalPaymentView } from "@/lib/trust/client-portal-summary";
 
 export const runtime = "nodejs";
 
@@ -34,6 +39,7 @@ export async function GET(request: NextRequest) {
   try {
     if (getDemoClientSessionFromRequest(request)) return apiOk(clientDemoData);
     const session = await verifyClientSessionFromRequest(request);
+    assertNotTestClientSession(session);
     if (session.accessLevel !== "full") {
       const journey = await getWorkJourney(session.invoiceId);
       return apiOk({
@@ -56,6 +62,11 @@ export async function GET(request: NextRequest) {
     const localUnlock = await canUnlockFromLocalPaymentProof(session.invoiceId);
     const downloadUnlocked =
       (isPaymentSettled(payment) || localUnlock) && orderFiles.finalAvailable;
+    const trust = await createClientPortalTrustSummary({
+      session,
+      invoice,
+      payment
+    });
 
     await optionalDbQuery(
       `
@@ -150,7 +161,7 @@ export async function GET(request: NextRequest) {
         progressPercent: journey.progressPercent,
         stages: journey.stages
       },
-      payment,
+      payment: buildClientPortalPaymentView(payment),
       paymentProof: latestProof
         ? {
             id: latestProof.id,
@@ -163,7 +174,6 @@ export async function GET(request: NextRequest) {
             paymentReference: latestProof.payment_reference,
             paymentDate: latestProof.payment_date,
             notes: latestProof.notes,
-            adminNotes: latestProof.admin_notes,
             submittedAt: latestProof.created_at
           }
         : null,
@@ -172,6 +182,7 @@ export async function GET(request: NextRequest) {
         finalAvailable: orderFiles.finalAvailable,
         downloadUnlocked
       },
+      trust,
       support: {
         whatsappUrl: getWhatsAppUrl(supportMessage),
         email: siteConfig.supportEmail,
