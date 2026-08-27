@@ -28,7 +28,8 @@ export type MyWritexContractErrorCode =
   | "NOT_FOUND"
   | "INVALID_REQUEST"
   | "IDEMPOTENCY_CONFLICT"
-  | "FIXTURES_DISABLED";
+  | "FIXTURES_DISABLED"
+  | "PRODUCTION_ADAPTER_DISABLED";
 
 export class MyWritexContractError extends Error {
   constructor(

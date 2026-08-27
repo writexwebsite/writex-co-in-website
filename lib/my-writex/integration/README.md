@@ -1,4 +1,4 @@
-# Stage 3B-0 Local Contract Adapter
+# Stage 3B Integration Safety Adapters
 
 This folder is additive readiness work only. It contains no HTTP client, database driver, production hostname, secret, notification sender, or merge executor.
 
@@ -15,3 +15,10 @@ Run the isolated contract tests with:
 pnpm exec tsx --test tests/client-portal/my-writex-stage3b0.test.ts
 ```
 
+Stage 3B-1 adds an application service composed only from explicit resolver/repository ports, an offline `SanitizedSnapshotAdapter`, safe structured-log construction, and default-off feature flags. The snapshot adapter refuses production and disabled construction, rejects remote paths and inconsistent ownership relationships, strips internal Customer Master references from public results, and preserves customer/invoice/request authorization and idempotency. `ProductionLTSAdapter` remains deliberately unimplemented and always throws; it contains no transport or database client.
+
+Run the Stage 3B-1 safety suite with:
+
+```powershell
+pnpm exec tsx --test tests/client-portal/my-writex-stage3b1.test.ts
+```

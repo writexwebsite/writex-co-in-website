@@ -327,3 +327,6 @@ export class LocalMockMyWritexAdapter {
     };
   }
 }
+
+/** Stage 3B contract name; behavior remains the production-locked local mock. */
+export class MockAdapter extends LocalMockMyWritexAdapter {}
