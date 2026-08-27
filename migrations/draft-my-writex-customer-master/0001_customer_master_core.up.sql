@@ -1,0 +1,115 @@
+-- DRAFT — DO NOT RUN IN PRODUCTION
+-- Target: disposable MySQL 8 clone only after schema-owner approval.
+
+CREATE TABLE IF NOT EXISTS customer_masters (
+  id CHAR(36) NOT NULL,
+  preferred_name VARCHAR(160) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'active',
+  relationship_started_on DATE NULL,
+  primary_manager_source_user_id BIGINT NULL,
+  source_system VARCHAR(64) NOT NULL,
+  source_provenance JSON NOT NULL,
+  merged_into_customer_master_id CHAR(36) NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  CONSTRAINT customer_masters_status_ck CHECK (status IN ('active','inactive','restricted','merged','deleted')),
+  CONSTRAINT customer_masters_not_self_merged_ck CHECK (merged_into_customer_master_id IS NULL OR merged_into_customer_master_id <> id),
+  CONSTRAINT customer_masters_merged_fk FOREIGN KEY (merged_into_customer_master_id) REFERENCES customer_masters(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  INDEX customer_masters_status_idx (status),
+  INDEX customer_masters_manager_idx (primary_manager_source_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS customer_identifiers (
+  id CHAR(36) NOT NULL,
+  customer_master_id CHAR(36) NOT NULL,
+  identifier_type VARCHAR(32) NOT NULL,
+  normalized_value VARCHAR(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+  display_value VARCHAR(255) NULL,
+  status VARCHAR(24) NOT NULL DEFAULT 'active',
+  is_primary TINYINT(1) NOT NULL DEFAULT 0,
+  valid_from DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  valid_to DATETIME(6) NULL,
+  quarantine_until DATETIME(6) NULL,
+  source_system VARCHAR(64) NOT NULL,
+  source_record_id VARCHAR(128) NULL,
+  provenance JSON NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  CONSTRAINT customer_identifiers_customer_fk FOREIGN KEY (customer_master_id) REFERENCES customer_masters(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT customer_identifiers_type_ck CHECK (identifier_type IN ('writex_id','legacy_lead_id','legacy_customer_id','external_customer_ref')),
+  CONSTRAINT customer_identifiers_status_ck CHECK (status IN ('reserved','active','retired','blocked')),
+  CONSTRAINT customer_identifiers_validity_ck CHECK (valid_to IS NULL OR valid_to >= valid_from),
+  UNIQUE KEY customer_identifiers_type_value_uq (identifier_type, normalized_value),
+  INDEX customer_identifiers_customer_idx (customer_master_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS customer_phones (
+  id CHAR(36) NOT NULL,
+  customer_master_id CHAR(36) NOT NULL,
+  encrypted_e164 VARBINARY(1024) NOT NULL,
+  normalized_hmac BINARY(32) NOT NULL,
+  hmac_key_version SMALLINT UNSIGNED NOT NULL,
+  masked_display VARCHAR(32) NOT NULL,
+  country_code CHAR(2) NULL,
+  phone_label VARCHAR(24) NOT NULL DEFAULT 'mobile',
+  verification_status VARCHAR(24) NOT NULL DEFAULT 'unverified',
+  verified_at DATETIME(6) NULL,
+  verification_source VARCHAR(64) NULL,
+  is_primary TINYINT(1) NOT NULL DEFAULT 0,
+  valid_from DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  valid_to DATETIME(6) NULL,
+  source_system VARCHAR(64) NOT NULL,
+  provenance JSON NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  CONSTRAINT customer_phones_customer_fk FOREIGN KEY (customer_master_id) REFERENCES customer_masters(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT customer_phones_verification_ck CHECK (verification_status IN ('unverified','verified','invalid','revoked')),
+  CONSTRAINT customer_phones_validity_ck CHECK (valid_to IS NULL OR valid_to >= valid_from),
+  INDEX customer_phones_lookup_idx (normalized_hmac, hmac_key_version),
+  INDEX customer_phones_customer_idx (customer_master_id, valid_to)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS customer_emails (
+  id CHAR(36) NOT NULL,
+  customer_master_id CHAR(36) NOT NULL,
+  encrypted_email VARBINARY(2048) NOT NULL,
+  normalized_hmac BINARY(32) NOT NULL,
+  hmac_key_version SMALLINT UNSIGNED NOT NULL,
+  masked_display VARCHAR(320) NOT NULL,
+  verification_status VARCHAR(24) NOT NULL DEFAULT 'unverified',
+  verified_at DATETIME(6) NULL,
+  verification_source VARCHAR(64) NULL,
+  is_primary TINYINT(1) NOT NULL DEFAULT 0,
+  valid_from DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  valid_to DATETIME(6) NULL,
+  source_system VARCHAR(64) NOT NULL,
+  provenance JSON NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  CONSTRAINT customer_emails_customer_fk FOREIGN KEY (customer_master_id) REFERENCES customer_masters(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT customer_emails_verification_ck CHECK (verification_status IN ('unverified','verified','invalid','revoked')),
+  CONSTRAINT customer_emails_validity_ck CHECK (valid_to IS NULL OR valid_to >= valid_from),
+  INDEX customer_emails_lookup_idx (normalized_hmac, hmac_key_version),
+  INDEX customer_emails_customer_idx (customer_master_id, valid_to)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS customer_aliases (
+  id CHAR(36) NOT NULL,
+  customer_master_id CHAR(36) NOT NULL,
+  alias_type VARCHAR(32) NOT NULL,
+  encrypted_alias VARBINARY(2048) NOT NULL,
+  normalized_hmac BINARY(32) NULL,
+  hmac_key_version SMALLINT UNSIGNED NULL,
+  masked_display VARCHAR(160) NULL,
+  valid_from DATETIME(6) NULL,
+  valid_to DATETIME(6) NULL,
+  source_system VARCHAR(64) NOT NULL,
+  source_record_id VARCHAR(128) NULL,
+  provenance JSON NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  CONSTRAINT customer_aliases_customer_fk FOREIGN KEY (customer_master_id) REFERENCES customer_masters(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT customer_aliases_type_ck CHECK (alias_type IN ('name','spelling','legacy_display_name')),
+  INDEX customer_aliases_customer_idx (customer_master_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -1,0 +1,607 @@
+openapi: 3.1.0
+info:
+  title: My WriteX Integration API
+  version: 1.0.0-draft
+  license:
+    name: Proprietary — internal readiness draft
+    identifier: LicenseRef-Proprietary-Internal-Draft
+  description: >-
+    DRAFT READINESS CONTRACT ONLY. My WriteX frontend calls the writex.co.in BFF;
+    the BFF calls a versioned integration service. The frontend never reads LTS
+    tables and the mock implementation never calls production.
+servers:
+  - url: /api/my-writex
+    description: Same-origin WriteX BFF
+tags:
+  - name: Authentication
+    description: Resolve a scoped local/customer identity without enumeration.
+  - name: Customer
+    description: Return the authenticated identity's customer-safe profile.
+  - name: Projects
+    description: Read only projects and documents authorized for the session scope.
+  - name: Billing
+    description: Read only invoices authorized for the session scope.
+  - name: Relationship
+    description: Read approved manager and relationship information.
+  - name: Requests
+    description: Create and read idempotent, object-authorized customer requests.
+security:
+  - sessionCookie: []
+paths:
+  /auth/resolve:
+    post:
+      tags: [Authentication]
+      operationId: resolveMyWritexIdentity
+      summary: Resolve WriteX ID or invoice identifier with registered phone
+      security: []
+      x-rate-limit: 6 attempts per identity/IP/device window; progressive cooldown and account lock apply
+      x-idempotency: not-applicable
+      x-cache-policy: no-store
+      x-retry-policy: client must not automatically retry authentication failures
+      x-audit-events: [auth.resolve_succeeded, auth.resolve_failed, auth.locked]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthResolveRequest'
+      responses:
+        '200':
+          description: Authenticated session created; cookie is set server-side
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationId'
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResolveResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/GenericAuthenticationFailure' }
+        '423': { $ref: '#/components/responses/GenericAuthenticationFailure' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /me:
+    get:
+      tags: [Customer]
+      operationId: getMyWritexMe
+      summary: Return the current customer-safe profile and session scope
+      x-auth-scope: customer; invoice returns a scope-safe invoice identity only
+      x-cache-policy: private, max-age=30; no shared cache
+      x-retry-policy: one retry on 502/503/504 with jitter; never retry 4xx
+      x-audit-events: [customer.profile_viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Current identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /projects:
+    get:
+      tags: [Projects]
+      operationId: listMyWritexProjects
+      summary: List projects authorized for the current scope
+      x-auth-scope: customer lists all owned public projects; invoice lists at most its linked project
+      x-cache-policy: private, max-age=30, stale-if-error=60
+      x-retry-policy: one retry on safe upstream timeout with jitter
+      x-audit-events: [project.list_viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, awaiting_information, in_progress, quality_review, ready_for_delivery, delivered, completed]
+      responses:
+        '200':
+          description: Authorized projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /projects/{publicRef}:
+    get:
+      tags: [Projects]
+      operationId: getMyWritexProject
+      summary: Return one authorized project by public reference
+      x-auth-scope: object-level authorization required for customer and invoice sessions
+      x-cache-policy: private, max-age=30
+      x-retry-policy: one retry on safe upstream timeout with jitter
+      x-audit-events: [project.viewed, authorization.object_denied]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ProjectPublicRef'
+      responses:
+        '200':
+          description: Authorized project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /invoices:
+    get:
+      tags: [Billing]
+      operationId: listMyWritexInvoices
+      summary: List customer-safe invoices for the current scope
+      x-auth-scope: customer owns linked invoices; invoice scope returns exactly its invoice
+      x-cache-policy: private, max-age=15; payment state must be revalidated
+      x-retry-policy: one retry for safe reads only
+      x-audit-events: [invoice.list_viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Authorized invoices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /documents:
+    get:
+      tags: [Projects]
+      operationId: listMyWritexDocuments
+      summary: List authorized document metadata; download URLs are short-lived and separate
+      x-auth-scope: strict object authorization through project/invoice ownership
+      x-cache-policy: private, max-age=15; signed URLs no-store
+      x-retry-policy: one retry for metadata reads; never replay a download mutation
+      x-audit-events: [document.list_viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: projectRef
+          in: query
+          schema: { $ref: '#/components/schemas/PublicReference' }
+      responses:
+        '200':
+          description: Authorized document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /manager:
+    get:
+      tags: [Relationship]
+      operationId: getMyWritexManager
+      summary: Return the approved customer-facing manager profile
+      x-auth-scope: customer; invoice may receive only the manager linked to that invoice/project
+      x-cache-policy: private, max-age=300
+      x-retry-policy: one safe-read retry
+      x-audit-events: [manager.viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Manager profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /relationship:
+    get:
+      tags: [Relationship]
+      operationId: listMyWritexRelationshipEvents
+      summary: Return a customer-safe relationship timeline
+      x-auth-scope: customer only unless an event is explicitly invoice-scoped
+      x-cache-policy: private, max-age=30
+      x-retry-policy: one safe-read retry
+      x-audit-events: [relationship.viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Authorized timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /requests:
+    get:
+      tags: [Requests]
+      operationId: listMyWritexRequests
+      summary: List requests owned by the current auth scope
+      x-auth-scope: customer or invoice, never cross-scope
+      x-cache-policy: no-store
+      x-retry-policy: one safe-read retry
+      x-audit-events: [request.list_viewed]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Authorized requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Requests]
+      operationId: createMyWritexRequest
+      summary: Create or submit a customer/invoice-scoped request
+      x-auth-scope: source references must be owned by the current scope
+      x-rate-limit: 20 writes per session per hour; lower during abuse signals
+      x-idempotency: required; same key and same normalized body returns the original result, different body conflicts
+      x-cache-policy: no-store
+      x-retry-policy: retry only with the identical Idempotency-Key after transport ambiguity
+      x-audit-events: [request.created, request.idempotent_replay, authorization.object_denied]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRequestInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestResponse' }
+        '200':
+          description: Identical idempotent replay
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /requests/{requestRef}:
+    get:
+      tags: [Requests]
+      operationId: getMyWritexRequest
+      summary: Return one authorized request
+      x-auth-scope: object-level authorization required
+      x-cache-policy: no-store
+      x-retry-policy: one safe-read retry
+      x-audit-events: [request.viewed, authorization.object_denied]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/RequestRef'
+      responses:
+        '200':
+          description: Authorized request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /requests/{requestRef}/respond:
+    post:
+      tags: [Requests]
+      operationId: respondToMyWritexRequest
+      summary: Add a customer response to an authorized request
+      x-auth-scope: owner scope and response-eligible status required
+      x-rate-limit: 30 writes per session per hour
+      x-idempotency: required
+      x-cache-policy: no-store
+      x-retry-policy: retry only with the identical Idempotency-Key
+      x-audit-events: [request.customer_responded, request.idempotent_replay, authorization.object_denied]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RequestRef'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1, maxLength: 4000 }
+                attachmentRefs:
+                  type: array
+                  maxItems: 5
+                  items: { $ref: '#/components/schemas/PublicReference' }
+      responses:
+        '200':
+          description: Updated request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: writex_client_session
+      description: Opaque HttpOnly session cookie; never a PII-bearing token
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      schema: { type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$' }
+      description: Client may supply a safe ID; server creates one if absent and echoes it
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$' }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string, maxLength: 512 }
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    ProjectPublicRef:
+      name: publicRef
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/PublicReference' }
+    RequestRef:
+      name: requestRef
+      in: path
+      required: true
+      schema: { type: string, pattern: '^REQ-[A-Z0-9-]{6,40}$' }
+  headers:
+    CorrelationId:
+      description: End-to-end safe request correlation ID
+      schema: { type: string }
+  responses:
+    BadRequest:
+      description: Invalid request
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    GenericAuthenticationFailure:
+      description: Generic failure; response never confirms identifier or phone existence
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: { code: AUTHENTICATION_FAILED, message: Unable to sign in with those details. }
+            correlationId: req_example
+    Unauthorized:
+      description: Session missing, expired, or revoked
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Forbidden:
+      description: Scope is not permitted; no existence disclosure
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    NotFound:
+      description: Resource not found or not authorized
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Conflict:
+      description: State or idempotency conflict
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Unprocessable:
+      description: Semantically invalid input
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    RateLimited:
+      description: Generic rate-limit/cooldown response
+      headers:
+        Retry-After: { schema: { type: integer, minimum: 1 } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  schemas:
+    PublicReference:
+      type: string
+      minLength: 6
+      maxLength: 64
+      pattern: '^[A-Z][A-Z0-9-]+$'
+    Scope:
+      type: string
+      enum: [invoice, customer]
+    AuthResolveRequest:
+      type: object
+      additionalProperties: false
+      required: [identifier, registeredPhone]
+      properties:
+        identifier: { type: string, minLength: 3, maxLength: 64 }
+        registeredPhone: { type: string, minLength: 8, maxLength: 32 }
+    AuthResolveResponse:
+      type: object
+      additionalProperties: false
+      required: [data, correlationId]
+      properties:
+        data:
+          type: object
+          required: [scope, expiresAt, landingPath]
+          properties:
+            scope: { $ref: '#/components/schemas/Scope' }
+            expiresAt: { type: string, format: date-time }
+            landingPath: { type: string, enum: [/my-writex, /client/overview] }
+        correlationId: { type: string }
+    MeResponse:
+      type: object
+      required: [data, correlationId]
+      properties:
+        data:
+          type: object
+          required: [scope, displayName]
+          properties:
+            scope: { $ref: '#/components/schemas/Scope' }
+            writeXId: { type: [string, 'null'] }
+            displayName: { type: string }
+            relationshipSince: { type: [string, 'null'], format: date }
+            status: { type: [string, 'null'] }
+        correlationId: { type: string }
+    PageMeta:
+      type: object
+      required: [pageSize, hasMore]
+      properties:
+        pageSize: { type: integer }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    Project:
+      type: object
+      additionalProperties: false
+      required: [publicRef, title, status]
+      properties:
+        publicRef: { $ref: '#/components/schemas/PublicReference' }
+        invoiceRef: { type: [string, 'null'] }
+        title: { type: string }
+        service: { type: [string, 'null'] }
+        category: { type: [string, 'null'] }
+        status: { type: string }
+        deadline: { type: [string, 'null'], format: date-time }
+        nextAction: { type: [string, 'null'] }
+    ProjectListResponse:
+      type: object
+      required: [data, page, correlationId]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Project' } }
+        page: { $ref: '#/components/schemas/PageMeta' }
+        correlationId: { type: string }
+    ProjectResponse:
+      type: object
+      required: [data, correlationId]
+      properties:
+        data: { $ref: '#/components/schemas/Project' }
+        correlationId: { type: string }
+    Invoice:
+      type: object
+      required: [publicRef, status, currency, totalAmount, paidAmount]
+      properties:
+        publicRef: { $ref: '#/components/schemas/PublicReference' }
+        projectRef: { type: [string, 'null'] }
+        status: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        totalAmount: { type: number, minimum: 0 }
+        paidAmount: { type: number, minimum: 0 }
+        issuedAt: { type: [string, 'null'], format: date-time }
+        dueAt: { type: [string, 'null'], format: date-time }
+    InvoiceListResponse:
+      type: object
+      required: [data, page, correlationId]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Invoice' } }
+        page: { $ref: '#/components/schemas/PageMeta' }
+        correlationId: { type: string }
+    Document:
+      type: object
+      required: [publicRef, name, type, addedAt]
+      properties:
+        publicRef: { $ref: '#/components/schemas/PublicReference' }
+        projectRef: { type: [string, 'null'] }
+        name: { type: string, maxLength: 255 }
+        type: { type: string, enum: [brief, reference, invoice, preview, delivery, revision, other] }
+        sizeBytes: { type: [integer, 'null'], minimum: 0 }
+        addedAt: { type: string, format: date-time }
+    DocumentListResponse:
+      type: object
+      required: [data, page, correlationId]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Document' } }
+        page: { $ref: '#/components/schemas/PageMeta' }
+        correlationId: { type: string }
+    Manager:
+      type: object
+      required: [displayName, approved]
+      properties:
+        displayName: { type: string }
+        role: { type: [string, 'null'] }
+        approved: { type: boolean }
+        contactChannel: { type: [string, 'null'], enum: [portal, null] }
+    ManagerResponse:
+      type: object
+      required: [data, correlationId]
+      properties:
+        data: { $ref: '#/components/schemas/Manager' }
+        correlationId: { type: string }
+    RelationshipEvent:
+      type: object
+      required: [publicRef, type, label, occurredAt]
+      properties:
+        publicRef: { $ref: '#/components/schemas/PublicReference' }
+        type: { type: string }
+        label: { type: string }
+        occurredAt: { type: string, format: date-time }
+        projectRef: { type: [string, 'null'] }
+    RelationshipResponse:
+      type: object
+      required: [data, page, correlationId]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/RelationshipEvent' } }
+        page: { $ref: '#/components/schemas/PageMeta' }
+        correlationId: { type: string }
+    Request:
+      type: object
+      required: [requestRef, source, title, status, createdAt, updatedAt]
+      properties:
+        requestRef: { type: string, pattern: '^REQ-[A-Z0-9-]{6,40}$' }
+        source: { type: string, enum: [new_requirement, similar_project, upcoming_work, invoice_workspace] }
+        sourcePublicRef: { type: [string, 'null'] }
+        title: { type: string, minLength: 3, maxLength: 160 }
+        status: { type: string, enum: [Draft, Submitted, Reviewing, More Information Needed, Ready for Discussion, Cancelled] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateRequestInput:
+      type: object
+      additionalProperties: false
+      required: [source, title, service, deadline, brief]
+      properties:
+        source: { type: string, enum: [new_requirement, similar_project, upcoming_work, invoice_workspace] }
+        sourcePublicRef: { type: [string, 'null'] }
+        title: { type: string, minLength: 3, maxLength: 160 }
+        service: { type: string, minLength: 1, maxLength: 100 }
+        category: { type: [string, 'null'], maxLength: 100 }
+        deadline: { type: string, format: date-time }
+        brief: { type: string, minLength: 10, maxLength: 20000 }
+        attachmentRefs:
+          type: array
+          maxItems: 5
+          items: { $ref: '#/components/schemas/PublicReference' }
+    RequestResponse:
+      type: object
+      required: [data, correlationId]
+      properties:
+        data: { $ref: '#/components/schemas/Request' }
+        correlationId: { type: string }
+    RequestListResponse:
+      type: object
+      required: [data, page, correlationId]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Request' } }
+        page: { $ref: '#/components/schemas/PageMeta' }
+        correlationId: { type: string }
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error, correlationId]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+        correlationId: { type: string }
+x-internal-service-contract:
+  security: mTLS plus short-lived audience-bound bffServiceToken; secrets never reach the browser
+  timeoutMs: 5000
+  retry: at most one retry for GET on connection reset/502/503/504 with exponential jitter; no blind POST replay
+  circuitBreaker: open after configured consecutive failures; return sanitized INTEGRATION_UNAVAILABLE
+  idMapping: immutable customer ID remains internal; only public references cross to browser responses
+  observability: correlation ID propagated end-to-end; logs contain safe IDs and reason codes, not phone/email/request brief
