@@ -1,0 +1,2 @@
+Local Stage 3A UAT fixture.
+No customer data, credentials, production content, or external instructions are included.

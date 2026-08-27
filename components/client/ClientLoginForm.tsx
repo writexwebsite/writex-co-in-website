@@ -6,12 +6,13 @@ import {
   ArrowRight,
   FlaskConical,
   LockKeyhole,
+  Mail,
   ReceiptText,
+  ShieldCheck,
   Smartphone
 } from "lucide-react";
-import { getWhatsAppUrl } from "@/lib/site";
+import Link from "next/link";
 import { AuthInput } from "@/components/auth/AuthFields";
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { navigateWithAxoTransition } from "@/lib/auth/axoLoginTransition";
 import { trackDemoEvent } from "@/lib/demo/analytics";
 
@@ -20,12 +21,13 @@ type ApiPayload = {
   data?: {
     valid?: boolean;
     authenticated?: boolean;
+    defaultRoute?: string;
   };
   error?: { message?: string };
 };
 
 const safeError =
-  "We could not verify those access details. Please check the information or contact WriteX Client Support.";
+  "We couldn't verify those details. Please check them and try again.";
 
 export function ClientLoginForm() {
   const router = useRouter();
@@ -68,7 +70,10 @@ export function ClientLoginForm() {
     const formData = new FormData(event.currentTarget);
     const invoiceId = String(formData.get("invoiceId") || "").trim();
     const whatsapp = String(formData.get("whatsapp") || "").trim();
-    const validation = await postJson("/api/client/auth/login", { invoiceId, whatsapp });
+    const validation = await postJson("/api/client/auth/login", {
+      invoiceNumber: invoiceId,
+      mobile: whatsapp
+    });
     setIsSubmitting(false);
 
     if (
@@ -77,13 +82,16 @@ export function ClientLoginForm() {
     ) {
       setMessage(
         validation.response.status === 503
-          ? "Secure workspace access is temporarily unavailable. Please contact WriteX Client Support."
+          ? "Client verification is temporarily unavailable."
           : safeError
       );
       return;
     }
 
-    navigateWithAxoTransition("/client/dashboard", router.push);
+    navigateWithAxoTransition(
+      validation.payload.data.defaultRoute || "/client/overview",
+      router.push
+    );
   }
 
   return (
@@ -93,16 +101,16 @@ export function ClientLoginForm() {
           Access Your WriteX Workspace
         </h1>
         <p className="mx-auto mt-3 max-w-md text-base leading-7 text-wxIndigo500">
-          Enter the access details linked to your active WriteX invoice.
+          Use the invoice number and mobile registered with your WriteX order.
         </p>
       </div>
 
       <div className="mt-7">
-        <AuthInput label="Invoice ID" icon={ReceiptText} id="auth-first-input" name="invoiceId" required minLength={3} autoComplete="off" aria-describedby={message ? "client-login-error" : undefined} placeholder="Enter your invoice ID" />
+        <AuthInput label="Invoice Number / WriteX ID" icon={ReceiptText} id="auth-first-input" name="invoiceId" required minLength={3} autoComplete="off" aria-describedby={message ? "client-login-error" : undefined} placeholder="Enter your invoice number" />
       </div>
 
       <div className="mt-5">
-        <AuthInput label="Registered WhatsApp Number" icon={Smartphone} id="whatsapp" name="whatsapp" type="tel" required minLength={8} autoComplete="tel" aria-describedby={message ? "client-login-error" : undefined} placeholder="Enter the number linked to your invoice" />
+        <AuthInput label="Registered Mobile Number" icon={Smartphone} id="whatsapp" name="whatsapp" type="tel" required minLength={10} autoComplete="tel" aria-describedby={message ? "client-login-error" : undefined} placeholder="Enter the mobile linked to your invoice" />
       </div>
 
       {message ? (
@@ -117,7 +125,7 @@ export function ClientLoginForm() {
         className="wx-gradient-action mt-6 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-lg px-5 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
         <LockKeyhole className="h-5 w-5" aria-hidden />
-        {isSubmitting ? "Verifying Access..." : "Access Workspace"}
+        {isSubmitting ? "Verifying securely..." : "Sign In Securely"}
         {isSubmitting ? null : <ArrowRight className="h-5 w-5" aria-hidden />}
       </button>
 
@@ -132,17 +140,37 @@ export function ClientLoginForm() {
         </div>
       ) : null}
 
-      <p className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm text-wxIndigo500">
-        <WhatsAppIcon className="h-5 w-5" />
+      <div className="mt-5 grid gap-2 border-t border-wxBorder pt-5 sm:grid-cols-2">
+        <Link
+          href="/trust-centre#verify-invoice"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-wxBorder px-3 text-sm font-semibold text-wxIndigo700 transition hover:border-wxViolet700 hover:text-wxViolet700"
+        >
+          <ShieldCheck className="h-4 w-4" aria-hidden />
+          Verify Invoice
+        </Link>
+        <Link
+          href="/trust-centre"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-wxBorder px-3 text-sm font-semibold text-wxIndigo700 transition hover:border-wxViolet700 hover:text-wxViolet700"
+        >
+          Open Trust Centre
+        </Link>
+        <Link
+          href="/trust-centre/report"
+          className="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-semibold text-wxViolet700 hover:bg-wxViolet700/5 sm:col-span-2"
+        >
+          Report Suspicious Activity
+        </Link>
+      </div>
+
+      <p className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-wxIndigo500">
+        <Mail className="h-5 w-5" aria-hidden />
         Need help accessing your workspace?
-        <a
-          href={getWhatsAppUrl("Hi WriteX, I need help accessing my client portal.")}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          href="mailto:business@writex.co.in"
           className="font-semibold text-wxViolet700 hover:text-wxPink500"
         >
-          Contact Client Support
-        </a>
+          business@writex.co.in
+        </Link>
       </p>
       <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs leading-5 text-wxIndigo500">
         <LockKeyhole className="h-4 w-4 shrink-0" aria-hidden />

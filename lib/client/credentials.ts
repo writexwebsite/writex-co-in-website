@@ -4,12 +4,15 @@ import bcrypt from "bcryptjs";
 import { notConfigured } from "@/lib/api/response";
 import { dbQuery, isDatabaseConfigured } from "@/lib/db";
 import { randomToken } from "@/lib/security";
-
-export function normalizeInvoiceId(value: string) { return value.trim().toUpperCase(); }
-export function normalizeWhatsapp(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits ? `+${digits}` : "";
-}
+export {
+  invoiceReferencesMatch,
+  normalizeInvoiceId,
+  normalizeWhatsapp
+} from "@/lib/client/identifiers";
+import {
+  normalizeInvoiceId,
+  normalizeWhatsapp
+} from "@/lib/client/identifiers";
 
 function peppered(value: string) {
   const pepper = process.env.CLIENT_ACCESS_CODE_PEPPER;

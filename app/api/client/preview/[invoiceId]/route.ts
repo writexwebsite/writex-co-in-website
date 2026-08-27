@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk, forbidden } from "@/lib/api/response";
-import { assertFullClientAccess, verifyClientSessionFromRequest } from "@/lib/auth";
+import { assertFullClientAccess, verifyInvoiceClientSessionFromRequest } from "@/lib/auth";
 import { getOrderFiles, sendClientEvent } from "@/lib/integrations/lts";
 import { getRequestContext, logPreviewDownloadEvent } from "@/lib/security";
 import { getSignedPreviewUrl } from "@/lib/storage/s3";
@@ -15,7 +15,7 @@ export async function GET(
   try {
     assertNotDemoRequest(request);
     const { invoiceId } = await context.params;
-    const session = await verifyClientSessionFromRequest(request);
+    const session = await verifyInvoiceClientSessionFromRequest(request);
     assertFullClientAccess(session);
 
     if (session.invoiceId !== invoiceId) {

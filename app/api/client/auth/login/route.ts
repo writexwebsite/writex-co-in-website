@@ -1,35 +1,258 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk, unauthorized } from "@/lib/api/response";
-import { createClientSessionRecord, createSignedSessionToken, getClientSessionMaxAgeSeconds, setClientSessionCookie } from "@/lib/auth";
+import {
+  createClientSessionRecord,
+  getClientSessionIdleSeconds,
+  getClientSessionMaxAgeSeconds,
+  setClientSessionCookie
+} from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
+import {
+  assertClientAccessEnabled,
+  clientInputFingerprint,
+  isClientLoginLocked,
+  recordClientLoginAttempt
+} from "@/lib/client/access";
 import { normalizeInvoiceId, normalizeWhatsapp } from "@/lib/client/credentials";
-import { validateInvoice } from "@/lib/integrations/lts";
-import { assertRateLimit, getRequestContext, hashValue, parseJson } from "@/lib/security";
+import { getClientVerificationProvider } from "@/lib/client/providers";
+import { optionalDbQuery } from "@/lib/db";
+import {
+  isMyWritexDevFixtureEnabled,
+  resolveDevelopmentCustomer,
+  resolveDevelopmentInvoice
+} from "@/lib/my-writex/dev-fixture";
+import { createDevelopmentClientSession } from "@/lib/my-writex/dev-sessions";
+import {
+  assertRateLimit,
+  assertSameOrigin,
+  getRequestContext,
+  hashValue,
+  parseJson
+} from "@/lib/security";
 import { futureClientLoginSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
-const failure = "We could not verify those access details. Please check the information or contact WriteX Client Support.";
+
+const failure =
+  "We couldn't verify those details. Please check them and try again.";
 
 export async function POST(request: NextRequest) {
   try {
+    assertSameOrigin(request);
     const context = getRequestContext(request);
+    const correlationId = crypto.randomUUID();
     const body = await parseJson(request, futureClientLoginSchema);
-    const invoiceId = normalizeInvoiceId(body.invoiceId);
-    const whatsapp = normalizeWhatsapp(body.whatsapp);
-    assertRateLimit({ key: `client-auth:${context.ipAddress}:${hashValue(invoiceId).slice(0, 16)}`, limit: Number(process.env.CLIENT_LOGIN_MAX_ATTEMPTS || 6), windowSeconds: 900 });
-    const invoice = await validateInvoice(invoiceId, whatsapp);
-    if (!invoice.valid) {
-      await logAuditEvent({ actorType: "client", entityType: "client_session", entityId: invoiceId, action: "client_login_failed", request });
+    const identifier = body.invoiceId.trim();
+    const invoiceId = normalizeInvoiceId(identifier);
+    const phone = normalizeWhatsapp(body.whatsapp);
+    if (!identifier || !phone) throw unauthorized(failure);
+
+    const inputFingerprint = clientInputFingerprint(identifier, phone);
+    assertRateLimit({
+      key: `client-auth:${context.ipAddress}:${hashValue(identifier.toLowerCase()).slice(0, 16)}`,
+      limit: Number(process.env.CLIENT_LOGIN_MAX_ATTEMPTS || 6),
+      windowSeconds: 900
+    });
+    if (
+      await isClientLoginLocked({
+        inputFingerprint,
+        ipAddress: context.ipAddress
+      })
+    ) {
       throw unauthorized(failure);
     }
-    const accessLevel = "full";
-    const mode = "invoice_whatsapp";
-    const sessionRecord = await createClientSessionRecord({ invoiceId, whatsapp, ipAddress: context.ipAddress, userAgent: context.userAgent, accessLevel, securityMode: mode });
-    const maxAge = getClientSessionMaxAgeSeconds();
-    const token = createSignedSessionToken({ kind: "client", sessionId: sessionRecord.sessionId, invoiceId, whatsapp, tokenHash: sessionRecord.tokenHash, accessLevel, securityMode: mode }, maxAge);
-    const response = apiOk({ authenticated: true, accessLevel, securityMode: mode, defaultRoute: "/client/dashboard" });
-    setClientSessionCookie(response, token, maxAge);
-    await logAuditEvent({ actorType: "client", entityType: "client_session", entityId: invoiceId, action: "client_login_success", metadata: { securityMode: mode }, request });
-    return response;
-  } catch (error) { return apiError(error); }
+
+    // Development fixtures are an explicit local provider. They never run in production.
+    const fixtureInvoice = resolveDevelopmentInvoice(identifier, phone);
+    if (fixtureInvoice) {
+      const maxAge = getClientSessionMaxAgeSeconds();
+      const sessionRecord = createDevelopmentClientSession({
+        session: {
+          kind: "client",
+          authScope: "invoice",
+          invoiceId: fixtureInvoice.invoiceId,
+          whatsapp: phone,
+          clientReference: fixtureInvoice.customerMasterId,
+          clientDisplayName: fixtureInvoice.displayName,
+          testSession: false,
+          accessLevel: "full",
+          securityMode: "development_fixture"
+        },
+        maxAgeSeconds: maxAge,
+        idleSeconds: getClientSessionIdleSeconds()
+      });
+      const response = apiOk({
+        authenticated: true,
+        authScope: "invoice",
+        accessLevel: "full",
+        securityMode: "development_fixture",
+        defaultRoute: "/client/overview"
+      });
+      setClientSessionCookie(response, sessionRecord.sessionToken, maxAge);
+      await recordAttemptAndAudit({
+        request,
+        inputFingerprint,
+        ipAddress: context.ipAddress,
+        correlationId,
+        succeeded: true,
+        entityId: fixtureInvoice.invoiceId,
+        authScope: "invoice"
+      });
+      return response;
+    }
+
+    // Production invoice access remains the first real resolver.
+    const provider = getClientVerificationProvider();
+    if (provider.mode === "live") {
+      await assertClientAccessEnabled(invoiceId);
+      const verification = await provider.verify(invoiceId, phone);
+      if (verification.verified) {
+        const verifiedInvoiceId = normalizeInvoiceId(
+          verification.identity.invoiceReference
+        );
+        if (verifiedInvoiceId !== invoiceId) throw unauthorized(failure);
+        const verificationReference = `WX-VRF-${crypto.randomUUID()
+          .replace(/-/g, "")
+          .slice(0, 8)
+          .toUpperCase()}`;
+        const sessionRecord = await createClientSessionRecord({
+          invoiceId: verifiedInvoiceId,
+          whatsapp: phone,
+          clientReference: verification.identity.clientReference,
+          clientDisplayName: verification.identity.displayName,
+          verificationReference,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          accessLevel: "full",
+          securityMode: "invoice_whatsapp"
+        });
+        await optionalDbQuery(
+          `
+            insert into trust_verification_references (
+              verification_reference, verification_type, invoice_id, result,
+              masked_input, correlation_id, data_source
+            )
+            values ($1, 'client_login', $2, 'verified', $3, $4, 'lts')
+            on conflict (verification_reference) do nothing
+          `,
+          [
+            verificationReference,
+            verifiedInvoiceId,
+            `${verifiedInvoiceId.slice(0, 3)}***${verifiedInvoiceId.slice(-4)}`,
+            correlationId
+          ]
+        );
+        const maxAge = getClientSessionMaxAgeSeconds();
+        const response = apiOk({
+          authenticated: true,
+          authScope: "invoice",
+          accessLevel: "full",
+          securityMode: "invoice_whatsapp",
+          defaultRoute: "/client/overview"
+        });
+        setClientSessionCookie(response, sessionRecord.sessionToken, maxAge);
+        await recordAttemptAndAudit({
+          request,
+          inputFingerprint,
+          ipAddress: context.ipAddress,
+          correlationId,
+          succeeded: true,
+          entityId: verifiedInvoiceId,
+          authScope: "invoice"
+        });
+        return response;
+      }
+    }
+
+    // Customer access is tried only after invoice access did not resolve.
+    const fixtureCustomer = resolveDevelopmentCustomer(identifier, phone);
+    if (fixtureCustomer) {
+      const maxAge = getClientSessionMaxAgeSeconds();
+      const sessionRecord = createDevelopmentClientSession({
+        session: {
+          kind: "client",
+          authScope: "customer",
+          invoiceId: "",
+          customerMasterId: fixtureCustomer.customerMasterId,
+          whatsapp: phone,
+          clientReference: fixtureCustomer.writeXId,
+          clientDisplayName: fixtureCustomer.name,
+          testSession: false,
+          accessLevel: "full",
+          securityMode: "writex_id_phone"
+        },
+        maxAgeSeconds: maxAge,
+        idleSeconds: getClientSessionIdleSeconds()
+      });
+      const response = apiOk({
+        authenticated: true,
+        authScope: "customer",
+        accessLevel: "full",
+        securityMode: "writex_id_phone",
+        defaultRoute: "/my-writex"
+      });
+      setClientSessionCookie(response, sessionRecord.sessionToken, maxAge);
+      await recordAttemptAndAudit({
+        request,
+        inputFingerprint,
+        ipAddress: context.ipAddress,
+        correlationId,
+        succeeded: true,
+        entityId: fixtureCustomer.customerMasterId,
+        authScope: "customer"
+      });
+      return response;
+    }
+
+    // Preserve the existing fail-closed provider behavior outside the local fixture mode.
+    if (provider.mode !== "live" && !isMyWritexDevFixtureEnabled()) {
+      await provider.verify(invoiceId, phone);
+    }
+
+    await recordAttemptAndAudit({
+      request,
+      inputFingerprint,
+      ipAddress: context.ipAddress,
+      correlationId,
+      succeeded: false,
+      entityId: hashValue(identifier.toLowerCase()).slice(0, 16)
+    });
+    throw unauthorized(failure);
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+async function recordAttemptAndAudit({
+  request,
+  inputFingerprint,
+  ipAddress,
+  correlationId,
+  succeeded,
+  entityId,
+  authScope
+}: {
+  request: NextRequest;
+  inputFingerprint: string;
+  ipAddress: string;
+  correlationId: string;
+  succeeded: boolean;
+  entityId: string;
+  authScope?: "invoice" | "customer";
+}) {
+  await recordClientLoginAttempt({
+    inputFingerprint,
+    ipAddress,
+    succeeded,
+    failureReason: succeeded ? undefined : "not_verified",
+    correlationId
+  });
+  await logAuditEvent({
+    actorType: "client",
+    entityType: "client_session",
+    entityId,
+    action: succeeded ? "client_login_success" : "client_login_failed",
+    metadata: authScope ? { authScope } : undefined,
+    request
+  });
 }

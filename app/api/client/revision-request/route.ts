@@ -7,7 +7,7 @@ import {
   forbidden,
   notConfigured
 } from "@/lib/api/response";
-import { assertFullClientAccess, verifyClientSessionFromRequest } from "@/lib/auth";
+import { assertFullClientAccess, verifyInvoiceClientSessionFromRequest } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit/logAuditEvent";
 import { dbQuery, isDatabaseConfigured } from "@/lib/db";
 import { getInvoice, sendClientEvent } from "@/lib/integrations/lts";
@@ -97,7 +97,7 @@ function validateAttachment(file: File) {
 export async function POST(request: NextRequest) {
   try {
     assertNotDemoRequest(request);
-    const session = await verifyClientSessionFromRequest(request);
+    const session = await verifyInvoiceClientSessionFromRequest(request);
     assertFullClientAccess(session);
     const context = getRequestContext(request);
     assertRateLimit({

@@ -11,11 +11,13 @@ import {
   RefreshCw
 } from "lucide-react";
 import { ClientLogoutButton } from "@/components/client/ClientLogoutButton";
+import { ClientTrustPanel } from "@/components/client/ClientTrustPanel";
 import { PaymentProofForm } from "@/components/client/PaymentProofForm";
 import { RevisionRequestForm } from "@/components/client/RevisionRequestForm";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { getWhatsAppUrl } from "@/lib/site";
 import { trackDemoEvent } from "@/lib/demo/analytics";
+import type { ClientPortalTrustSummary } from "@/lib/trust/client-portal-summary";
 
 type Stage = {
   key: string;
@@ -55,6 +57,7 @@ type DashboardData = {
     verificationStatus: string | null;
   } | null;
   delivery: { previewAvailable: boolean; finalAvailable: boolean; downloadUnlocked: boolean };
+  trust: ClientPortalTrustSummary;
   support: { whatsappUrl: string; email: string; supportHours: string };
   revisions?: Array<{
     id: string;
@@ -83,7 +86,7 @@ function statusText(status: string) {
 }
 
 function isDashboardData(value: unknown): value is DashboardData {
-  return Boolean(value && typeof value === "object" && "invoice" in value && "work" in value && "payment" in value && "delivery" in value);
+  return Boolean(value && typeof value === "object" && "invoice" in value && "work" in value && "payment" in value && "delivery" in value && "trust" in value);
 }
 
 export function ClientDashboard() {
@@ -156,9 +159,19 @@ export function ClientDashboard() {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-wxViolet700">Invoice {data.invoice.invoiceId}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-wxViolet700">
+              Invoice {data.invoice.invoiceId}
+            </p>
+            {data.trust.invoice.state === "verified" ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-1 text-xs font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                Verified by WriteX Trust Centre™
+              </span>
+            ) : null}
+          </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{data.greeting}</h1>
-          <p className="mt-2 text-sm text-wxIndigo500">{data.invoice.serviceType || "WriteX support"} · Due {formatDate(data.invoice.deadline)}</p>
+          <p className="mt-2 text-sm text-wxIndigo500">{data.invoice.serviceType || "WriteX support"} | Due {formatDate(data.invoice.deadline)}</p>
         </div>
         <ClientLogoutButton isDemo={data.isDemo} />
       </header>
@@ -192,6 +205,8 @@ export function ClientDashboard() {
       </div>
 
       {actionMessage ? <p role="status" className="rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-900">{actionMessage}</p> : null}
+
+      <ClientTrustPanel trust={data.trust} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.7fr)]">
         <section className="rounded-2xl border border-wxBorder bg-wxSurface p-6 shadow-soft">

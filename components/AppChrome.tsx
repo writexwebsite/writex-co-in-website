@@ -20,7 +20,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const isClientPortal =
     pathname === "/client-login" || pathname?.startsWith("/client");
   const isEmployeePortal = pathname === "/employee-login" || pathname?.startsWith("/employee");
-  const hidePublicChrome = isAdmin || isClientPortal || isEmployeePortal;
+  const isMyWritex = pathname === "/my-writex" || pathname?.startsWith("/my-writex/");
+  const hidePublicChrome = isAdmin || isClientPortal || isEmployeePortal || isMyWritex;
 
   return (
     <>

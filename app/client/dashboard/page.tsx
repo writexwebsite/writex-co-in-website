@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { ClientDashboard } from "@/components/client/ClientDashboard";
 import { PortalShell } from "@/components/client/PortalShell";
-import { requireClientSession } from "@/lib/client/session";
+import { requireInvoiceClientSession } from "@/lib/client/session";
 import { getDemoClientSessionFromCookies } from "@/lib/demo/session";
 
 export const metadata: Metadata = {
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 
 export default async function ClientDashboardPage() {
   const demo = await getDemoClientSessionFromCookies();
-  if (!demo) await requireClientSession();
+  if (!demo) {
+  const session = await requireInvoiceClientSession();
+    if (session.testSession) redirect("/client/overview");
+  }
 
   return (
     <PortalShell isDemo={Boolean(demo)}>

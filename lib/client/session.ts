@@ -3,40 +3,32 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  assertCustomerClientSession,
+  assertInvoiceClientSession,
   getClientCookieName,
-  verifySignedSessionToken,
-  type ClientSession
+  getClientSessionFromOpaqueToken
 } from "@/lib/auth";
-import { dbQuery, isDatabaseConfigured } from "@/lib/db";
 
 export async function getClientSessionFromCookies() {
   const cookieStore = await cookies();
   const token = cookieStore.get(getClientCookieName())?.value;
-  const session = verifySignedSessionToken<ClientSession>(token);
-
-  if (!session || session.kind !== "client") return null;
-
-  if (isDatabaseConfigured() && session.sessionId) {
-    const result = await dbQuery<{ id: string }>(
-      `
-        select id
-        from client_sessions
-        where id = $1
-          and session_token_hash = $2
-          and expires_at > now()
-        limit 1
-      `,
-      [session.sessionId, session.tokenHash]
-    );
-
-    if (!result.rows[0]) return null;
-  }
-
-  return session;
+  return getClientSessionFromOpaqueToken(token);
 }
 
 export async function requireClientSession() {
   const session = await getClientSessionFromCookies();
   if (!session) redirect("/client-login");
   return session;
+}
+
+export async function requireInvoiceClientSession() {
+  const session = await requireClientSession();
+  if (session.authScope !== "invoice") redirect("/my-writex");
+  return assertInvoiceClientSession(session);
+}
+
+export async function requireCustomerClientSession() {
+  const session = await requireClientSession();
+  if (session.authScope !== "customer") redirect("/client/overview");
+  return assertCustomerClientSession(session);
 }
