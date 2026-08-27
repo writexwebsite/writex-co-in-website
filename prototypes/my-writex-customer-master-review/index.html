@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
+    />
+    <title>Customer Master Review — Local Prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1f1733;
+        --muted: #6f6682;
+        --line: #e4dfec;
+        --soft: #f7f5fa;
+        --violet: #5b21b6;
+        --violet-soft: #f0eafe;
+        --green: #116747;
+        --green-soft: #e8f5ee;
+        --orange: #93501e;
+        --orange-soft: #fff1df;
+        --red: #9f2734;
+        --red-soft: #fcebed;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f4f2f7; color: var(--ink); }
+      button { font: inherit; }
+      .shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
+      .sidebar { background: #fff; border-right: 1px solid var(--line); padding: 24px 18px; }
+      .brand { font-weight: 850; letter-spacing: -.04em; font-size: 24px; }
+      .brand span { color: var(--violet); }
+      .local-chip { display: inline-flex; margin-top: 18px; padding: 7px 10px; border-radius: 999px; background: var(--orange-soft); color: var(--orange); font-size: 12px; font-weight: 750; }
+      .sidebar h2 { margin: 32px 10px 10px; color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+      .nav-item { display: flex; min-height: 46px; align-items: center; padding: 0 12px; border-radius: 10px; color: var(--muted); font-size: 14px; font-weight: 650; }
+      .nav-item.active { background: var(--violet-soft); color: var(--violet); }
+      main { min-width: 0; padding: 34px; }
+      .eyebrow { color: var(--violet); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+      h1 { margin: 8px 0 6px; font-size: clamp(28px, 3vw, 42px); letter-spacing: -.04em; }
+      .subhead { margin: 0; color: var(--muted); max-width: 760px; line-height: 1.55; }
+      .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+      .stat { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+      .stat strong { display: block; font-size: 26px; letter-spacing: -.03em; }
+      .stat span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 22px 0 14px; }
+      .toolbar label { position: relative; flex: 1 1 260px; }
+      .toolbar input, .toolbar select { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 0 13px; color: var(--ink); }
+      .toolbar select { width: auto; min-width: 180px; }
+      .queue { display: grid; gap: 12px; }
+      .review-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: 0 8px 28px rgba(44, 27, 70, .035); }
+      .card-top { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; }
+      .ref { font-weight: 800; letter-spacing: .02em; }
+      .reason { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+      .confidence { padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+      .confidence.high { background: var(--red-soft); color: var(--red); }
+      .confidence.medium { background: var(--orange-soft); color: var(--orange); }
+      .confidence.low { background: var(--soft); color: var(--muted); }
+      .details { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 12px; margin-top: 18px; padding: 16px 0; border-block: 1px solid var(--line); }
+      .detail span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+      .detail strong { display: block; margin-top: 5px; font-size: 13px; overflow-wrap: anywhere; }
+      .conflict { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .action { min-height: 40px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); padding: 0 13px; cursor: pointer; font-weight: 700; }
+      .action:hover, .action:focus-visible { border-color: var(--violet); outline: 3px solid rgba(91, 33, 182, .14); }
+      .action.primary { background: var(--violet); color: #fff; border-color: var(--violet); }
+      .action.danger { color: var(--red); }
+      .status { margin-left: auto; align-self: center; color: var(--green); font-size: 12px; font-weight: 800; }
+      .empty { display: none; padding: 36px; text-align: center; background: #fff; border-radius: 16px; color: var(--muted); }
+      dialog { width: min(680px, calc(100vw - 32px)); border: 0; border-radius: 18px; padding: 0; box-shadow: 0 24px 80px rgba(30, 18, 50, .24); }
+      dialog::backdrop { background: rgba(24, 15, 38, .5); }
+      .dialog-body { padding: 24px; }
+      .dialog-body h2 { margin: 6px 0 8px; }
+      .impact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+      .impact div { padding: 14px; background: var(--soft); border-radius: 10px; }
+      .impact strong { display: block; font-size: 20px; }
+      .impact span { color: var(--muted); font-size: 12px; }
+      .warning { padding: 13px; border: 1px solid #f1d29a; background: #fff7e8; color: #744114; border-radius: 10px; font-size: 13px; line-height: 1.45; }
+      .toast { position: fixed; right: 22px; bottom: 22px; max-width: 380px; background: #20172f; color: #fff; padding: 13px 16px; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.24); opacity: 0; transform: translateY(12px); pointer-events: none; transition: .2s ease; }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      @media (max-width: 980px) {
+        .shell { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        main { padding: 22px; }
+        .summary { grid-template-columns: repeat(2, 1fr); }
+        .details { grid-template-columns: repeat(3, 1fr); }
+      }
+      @media (max-width: 560px) {
+        main { padding: 16px; }
+        .summary { grid-template-columns: 1fr; }
+        .details { grid-template-columns: 1fr; }
+        .toolbar select { width: 100%; }
+        .card-top { flex-direction: column; }
+        .actions { display: grid; grid-template-columns: 1fr; }
+        .action { width: 100%; }
+        .status { margin-left: 0; }
+        .impact { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">WRITE<span>X</span></div>
+        <div class="local-chip">LOCAL PROTOTYPE · NO WRITES</div>
+        <h2>Data operations</h2>
+        <div class="nav-item active">Customer Master Review</div>
+        <div class="nav-item">Eligibility summary</div>
+        <div class="nav-item">Merge history</div>
+        <h2>Safety</h2>
+        <div class="nav-item">Production adapter disabled</div>
+        <div class="nav-item">Feature flags off</div>
+      </aside>
+      <main>
+        <p class="eyebrow">My WriteX · Local-only operations prototype</p>
+        <h1>Customer Master Review</h1>
+        <p class="subhead">Review anonymized identity and ownership evidence. Every action below changes only this browser view; it does not call an API, merge a customer, or modify Admin/LTS.</p>
+
+        <section class="summary" aria-label="Queue summary">
+          <div class="stat"><strong>336</strong><span>Review Required estimate</span></div>
+          <div class="stat"><strong>60</strong><span>Exact-phone groups</span></div>
+          <div class="stat"><strong>44</strong><span>Multiple-BDE conflicts</span></div>
+          <div class="stat"><strong>0</strong><span>Production writes</span></div>
+        </section>
+
+        <div class="toolbar">
+          <label><span hidden>Search queue</span><input id="search" type="search" placeholder="Search anonymized reference or reason" /></label>
+          <select id="confidence" aria-label="Filter by confidence">
+            <option value="all">All confidence</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <section id="queue" class="queue" aria-live="polite"></section>
+        <div id="empty" class="empty">No local prototype cases match this filter.</div>
+      </main>
+    </div>
+
+    <dialog id="previewDialog">
+      <div class="dialog-body">
+        <p class="eyebrow">Non-executable impact preview</p>
+        <h2 id="previewTitle">Preview merge</h2>
+        <p id="previewCopy" class="subhead"></p>
+        <div class="impact">
+          <div><strong id="impactInvoices">0</strong><span>Invoices affected</span></div>
+          <div><strong id="impactProjects">0</strong><span>Projects affected</span></div>
+          <div><strong id="impactManagers">0</strong><span>Manager-history rows</span></div>
+        </div>
+        <p class="warning">This prototype cannot execute or reverse a merge. A future action requires data-owner approval, separation of duties, append-only ledger evidence, relationship reconciliation, and rollback proof.</p>
+        <div class="actions"><button id="closeDialog" class="action primary" type="button">Close preview</button></div>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status"></div>
+
+    <script>
+      const records = [
+        { ref: "CMR-7K2A", reason: "Exact normalized phone", phone: "+44 •••• 0012", email: "a•••@example.invalid", projects: 7, invoices: 9, bde: "BDE-014", conflict: "Two legacy customer-stage records share a verified phone representation.", confidence: "high", managerRows: 2 },
+        { ref: "CMR-9M4B", reason: "Exact verified email", phone: "+91 •••••• 4408", email: "r•••@example.invalid", projects: 4, invoices: 5, bde: "BDE-008", conflict: "Email equality is strong evidence, but phone and ownership context require review.", confidence: "high", managerRows: 1 },
+        { ref: "CMR-3P8C", reason: "Invoice/project ownership conflict", phone: "+44 •••• 8831", email: "m•••@example.invalid", projects: 3, invoices: 4, bde: "BDE-021 / BDE-034", conflict: "One assignment points to an invoice owned by a different legacy lead; two BDE signals exist.", confidence: "medium", managerRows: 3 },
+        { ref: "CMR-5T1D", reason: "Same name, different phone", phone: "+91 •••••• 7720", email: "s•••@example.invalid", projects: 2, invoices: 2, bde: "BDE-011", conflict: "Name-only similarity is insufficient evidence and must never auto-merge.", confidence: "low", managerRows: 1 }
+      ];
+      const decisions = new Map();
+      const queue = document.getElementById("queue");
+      const empty = document.getElementById("empty");
+      const search = document.getElementById("search");
+      const confidence = document.getElementById("confidence");
+      const dialog = document.getElementById("previewDialog");
+      const toast = document.getElementById("toast");
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+      }
+      function render() {
+        const term = search.value.trim().toLowerCase();
+        const selectedConfidence = confidence.value;
+        const visible = records.filter(record =>
+          (selectedConfidence === "all" || record.confidence === selectedConfidence) &&
+          (!term || `${record.ref} ${record.reason} ${record.conflict}`.toLowerCase().includes(term))
+        );
+        queue.innerHTML = visible.map(record => `
+          <article class="review-card" data-ref="${escapeHtml(record.ref)}">
+            <div class="card-top">
+              <div><div class="ref">${escapeHtml(record.ref)}</div><p class="reason">${escapeHtml(record.reason)}</p></div>
+              <span class="confidence ${record.confidence}">${escapeHtml(record.confidence.toUpperCase())} CONFIDENCE</span>
+            </div>
+            <div class="details">
+              <div class="detail"><span>Masked phone</span><strong>${escapeHtml(record.phone)}</strong></div>
+              <div class="detail"><span>Masked email</span><strong>${escapeHtml(record.email)}</strong></div>
+              <div class="detail"><span>Projects</span><strong>${record.projects}</strong></div>
+              <div class="detail"><span>Invoices</span><strong>${record.invoices}</strong></div>
+              <div class="detail"><span>Assigned BDE</span><strong>${escapeHtml(record.bde)}</strong></div>
+              <div class="detail"><span>Decision</span><strong>${escapeHtml(decisions.get(record.ref) || "Pending")}</strong></div>
+            </div>
+            <p class="conflict"><strong>Conflict:</strong> ${escapeHtml(record.conflict)}</p>
+            <div class="actions">
+              <button class="action" data-action="same" type="button">Same Customer</button>
+              <button class="action" data-action="different" type="button">Different Customer</button>
+              <button class="action" data-action="defer" type="button">Defer</button>
+              <button class="action primary" data-action="preview" type="button">Preview Merge</button>
+              <button class="action danger" data-action="reverse" type="button">Reverse Merge</button>
+              <span class="status">LOCAL VIEW ONLY</span>
+            </div>
+          </article>`).join("");
+        empty.style.display = visible.length ? "none" : "block";
+      }
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+      queue.addEventListener("click", event => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const card = button.closest("[data-ref]");
+        const record = records.find(item => item.ref === card.dataset.ref);
+        if (!record) return;
+        const action = button.dataset.action;
+        if (action === "preview" || action === "reverse") {
+          document.getElementById("previewTitle").textContent = action === "reverse" ? `Reverse merge preview · ${record.ref}` : `Merge preview · ${record.ref}`;
+          document.getElementById("previewCopy").textContent = action === "reverse" ? "Shows the relationships that a future audited reversal would restore. No action is executed." : "Shows the unique relationship impact that a future authorized reviewer would verify before execution.";
+          document.getElementById("impactInvoices").textContent = record.invoices;
+          document.getElementById("impactProjects").textContent = record.projects;
+          document.getElementById("impactManagers").textContent = record.managerRows;
+          dialog.showModal();
+          return;
+        }
+        const labels = { same: "Confirmed Same Customer", different: "Confirmed Different Customer", defer: "Deferred" };
+        decisions.set(record.ref, labels[action]);
+        render();
+        showToast(`${record.ref}: ${labels[action]} — local browser state only`);
+      });
+      search.addEventListener("input", render);
+      confidence.addEventListener("change", render);
+      document.getElementById("closeDialog").addEventListener("click", () => dialog.close());
+      render();
+    </script>
+  </body>
+</html>

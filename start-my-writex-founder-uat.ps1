@@ -5,6 +5,7 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $expectedBranch = "feature/my-writex-v1"
 $frozenCommit = "1f805b06d1cb88d2cdeea2b4e0e6ca6f9110298b"
+$readinessCommit = "e9ff03aaf198155e900edda5610b57024520f192"
 $frozenTag = "my-writex-stage3a-founder-uat-candidate"
 $runtimeDirectory = Join-Path $projectRoot ".local\my-writex-founder-uat"
 $processFile = Join-Path $runtimeDirectory "process.json"
@@ -38,6 +39,12 @@ $branch = (git branch --show-current).Trim()
 if ($branch -ne $expectedBranch) {
   throw "Wrong branch '$branch'. Expected '$expectedBranch'."
 }
+
+git merge-base --is-ancestor $readinessCommit HEAD
+if ($LASTEXITCODE -ne 0) {
+  throw "The current commit does not contain the required Stage 3B-1 readiness checkpoint $readinessCommit."
+}
+$currentCommit = (git rev-parse HEAD).Trim()
 
 $tagTarget = (git rev-list -n 1 $frozenTag 2>$null).Trim()
 if ($tagTarget -ne $frozenCommit) {
@@ -87,6 +94,13 @@ if (Test-Path -LiteralPath $requestStore) {
 $env:NODE_ENV = "development"
 $env:MY_WRITEX_DEV_FIXTURES = "true"
 $env:MY_WRITEX_REQUEST_STORE_PATH = $requestStore
+$env:MY_WRITEX_ENABLED = "false"
+$env:MY_WRITEX_LTS_INTEGRATION_ENABLED = "false"
+$env:MY_WRITEX_CUSTOMER_MASTER_ENABLED = "false"
+$env:MY_WRITEX_REAL_REQUESTS_ENABLED = "false"
+$env:MY_WRITEX_PRODUCTION_AUTH_ENABLED = "false"
+$env:MY_WRITEX_LOCAL_MOCK_ENABLED = "false"
+$env:MY_WRITEX_SANITIZED_SNAPSHOT_ENABLED = "false"
 $env:INTEGRATION_MODE = "disabled"
 $env:LTS_API_BASE_URL = ""
 $env:LTS_API_KEY = ""
@@ -96,6 +110,18 @@ $env:DATABASE_URL = ""
 
 if ($env:MY_WRITEX_DEV_FIXTURES -ne "true" -or $env:INTEGRATION_MODE -ne "disabled") {
   throw "Safe local fixture environment could not be established."
+}
+$riskyFlags = @(
+  "MY_WRITEX_ENABLED",
+  "MY_WRITEX_LTS_INTEGRATION_ENABLED",
+  "MY_WRITEX_CUSTOMER_MASTER_ENABLED",
+  "MY_WRITEX_REAL_REQUESTS_ENABLED",
+  "MY_WRITEX_PRODUCTION_AUTH_ENABLED"
+)
+foreach ($flagName in $riskyFlags) {
+  if ((Get-Item -LiteralPath "Env:$flagName").Value -ne "false") {
+    throw "Risky feature flag $flagName is not safely disabled."
+  }
 }
 
 $pnpmPath = (Get-Command pnpm.cmd -ErrorAction SilentlyContinue).Source
@@ -117,6 +143,8 @@ $process = Start-Process `
   processStartTimeUtc = $process.StartTime.ToUniversalTime().ToString("O")
   projectRoot = $projectRoot
   frozenCommit = $frozenCommit
+  readinessCommit = $readinessCommit
+  launchedCommit = $currentCommit
   integrationMode = "disabled"
 } | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
 
@@ -141,21 +169,32 @@ if (-not $ready) {
 $urls = @(
   "http://127.0.0.1:3000/client-login",
   "http://127.0.0.1:3000/my-writex",
+  "http://127.0.0.1:3000/my-writex/projects",
+  "http://127.0.0.1:3000/my-writex/projects/project-research-proposal",
   "http://127.0.0.1:3000/my-writex/new-requirement",
   "http://127.0.0.1:3000/my-writex/requests",
   "http://127.0.0.1:3000/my-writex/upcoming",
+  "http://127.0.0.1:3000/my-writex/career",
+  "http://127.0.0.1:3000/my-writex/career/jobs",
+  "http://127.0.0.1:3000/my-writex/career/cv",
+  "http://127.0.0.1:3000/my-writex/manager",
+  "http://127.0.0.1:3000/my-writex/account",
   "http://127.0.0.1:3000/client/overview",
+  "http://127.0.0.1:3000/client/project",
   "http://127.0.0.1:3000/dev/my-writex-requests"
 )
 
 Write-Host ""
 Write-Host "My WriteX Founder UAT is ready (localhost only)." -ForegroundColor Green
 Write-Host "Frozen tag: $frozenTag -> $frozenCommit"
+Write-Host "Stage 3B-1 readiness checkpoint present: $readinessCommit"
+Write-Host "Launched commit: $currentCommit"
 Write-Host "Full customer fixture: WriteX ID rahulsharma.7k2 | Registered phone +447700900001"
+Write-Host "Negative-separation fixture: WriteX ID sarahjones.9m4 | Registered phone +447700900002"
 Write-Host "Invoice-only fixture: Invoice WX-MW-1001 | Registered phone +447700900001"
 Write-Host "Founder UAT URLs:"
 $urls | ForEach-Object { Write-Host "  $_" }
-Write-Host "Integration mode: disabled; LTS/PMT/database endpoints cleared for this child process."
+Write-Host "Integration mode: disabled; all production-risk My WriteX flags are false; LTS/PMT/database endpoints cleared for this child process."
 Write-Host "Stop with: .\stop-my-writex-founder-uat.ps1"
 
 Start-Process "http://127.0.0.1:3000/client-login"
