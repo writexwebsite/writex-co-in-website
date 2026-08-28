@@ -1260,6 +1260,7 @@ function EmployeeEditor({
     && deliveryHierarchyValid;
   const storedSupervisor = employee ? employees.find((item) => item.id === employee.managerEmployeeId) || null : null;
   const storedDeliveryParent = employee ? employees.find((item) => item.id === employee.deliveryReportingParentEmployeeId) || null : null;
+  const isStoredDeliveryTrainer = employee?.academyArea === "DEVELOPMENT_OPERATIONS" && employee.academyRole === "TRAINER";
   const storedHierarchyValid = !employee?.academyEnabled
     || employee.academyArea === "ACADEMY_WIDE"
     || (employee.academyArea === "DEVELOPMENT_OPERATIONS"
@@ -1396,7 +1397,7 @@ function EmployeeEditor({
           <StatusTile label="Employment" value={employee.employmentStatus} icon={<UserRound className="h-4 w-4" />} />
           <StatusTile label="Academy access" value={employee.academyEnabled ? storedHierarchyValid ? "Enabled" : "Needs Hierarchy Attention" : "Disabled"} icon={<ShieldCheck className="h-4 w-4" />} tone={employee.academyEnabled && !storedHierarchyValid ? "danger" : undefined} />
           <StatusTile label="Academy area" value={employee.academyArea === "DEVELOPMENT_OPERATIONS" ? "Development Academy" : employee.academyArea === "ACADEMY_WIDE" ? "Academy-wide" : "Sales Academy"} icon={<ShieldCheck className="h-4 w-4" />} />
-          <StatusTile label="Academy role" value={academyResponsibilityLabel(employee)} icon={<ShieldCheck className="h-4 w-4" />} />
+          <StatusTile label="Academy role" value={isStoredDeliveryTrainer ? "Trainer / Evaluator" : academyResponsibilityLabel(employee)} icon={<ShieldCheck className="h-4 w-4" />} />
           {employee.academyArea === "ACADEMY_WIDE" ? <StatusTile label="Program access" value="Sales + Development / Operations" icon={<GraduationCap className="h-4 w-4" />} /> : null}
           <StatusTile label="Primary SuperAdmin" value={employee.primarySuperAdmin ? "YES" : "NO"} icon={<UserRound className="h-4 w-4" />} />
           {employee.academyArea === "SALES" && employee.academyRole === "EMPLOYEE" ? <StatusTile label="Employee segment" value={employee.employeeSegment === "SENIOR_BDE" ? "Senior BDE" : "New BDE"} icon={<GraduationCap className="h-4 w-4" />} /> : null}
@@ -1619,8 +1620,13 @@ function EmployeeEditor({
             <StatusTile label="Operational role" value={deliveryResponsibilityLabel(deliveryResponsibility)} icon={<UsersRound className="h-4 w-4" />}/>
             <StatusTile label="Reports to" value={employee.deliveryReportingParentName || (deliveryResponsibility === "MANAGER" || deliveryResponsibility === "TRAINER" ? "Not applicable" : "Reassignment required")} icon={<UserRound className="h-4 w-4" />} tone={requiredDeliveryParentRole && !employee.deliveryReportingParentName ? "danger" : undefined}/>
             <StatusTile label="Trainer" value={employee.deliveryTrainerName || (deliveryTrainerRequired ? "Reassignment required" : "Not assigned")} icon={<GraduationCap className="h-4 w-4" />} tone={deliveryTrainerRequired && !employee.deliveryTrainerName ? "danger" : undefined}/>
+            {isStoredDeliveryTrainer ? <>
+              <StatusTile label="Learning role" value="None" icon={<BookOpen className="h-4 w-4" />}/>
+              <StatusTile label="Lesson access" value="All 26 Development lessons · Read only" icon={<BookOpen className="h-4 w-4" />}/>
+              <StatusTile label="Assessment review scope" value="All Development / Operations learners" icon={<ShieldCheck className="h-4 w-4" />}/>
+            </> : null}
           </div> : null}
-          {employee && academyArea === "DEVELOPMENT_OPERATIONS" ? <WebsiteDeliveryLearningAssignment employee={employee} /> : null}
+          {employee && academyArea === "DEVELOPMENT_OPERATIONS" && !isStoredDeliveryTrainer ? <WebsiteDeliveryLearningAssignment employee={employee} /> : null}
         </section>
 
         <div className="flex flex-col gap-2 rounded-md border border-wxBorder bg-wxSurfaceElevated/95 p-3 shadow-lift sm:flex-row sm:items-center sm:justify-between md:sticky md:bottom-20 md:z-20 md:backdrop-blur">

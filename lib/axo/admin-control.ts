@@ -220,6 +220,7 @@ export async function executeAdminAxoOperation(input: {
     case "getAcademyEntitlements": {
       const employee = await getEmployee(operation.params.employeeId);
       requireEmployee(employee);
+      const isDeliveryTrainer = employee.academyArea === "DEVELOPMENT_OPERATIONS" && employee.academyRole === "TRAINER";
       return {
         employeeId: employee.id,
         academyUserId: employee.academyUserId,
@@ -231,12 +232,21 @@ export async function executeAdminAxoOperation(input: {
         reportingParentEmployeeId: employee.deliveryReportingParentEmployeeId,
         trainerEmployeeId: employee.deliveryTrainerEmployeeId,
         syncStatus: employee.syncStatus,
-        learningAssignment: {
+        learningAssignment: isDeliveryTrainer ? null : {
           id: employee.learningAssignmentId,
           pathKey: employee.learningPathKey,
           status: employee.learningAssignmentStatus,
           firstLessonRoute: employee.learningFirstLessonRoute
-        }
+        },
+        trainerRoleModel: isDeliveryTrainer ? {
+          academyRole: "TRAINER_EVALUATOR",
+          learningRole: "NONE",
+          lessonAccess: "ALL_26_DEVELOPMENT_LESSONS_READ_ONLY",
+          assessmentReviewScope: "ALL_DEVELOPMENT_OPERATIONS_LEARNER_ASSESSMENTS",
+          reportingRelationship: employee.deliveryReportingParentEmployeeId || null,
+          trainerAssignment: null,
+          allowedWrites: ["CLAIM_REVIEW", "SAVE_REVIEW_DRAFT", "COMPLETE_ASSESSMENT_REVIEW", "ESCALATE_ASSESSMENT_REVIEW"]
+        } : null
       };
     }
     case "getEmployeeSessions": {
