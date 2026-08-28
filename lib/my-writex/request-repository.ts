@@ -4,7 +4,11 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ApiError, forbidden } from "@/lib/api/response";
 import type { ClientSession } from "@/lib/auth";
-import { isMyWritexDevFixtureEnabled } from "@/lib/my-writex/dev-fixture";
+import { createMyWritexDemoRequestDatabase } from "@/lib/my-writex/demo-request-seed";
+import {
+  isMyWritexDemoFixtureEnabled,
+  isMyWritexFixtureEnabled,
+} from "@/lib/my-writex/dev-fixture";
 import {
   type MyWritexRequestEventName,
   type MyWritexRequestFunnel,
@@ -17,17 +21,28 @@ import {
 
 type RequestDatabase = { version: 1; sequence: number; requests: MyWritexRequestRecord[] };
 const emptyDatabase = (): RequestDatabase => ({ version: 1, sequence: 0, requests: [] });
+const initialDatabase = (): RequestDatabase =>
+  isMyWritexDemoFixtureEnabled()
+    ? createMyWritexDemoRequestDatabase()
+    : emptyDatabase();
+
+const DEMO_MAX_REQUESTS = 100;
+const DEMO_MAX_STORE_BYTES = 1024 * 1024;
 
 declare global {
   var __myWritexRequestStoreQueue: Promise<unknown> | undefined;
 }
 
 function storePath() {
-  return process.env.MY_WRITEX_REQUEST_STORE_PATH || path.join(process.cwd(), ".local", "my-writex-stage3a", "requests.json");
+  const configured = process.env.MY_WRITEX_REQUEST_STORE_PATH?.trim();
+  if (isMyWritexDemoFixtureEnabled() && (!configured || !path.isAbsolute(configured))) {
+    throw new ApiError(503, "NOT_CONFIGURED", "The isolated demo request store is not configured.");
+  }
+  return configured || path.join(process.cwd(), ".local", "my-writex-stage3a", "requests.json");
 }
 
 function assertLocalStore() {
-  if (!isMyWritexDevFixtureEnabled() || process.env.NODE_ENV === "production") {
+  if (!isMyWritexFixtureEnabled()) {
     throw new ApiError(404, "NOT_FOUND", "This local request capability is not available.");
   }
 }
@@ -38,7 +53,7 @@ async function readDatabase() {
     const parsed = JSON.parse(await readFile(storePath(), "utf8")) as RequestDatabase;
     return parsed.version === 1 && Array.isArray(parsed.requests) ? parsed : emptyDatabase();
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyDatabase();
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return initialDatabase();
     throw error;
   }
 }
@@ -47,7 +62,11 @@ async function writeDatabase(database: RequestDatabase) {
   const target = storePath();
   await mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.${process.pid}.${crypto.randomUUID()}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(database, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  const serialized = `${JSON.stringify(database, null, 2)}\n`;
+  if (isMyWritexDemoFixtureEnabled() && Buffer.byteLength(serialized, "utf8") > DEMO_MAX_STORE_BYTES) {
+    throw new ApiError(507, "INTEGRATION_UNAVAILABLE", "The demo request store has reached its safe capacity.");
+  }
+  await writeFile(temporary, serialized, { encoding: "utf8", flag: "wx" });
   await rename(temporary, target);
 }
 
@@ -130,6 +149,9 @@ export async function saveDraft(owner: MyWritexRequestOwner, input: MyWritexRequ
     const now = new Date().toISOString();
     let record = database.requests.find((candidate) => owns(candidate, owner) && candidate.status === "Draft" && (candidate.id === input.requestId || candidate.idempotencyKey === input.idempotencyKey));
     if (!record) {
+      if (isMyWritexDemoFixtureEnabled() && database.requests.length >= DEMO_MAX_REQUESTS) {
+        throw new ApiError(429, "RATE_LIMITED", "The demo request limit has been reached. Reset the demo before continuing.");
+      }
       record = {
         id: crypto.randomUUID(),
         fixtureScope: ownerKey(owner),
@@ -277,4 +299,17 @@ export async function requestFunnel(): Promise<MyWritexRequestFunnel> {
     readyForDiscussion: records.filter((record) => record.status === "Ready for Discussion").length,
     cancelled: count("request_cancelled"),
   };
+}
+
+export async function resetMyWritexDemoRequestStore() {
+  if (!isMyWritexDemoFixtureEnabled()) {
+    throw new ApiError(404, "NOT_FOUND", "The demo reset capability is not available.");
+  }
+  return mutate((database) => {
+    const seed = createMyWritexDemoRequestDatabase();
+    database.version = seed.version;
+    database.sequence = seed.sequence;
+    database.requests = seed.requests;
+    return structuredClone(seed);
+  });
 }

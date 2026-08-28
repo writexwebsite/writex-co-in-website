@@ -1,0 +1,71 @@
+name: Deploy isolated My WriteX demo
+
+on:
+  push:
+    tags:
+      - "my-writex-demo-v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: my-writex-isolated-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 35
+    steps:
+      - name: Check out tagged demo release
+        uses: actions/checkout@v4
+
+      - name: Validate isolated deployment scripts
+        run: bash -n scripts/deploy-my-writex-demo.sh scripts/rollback-my-writex-demo.sh
+
+      - name: Configure pinned SSH host
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.LIGHTSAIL_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package isolated demo source
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=.next \
+            --exclude=node_modules \
+            --exclude='.env*' \
+            --exclude='*.log' \
+            --exclude=.local \
+            --exclude=reports \
+            --exclude=artifacts \
+            -czf my-writex-demo-source.tgz .
+
+      - name: Upload demo source
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: scp my-writex-demo-source.tgz "${USER}@${HOST}:/tmp/my-writex-demo-${GITHUB_RUN_ID}.tgz"
+
+      - name: Deploy only the isolated demo
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          ssh "${USER}@${HOST}" "RUN_ID='${GITHUB_RUN_ID}' GIT_SHA='${GITHUB_SHA}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          source_dir="$(mktemp -d /tmp/my-writex-demo-source.XXXXXX)"
+          archive="/tmp/my-writex-demo-${RUN_ID}.tgz"
+          cleanup() { rm -rf -- "$source_dir" "$archive"; }
+          trap cleanup EXIT
+          tar -xzf "$archive" -C "$source_dir"
+          release_id="$(date -u +%Y%m%dT%H%M%SZ)-${GIT_SHA:0:12}"
+          SOURCE_DIR="$source_dir" RELEASE_ID="$release_id" bash "$source_dir/scripts/deploy-my-writex-demo.sh"
+          REMOTE

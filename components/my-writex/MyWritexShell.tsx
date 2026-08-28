@@ -6,7 +6,7 @@ import { ClientLogoutButton } from "@/components/client/ClientLogoutButton";
 import type { MyWritexCustomer } from "@/lib/my-writex/types";
 import { DesktopCustomerNavigation, MobileCustomerBottomNavigation, MobileCustomerNavigation } from "@/components/my-writex/MyWritexNavigation";
 
-export function MyWritexShell({ customer, children }: { customer: MyWritexCustomer; children: ReactNode }) {
+export function MyWritexShell({ customer, children, isDemo = false }: { customer: MyWritexCustomer; children: ReactNode; isDemo?: boolean }) {
   return (
     <div className="my-writex-product selection:bg-[#6339c6] selection:text-white">
       <aside className="mw-sidebar" aria-label="My WriteX sidebar">
@@ -24,6 +24,7 @@ export function MyWritexShell({ customer, children }: { customer: MyWritexCustom
       </aside>
 
       <div className="mw-app-area">
+        {isDemo ? <div className="border-b border-[#d9cdf2] bg-[#f5f1ff] px-2 py-2 text-center text-[10px] font-semibold leading-4 tracking-[0.01em] text-[#4f2ca4] sm:px-4 sm:text-xs sm:tracking-[0.02em]">Demo Environment · No real customer data</div> : null}
         <header className="mw-mobile-topbar">
           <BrandLogo markClassName="w-24" sizes="96px" />
           <div className="flex items-center gap-8">

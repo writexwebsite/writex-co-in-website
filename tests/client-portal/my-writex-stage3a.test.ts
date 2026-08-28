@@ -39,11 +39,13 @@ test("request file metadata is safe, bounded and never stores raw paths", () => 
   assert.throws(() => sanitizeRequestFiles([{ name: "huge.pdf", size: 11 * 1024 * 1024, mimeType: "application/pdf", purpose: "brief" }]));
 });
 
-test("local request truth hard-stops outside explicit non-production fixtures", () => {
+test("request truth hard-stops outside an explicit local or isolated demo fixture", () => {
   const repository = source("lib/my-writex/request-repository.ts");
-  assert.match(repository, /isMyWritexDevFixtureEnabled/);
-  assert.match(repository, /process\.env\.NODE_ENV === "production"/);
+  assert.match(repository, /isMyWritexFixtureEnabled/);
+  assert.match(repository, /isMyWritexDemoFixtureEnabled/);
   assert.match(repository, /\.local[\s\S]*my-writex-stage3a[\s\S]*requests\.json/);
+  assert.match(repository, /path\.isAbsolute\(configured\)/);
+  assert.match(repository, /DEMO_MAX_STORE_BYTES/);
   assert.match(repository, /writeFile\(temporary/);
   assert.match(repository, /rename\(temporary, target\)/);
 });
@@ -115,10 +117,12 @@ test("invoice continuation and request centre remain invoice-scoped", () => {
   assert.doesNotMatch(page, /getMyWritexCustomer|customerMasterId/);
 });
 
-test("manager inspector is dev-only and exposes queue, lifecycle and privacy-safe funnel", () => {
+test("manager inspector is local or separately gated in the isolated demo", () => {
   const page = source("app/dev/my-writex-requests/page.tsx");
-  assert.match(page, /process\.env\.NODE_ENV === "production"/);
   assert.match(page, /isMyWritexDevFixtureEnabled/);
+  assert.match(page, /isMyWritexDemoFixtureEnabled/);
+  assert.match(page, /hasMyWritexDemoReviewAccessFromCookies/);
+  assert.match(page, /DemoReviewAccessForm/);
   const inspector = source("components/my-writex/RequestInspector.tsx");
   for (const label of ["Manager queue", "Update status", "Request information", "Internal note", "History"]) assert.match(inspector, new RegExp(label));
   const types = source("lib/my-writex/request-types.ts");

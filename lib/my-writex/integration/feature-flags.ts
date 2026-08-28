@@ -26,7 +26,15 @@ export function getMyWritexFeatureFlags(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): MyWritexFeatureFlags {
   const production = environment.NODE_ENV === "production";
-  if (production) return MY_WRITEX_FEATURE_FLAG_DEFAULTS;
+  const safeDemo = isMyWritexDemoModeEnabled(environment);
+  if (production && !safeDemo) return MY_WRITEX_FEATURE_FLAG_DEFAULTS;
+
+  if (safeDemo) {
+    return {
+      ...MY_WRITEX_FEATURE_FLAG_DEFAULTS,
+      MY_WRITEX_ENABLED: true,
+    };
+  }
 
   return {
     MY_WRITEX_ENABLED: enabled(environment.MY_WRITEX_ENABLED),
@@ -50,3 +58,4 @@ export function riskyIntegrationFlagsAreOff(flags: MyWritexFeatureFlags) {
     !flags.MY_WRITEX_PRODUCTION_AUTH_ENABLED
   );
 }
+import { isMyWritexDemoModeEnabled } from "@/lib/my-writex/demo-mode";

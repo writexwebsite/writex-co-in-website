@@ -95,19 +95,19 @@ export function MobileCustomerNavigation() {
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button className="absolute inset-0 bg-[#171a1f]/40" aria-label="Close menu" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 right-0 flex w-full max-w-[420px] flex-col overflow-y-auto bg-white p-5 text-[var(--mw-ink)] shadow-[0_8px_28px_rgba(16,24,40,0.06)]">
+          <aside className="absolute inset-y-0 right-0 flex w-full max-w-[420px] flex-col overflow-hidden bg-white p-5 text-[var(--mw-ink)] shadow-[0_8px_28px_rgba(16,24,40,0.06)]">
             <div className="flex items-center justify-between">
               <div><p className="mw-eyebrow">My WriteX</p><p className="mw-section-title mt-1">Your complete space</p></div>
               <button onClick={() => setOpen(false)} aria-label="Close My WriteX menu" className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-[var(--mw-line)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--mw-primary)]"><X className="h-5 w-5" strokeWidth={1.75} aria-hidden /></button>
             </div>
-            <nav aria-label="Mobile My WriteX navigation" className="mt-7">
+            <div className="mt-5 shrink-0 border-y border-[var(--mw-line)] py-4"><ClientLogoutButton /></div>
+            <nav aria-label="Mobile My WriteX navigation" className="mt-7 min-h-0 flex-1 overflow-y-auto pb-5">
               <div className="grid gap-1">{customerNavigation.map((item) => <NavLink key={item.href} item={item} onNavigate={() => setOpen(false)} />)}</div>
               <div className="mt-7 border-t border-[var(--mw-line)] pt-5">
                 <p className="mw-meta px-3 font-medium">Shortcuts</p>
                 <div className="mt-3 grid gap-1">{drawerShortcuts.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-[10px] px-3 text-sm font-medium text-[var(--mw-muted)] outline-none hover:bg-[var(--mw-soft)] focus-visible:ring-2 focus-visible:ring-[var(--mw-primary)]">{item.label}</Link>)}</div>
               </div>
             </nav>
-            <div className="mt-auto border-t border-[var(--mw-line)] pt-5"><ClientLogoutButton /></div>
           </aside>
         </div>
       ) : null}

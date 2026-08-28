@@ -4,6 +4,7 @@ import { ClientLoginForm } from "@/components/client/ClientLoginForm";
 import { PageAnalytics } from "@/components/PageAnalytics";
 import { absoluteUrl } from "@/lib/site";
 import { quoteTrackingEvents } from "@/lib/tracking";
+import { isMyWritexDemoFixtureEnabled } from "@/lib/my-writex/dev-fixture";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,6 @@ export const metadata: Metadata = {
 
 export default function ClientLoginPage() {
   return (
-    <><PageAnalytics event={quoteTrackingEvents.clientLoginClicked} pagePath="/client-login" /><AuthShell variant="client"><ClientLoginForm /></AuthShell></>
+    <><PageAnalytics event={quoteTrackingEvents.clientLoginClicked} pagePath="/client-login" /><AuthShell variant="client"><ClientLoginForm myWritexDemo={isMyWritexDemoFixtureEnabled()} /></AuthShell></>
   );
 }

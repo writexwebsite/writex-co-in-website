@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: false,
   images: {
+    // Avoid Next's internal refetch of local assets on the isolated demo listener.
+    // The normal production build keeps the optimized-image path unchanged.
+    unoptimized: process.env.MY_WRITEX_DEMO_MODE === "true",
     formats: ["image/avif", "image/webp"]
   },
   async redirects() {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { dbQuery, isDatabaseConfigured } from "@/lib/db";
+import { isMyWritexDemoModeEnabled } from "@/lib/my-writex/demo-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function GET() {
   return NextResponse.json(
     {
       status: healthy ? "ok" : "unavailable",
-      app: "writex-co-in",
+      app: isMyWritexDemoModeEnabled() ? "my-writex-demo" : "writex-co-in",
       environment,
       database,
       timestamp: new Date().toISOString()

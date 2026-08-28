@@ -1,6 +1,19 @@
 import "server-only";
 
 import { normalizeInvoiceId, normalizeWhatsapp } from "@/lib/client/identifiers";
+import {
+  isMyWritexDemoModeEnabled,
+  MY_WRITEX_DEMO_CUSTOMER_ID,
+  MY_WRITEX_DEMO_INVOICE,
+  MY_WRITEX_DEMO_PHONE,
+  MY_WRITEX_DEMO_WRITEX_ID,
+} from "@/lib/my-writex/demo-mode";
+export {
+  MY_WRITEX_DEMO_CUSTOMER_ID,
+  MY_WRITEX_DEMO_INVOICE,
+  MY_WRITEX_DEMO_PHONE,
+  MY_WRITEX_DEMO_WRITEX_ID,
+} from "@/lib/my-writex/demo-mode";
 import type {
   MyWritexCustomer,
   MyWritexDocument,
@@ -22,6 +35,14 @@ export function isMyWritexDevFixtureEnabled() {
     process.env.NODE_ENV !== "production" &&
     process.env.MY_WRITEX_DEV_FIXTURES === "true"
   );
+}
+
+export function isMyWritexDemoFixtureEnabled() {
+  return isMyWritexDemoModeEnabled();
+}
+
+export function isMyWritexFixtureEnabled() {
+  return isMyWritexDevFixtureEnabled() || isMyWritexDemoFixtureEnabled();
 }
 
 const timelineEvents = [
@@ -399,31 +420,81 @@ const secondaryCustomer: MyWritexCustomer = {
   upcomingWork: [],
 };
 
+const demoProjects: MyWritexProject[] = projects.map((project) => ({
+  ...project,
+  customerMasterId: MY_WRITEX_DEMO_CUSTOMER_ID,
+  files: project.files.map((file) => ({ ...file })),
+  timeline: project.timeline.map((stage) => ({ ...stage })),
+}));
+
+const demoCustomer: MyWritexCustomer = {
+  ...customer,
+  customerMasterId: MY_WRITEX_DEMO_CUSTOMER_ID,
+  writeXId: MY_WRITEX_DEMO_WRITEX_ID,
+  registeredPhone: MY_WRITEX_DEMO_PHONE,
+  name: "Shubham",
+  preferredName: "Shubham",
+  relationshipSince: 2024,
+  projects: demoProjects,
+  invoices: customer.invoices.map((invoice) => ({ ...invoice })),
+  documents: customer.documents.map((document) => ({ ...document })),
+  historicalRequests: customer.historicalRequests.map((request) => ({ ...request })),
+  pendingActions: customer.pendingActions.map((action) => ({ ...action })),
+  relationshipTimeline: customer.relationshipTimeline.map((item) =>
+    item.year === 2023
+      ? {
+          ...item,
+          year: 2024,
+          title: "Joined WriteX",
+          description: "Your first demo project marked the beginning of this sample relationship.",
+        }
+      : { ...item },
+  ),
+  upcomingWork: customer.upcomingWork.map((item) => ({ ...item })),
+  profile: {
+    ...customer.profile,
+    country: "United Kingdom",
+    programme: "Postgraduate Business Programme",
+  },
+  career: structuredClone(customer.career),
+};
+
 export function normalizeWriteXId(value: string) {
   return value.trim().replace(/^@/, "").toLowerCase();
 }
 
 export function resolveDevelopmentInvoice(identifier: string, phone: string) {
-  if (!isMyWritexDevFixtureEnabled()) return null;
+  if (!isMyWritexFixtureEnabled()) return null;
+  const activeCustomer = isMyWritexDemoFixtureEnabled() ? demoCustomer : customer;
+  const activeInvoice = isMyWritexDemoFixtureEnabled()
+    ? MY_WRITEX_DEMO_INVOICE
+    : MY_WRITEX_DEV_INVOICE;
   if (
-    normalizeInvoiceId(identifier) !== MY_WRITEX_DEV_INVOICE ||
-    normalizeWhatsapp(phone) !== MY_WRITEX_DEV_PHONE
+    normalizeInvoiceId(identifier) !== activeInvoice ||
+    normalizeWhatsapp(phone) !== activeCustomer.registeredPhone
   ) {
     return null;
   }
-  const project = projects.find(
-    (item) => item.invoiceReference === MY_WRITEX_DEV_INVOICE,
+  const project = activeCustomer.projects.find(
+    (item) => item.invoiceReference === activeInvoice,
   )!;
   return {
-    invoiceId: MY_WRITEX_DEV_INVOICE,
-    customerMasterId: customer.customerMasterId,
-    displayName: customer.name,
+    invoiceId: activeInvoice,
+    customerMasterId: activeCustomer.customerMasterId,
+    displayName: activeCustomer.name,
     project,
   };
 }
 
 export function resolveDevelopmentCustomer(identifier: string, phone: string) {
-  if (!isMyWritexDevFixtureEnabled()) return null;
+  if (!isMyWritexFixtureEnabled()) return null;
+  if (isMyWritexDemoFixtureEnabled()) {
+    if (
+      normalizeWriteXId(identifier) === demoCustomer.writeXId &&
+      normalizeWhatsapp(phone) === demoCustomer.registeredPhone
+    ) return demoCustomer;
+    return null;
+  }
   if (
     normalizeWriteXId(identifier) === secondaryCustomer.writeXId &&
     normalizeWhatsapp(phone) === secondaryCustomer.registeredPhone
@@ -438,7 +509,10 @@ export function resolveDevelopmentCustomer(identifier: string, phone: string) {
 }
 
 export function getDevelopmentCustomer(customerMasterId: string) {
-  if (!isMyWritexDevFixtureEnabled()) return null;
+  if (!isMyWritexFixtureEnabled()) return null;
+  if (isMyWritexDemoFixtureEnabled()) {
+    return customerMasterId === demoCustomer.customerMasterId ? demoCustomer : null;
+  }
   if (customerMasterId === customer.customerMasterId) return customer;
   if (customerMasterId === secondaryCustomer.customerMasterId) return secondaryCustomer;
   return null;
@@ -460,9 +534,11 @@ export function getDevelopmentProjectForCustomer(
 }
 
 export function getDevelopmentProjectForInvoice(invoiceReference: string) {
-  if (!isMyWritexDevFixtureEnabled()) return null;
+  if (!isMyWritexFixtureEnabled()) return null;
   const normalized = normalizeInvoiceId(invoiceReference);
   return (
-    projects.find((project) => project.invoiceReference === normalized) || null
+    (isMyWritexDemoFixtureEnabled() ? demoProjects : projects).find(
+      (project) => project.invoiceReference === normalized,
+    ) || null
   );
 }

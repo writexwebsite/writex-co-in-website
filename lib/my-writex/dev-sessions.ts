@@ -2,7 +2,7 @@ import "server-only";
 
 import type { ClientSession } from "@/lib/auth";
 import { hashValue, randomToken } from "@/lib/security";
-import { isMyWritexDevFixtureEnabled } from "@/lib/my-writex/dev-fixture";
+import { isMyWritexFixtureEnabled } from "@/lib/my-writex/dev-fixture";
 
 type DevelopmentSessionRecord = {
   session: ClientSession;
@@ -25,8 +25,8 @@ function store() {
 }
 
 function assertEnabled() {
-  if (!isMyWritexDevFixtureEnabled()) {
-    throw new Error("My WriteX development sessions are disabled.");
+  if (!isMyWritexFixtureEnabled()) {
+    throw new Error("My WriteX isolated fixture sessions are disabled.");
   }
 }
 
@@ -66,7 +66,7 @@ export function getDevelopmentClientSession(
   token: string | undefined,
   idleSeconds: number
 ) {
-  if (!token || !isMyWritexDevFixtureEnabled()) return null;
+  if (!token || !isMyWritexFixtureEnabled()) return null;
   const record = store().get(hashValue(token));
   const now = Date.now();
   if (
@@ -85,7 +85,7 @@ export function getDevelopmentClientSession(
 }
 
 export function revokeDevelopmentClientSession(token: string | undefined) {
-  if (!token || !isMyWritexDevFixtureEnabled()) return false;
+  if (!token || !isMyWritexFixtureEnabled()) return false;
   const record = store().get(hashValue(token));
   if (!record) return false;
   record.revokedAt = Date.now();
@@ -93,7 +93,7 @@ export function revokeDevelopmentClientSession(token: string | undefined) {
 }
 
 export function rotateDevelopmentClientSession(token: string | undefined) {
-  if (!token || !isMyWritexDevFixtureEnabled()) return null;
+  if (!token || !isMyWritexFixtureEnabled()) return null;
   const oldHash = hashValue(token);
   const record = store().get(oldHash);
   if (!record || record.revokedAt || record.absoluteExpiresAt <= Date.now()) {

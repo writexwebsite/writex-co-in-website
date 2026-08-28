@@ -17,10 +17,12 @@ import { normalizeInvoiceId, normalizeWhatsapp } from "@/lib/client/credentials"
 import { getClientVerificationProvider } from "@/lib/client/providers";
 import { optionalDbQuery } from "@/lib/db";
 import {
-  isMyWritexDevFixtureEnabled,
+  isMyWritexDemoFixtureEnabled,
+  isMyWritexFixtureEnabled,
   resolveDevelopmentCustomer,
   resolveDevelopmentInvoice
 } from "@/lib/my-writex/dev-fixture";
+import { isExpectedMyWritexDemoHost } from "@/lib/my-writex/demo-mode";
 import { createDevelopmentClientSession } from "@/lib/my-writex/dev-sessions";
 import {
   assertRateLimit,
@@ -39,6 +41,10 @@ const failure =
 export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
+    if (
+      isMyWritexDemoFixtureEnabled() &&
+      !isExpectedMyWritexDemoHost(request.headers.get("host"))
+    ) throw unauthorized(failure);
     const context = getRequestContext(request);
     const correlationId = crypto.randomUUID();
     const body = await parseJson(request, futureClientLoginSchema);
@@ -62,8 +68,13 @@ export async function POST(request: NextRequest) {
       throw unauthorized(failure);
     }
 
-    // Development fixtures are an explicit local provider. They never run in production.
-    const fixtureInvoice = resolveDevelopmentInvoice(identifier, phone);
+    // The isolated fixture provider is resolved before any external provider.
+    // The public isolated demo exposes only the synthetic customer workspace.
+    // Keep the invoice fixture available for localhost development, but never
+    // open the legacy invoice portal on the demo hostname.
+    const fixtureInvoice = isMyWritexDemoFixtureEnabled()
+      ? null
+      : resolveDevelopmentInvoice(identifier, phone);
     if (fixtureInvoice) {
       const maxAge = getClientSessionMaxAgeSeconds();
       const sessionRecord = createDevelopmentClientSession({
@@ -99,6 +110,58 @@ export async function POST(request: NextRequest) {
         authScope: "invoice"
       });
       return response;
+    }
+
+    const fixtureCustomer = resolveDevelopmentCustomer(identifier, phone);
+    if (fixtureCustomer) {
+      const maxAge = getClientSessionMaxAgeSeconds();
+      const sessionRecord = createDevelopmentClientSession({
+        session: {
+          kind: "client",
+          authScope: "customer",
+          invoiceId: "",
+          customerMasterId: fixtureCustomer.customerMasterId,
+          whatsapp: phone,
+          clientReference: fixtureCustomer.writeXId,
+          clientDisplayName: fixtureCustomer.name,
+          testSession: false,
+          accessLevel: "full",
+          securityMode: "writex_id_phone"
+        },
+        maxAgeSeconds: maxAge,
+        idleSeconds: getClientSessionIdleSeconds()
+      });
+      const response = apiOk({
+        authenticated: true,
+        authScope: "customer",
+        accessLevel: "full",
+        securityMode: "writex_id_phone",
+        defaultRoute: "/my-writex"
+      });
+      setClientSessionCookie(response, sessionRecord.sessionToken, maxAge);
+      await recordAttemptAndAudit({
+        request,
+        inputFingerprint,
+        ipAddress: context.ipAddress,
+        correlationId,
+        succeeded: true,
+        entityId: fixtureCustomer.customerMasterId,
+        authScope: "customer"
+      });
+      return response;
+    }
+
+    // Demo mode never falls through to LTS, a database-backed login or another provider.
+    if (isMyWritexDemoFixtureEnabled()) {
+      await recordAttemptAndAudit({
+        request,
+        inputFingerprint,
+        ipAddress: context.ipAddress,
+        correlationId,
+        succeeded: false,
+        entityId: hashValue(identifier.toLowerCase()).slice(0, 16)
+      });
+      throw unauthorized(failure);
     }
 
     // Production invoice access remains the first real resolver.
@@ -164,48 +227,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Customer access is tried only after invoice access did not resolve.
-    const fixtureCustomer = resolveDevelopmentCustomer(identifier, phone);
-    if (fixtureCustomer) {
-      const maxAge = getClientSessionMaxAgeSeconds();
-      const sessionRecord = createDevelopmentClientSession({
-        session: {
-          kind: "client",
-          authScope: "customer",
-          invoiceId: "",
-          customerMasterId: fixtureCustomer.customerMasterId,
-          whatsapp: phone,
-          clientReference: fixtureCustomer.writeXId,
-          clientDisplayName: fixtureCustomer.name,
-          testSession: false,
-          accessLevel: "full",
-          securityMode: "writex_id_phone"
-        },
-        maxAgeSeconds: maxAge,
-        idleSeconds: getClientSessionIdleSeconds()
-      });
-      const response = apiOk({
-        authenticated: true,
-        authScope: "customer",
-        accessLevel: "full",
-        securityMode: "writex_id_phone",
-        defaultRoute: "/my-writex"
-      });
-      setClientSessionCookie(response, sessionRecord.sessionToken, maxAge);
-      await recordAttemptAndAudit({
-        request,
-        inputFingerprint,
-        ipAddress: context.ipAddress,
-        correlationId,
-        succeeded: true,
-        entityId: fixtureCustomer.customerMasterId,
-        authScope: "customer"
-      });
-      return response;
-    }
-
     // Preserve the existing fail-closed provider behavior outside the local fixture mode.
-    if (provider.mode !== "live" && !isMyWritexDevFixtureEnabled()) {
+    if (provider.mode !== "live" && !isMyWritexFixtureEnabled()) {
       await provider.verify(invoiceId, phone);
     }
 

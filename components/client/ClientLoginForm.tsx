@@ -29,13 +29,13 @@ type ApiPayload = {
 const safeError =
   "We couldn't verify those details. Please check them and try again.";
 
-export function ClientLoginForm() {
+export function ClientLoginForm({ myWritexDemo = false }: { myWritexDemo?: boolean }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState("");
-  const demoEnabled = process.env.NEXT_PUBLIC_DEMO_LOGIN_ENABLED === "true";
+  const demoEnabled = !myWritexDemo && process.env.NEXT_PUBLIC_DEMO_LOGIN_ENABLED === "true";
 
   async function openDemo() {
     setDemoError("");
@@ -101,7 +101,9 @@ export function ClientLoginForm() {
           Access Your WriteX Workspace
         </h1>
         <p className="mx-auto mt-3 max-w-md text-base leading-7 text-wxIndigo500">
-          Use the invoice number and mobile registered with your WriteX order.
+          {myWritexDemo
+            ? "Use your demo WriteX ID and registered phone number."
+            : "Use the invoice number and mobile registered with your WriteX order."}
         </p>
       </div>
 
@@ -110,7 +112,7 @@ export function ClientLoginForm() {
       </div>
 
       <div className="mt-5">
-        <AuthInput label="Registered Mobile Number" icon={Smartphone} id="whatsapp" name="whatsapp" type="tel" required minLength={10} autoComplete="tel" aria-describedby={message ? "client-login-error" : undefined} placeholder="Enter the mobile linked to your invoice" />
+        <AuthInput label={myWritexDemo ? "Registered Phone Number" : "Registered Mobile Number"} icon={Smartphone} id="whatsapp" name="whatsapp" type="tel" required minLength={10} autoComplete="tel" aria-describedby={message ? "client-login-error" : undefined} placeholder={myWritexDemo ? "Enter the registered demo phone" : "Enter the mobile linked to your invoice"} />
       </div>
 
       {message ? (

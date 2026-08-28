@@ -3,6 +3,7 @@ import { apiError, apiOk } from "@/lib/api/response";
 import { verifyCustomerClientSessionFromRequest } from "@/lib/auth";
 import { requestOperation, validatedRequestInput } from "@/lib/my-writex/request-api";
 import { listRequests, requestOwnerFromSession, saveDraft, submitRequest, toRequestView } from "@/lib/my-writex/request-repository";
+import { assertRateLimit, assertSameOrigin, getRequestContext } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    assertSameOrigin(request);
     const session = await verifyCustomerClientSessionFromRequest(request);
     const raw = await request.json();
     const operation = requestOperation(raw);
+    const context = getRequestContext(request);
+    assertRateLimit({
+      key: `my-writex-request:${operation}:${session.sessionId || session.tokenHash}:${context.ipAddress}`,
+      limit: operation === "save_draft" ? 180 : 12,
+      windowSeconds: operation === "save_draft" ? 15 * 60 : 60 * 60,
+    });
     const input = validatedRequestInput(session, raw, operation === "submit");
     const owner = requestOwnerFromSession(session);
     if (operation === "save_draft") return apiOk({ request: toRequestView(await saveDraft(owner, input)) }, { status: 201 });
