@@ -46,13 +46,13 @@ jobs:
             --exclude=.local \
             --exclude=reports \
             --exclude=artifacts \
-            -czf my-writex-demo-source.tgz .
+            -czf "$RUNNER_TEMP/my-writex-demo-source.tgz" .
 
       - name: Upload demo source
         env:
           HOST: ${{ secrets.LIGHTSAIL_HOST }}
           USER: ${{ secrets.LIGHTSAIL_USER }}
-        run: scp my-writex-demo-source.tgz "${USER}@${HOST}:/tmp/my-writex-demo-${GITHUB_RUN_ID}.tgz"
+        run: scp "$RUNNER_TEMP/my-writex-demo-source.tgz" "${USER}@${HOST}:/tmp/my-writex-demo-${GITHUB_RUN_ID}.tgz"
 
       - name: Deploy only the isolated demo
         env:
