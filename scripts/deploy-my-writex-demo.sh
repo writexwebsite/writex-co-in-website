@@ -277,7 +277,7 @@ fi
 sudo nginx -t
 sudo systemctl reload nginx
 
-resolved_ip="$(getent ahostsv4 "${DEMO_HOST}" | awk 'NR==1 {print $1}')"
+resolved_ip="$(getent ahostsv4 "${DEMO_HOST}" 2>/dev/null | awk 'NR==1 {print $1}' || true)"
 if [[ "${resolved_ip}" == "${SERVER_IP}" ]] && ! sudo test -f "/etc/letsencrypt/live/${DEMO_HOST}/fullchain.pem"; then
   sudo certbot certonly --webroot -w "${ACME_DIR}" -d "${DEMO_HOST}" \
     --non-interactive --agree-tos --email info@writex.co.in --keep-until-expiring

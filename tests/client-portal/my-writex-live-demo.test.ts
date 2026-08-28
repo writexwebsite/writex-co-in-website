@@ -151,6 +151,7 @@ test("deployment assets are isolated and reject broad production operations", as
   );
   assert.doesNotMatch(deploy, /pnpm run test:client-portal/);
   assert.match(deploy, /pm2 restart my-writex-demo/);
+  assert.match(deploy, /getent ahostsv4[\s\S]*\|\| true/);
   assert.match(deploy, /PRODUCTION_ISOLATION=verified/);
   assert.match(nginx, /server_name demo\.writex\.co\.in/);
   assert.match(nginx, /X-Robots-Tag "noindex, nofollow, noarchive"/);
