@@ -70,10 +70,12 @@ export function ClientLoginForm({ myWritexDemo = false }: { myWritexDemo?: boole
     const formData = new FormData(event.currentTarget);
     const invoiceId = String(formData.get("invoiceId") || "").trim();
     const whatsapp = String(formData.get("whatsapp") || "").trim();
-    const validation = await postJson("/api/client/auth/login", {
-      invoiceNumber: invoiceId,
-      mobile: whatsapp
-    });
+    const validation = await postJson(
+      "/api/client/auth/login",
+      myWritexDemo
+        ? { invoiceId, whatsapp }
+        : { invoiceNumber: invoiceId, mobile: whatsapp }
+    );
     setIsSubmitting(false);
 
     if (

@@ -73,12 +73,14 @@ test("the synthetic Shubham fixture and request lifecycle are complete", async (
 
 test("demo authentication is isolated, generic and cookie scoped", async () => {
   const login = await readFile("app/api/client/auth/login/route.ts", "utf8");
+  const loginForm = await readFile("components/client/ClientLoginForm.tsx", "utf8");
   const auth = await readFile("lib/auth/index.ts", "utf8");
   const review = await readFile("lib/my-writex/demo-review-auth.ts", "utf8");
   assert.match(login, /Demo mode never falls through to LTS/);
   assert.match(login, /isMyWritexDemoFixtureEnabled\(\)[\s\S]*\? null[\s\S]*resolveDevelopmentInvoice/);
   assert.match(login, /isExpectedMyWritexDemoHost/);
   assert.match(login, /We couldn't verify those details/);
+  assert.match(loginForm, /myWritexDemo\s*\?\s*\{ invoiceId, whatsapp \}/);
   assert.match(auth, /httpOnly: true/);
   assert.match(auth, /secure: process\.env\.NODE_ENV === "production"/);
   assert.match(auth, /sameSite: "lax"/);
