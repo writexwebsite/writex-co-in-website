@@ -62,4 +62,3 @@ The baseline failures are repository-integrity failures: committed pages/routes 
 2. Record the approved read-only AWS/LTS identity, operator, inspection window and owner approvals.
 3. Record data-owner and security approval references for the snapshot, approved table scope, export operator, retention/deletion date and encrypted storage location.
 4. Rerun the baseline from a clean worktree before starting E4.
-
