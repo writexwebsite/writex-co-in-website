@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import type { AdminSession } from "../../lib/auth";
 import { canUseHiringPermission } from "../../lib/admin/permissions";
+import { getVisibleAdminNavigation } from "../../lib/admin/navigation";
 import { getHiringWorkflow } from "../../lib/hiring/workflow";
 
 const source=(file:string)=>readFile(path.join(process.cwd(),file),"utf8");
@@ -21,6 +22,36 @@ test("Hiring access grant retains the submitted form across the async request",a
   assert.match(manager,/const formElement = event\.currentTarget/);
   assert.match(manager,/formElement\.reset\(\); await refresh\(\)/);
   assert.doesNotMatch(manager,/event\.currentTarget\.reset\(\)/);
+  assert.doesNotMatch(manager,/window\.prompt/);
+  assert.match(manager,/Revoke Hiring access/);
+});
+
+test("delegated HR sees only the compact Hiring navigation",()=>{
+  const groups=getVisibleAdminNavigation({role:"viewer",hiringRole:"hr_admin",hiringEnabled:true});
+  assert.deepEqual(groups.map(group=>group.href),["/admin/hiring"]);
+  assert.deepEqual(groups[0].items.map(item=>item.label),["Overview","Candidates","Assessments","Interviews","Talent Pool","Settings"]);
+  assert.equal(groups[0].advancedItems.length,0);
+});
+
+test("Primary Admin can reset a secondary Hiring password without retaining plaintext",async()=>{
+  const [manager,route,access,migration,adminLayout]=await Promise.all([
+    source("components/admin/HiringAccessManager.tsx"),
+    source("app/api/admin/hiring/access/route.ts"),
+    source("lib/hiring/access.ts"),
+    source("database/migrations/20260831_smart_hiring_hr_delegation_and_video.sql"),
+    source("app/admin/layout.tsx")
+  ]);
+  assert.match(manager,/Set \/ Change \/ Reset password/);
+  assert.match(manager,/The current password cannot be viewed/);
+  assert.doesNotMatch(manager,/localStorage|sessionStorage/);
+  assert.match(route,/resetHiringAdminPassword/);
+  assert.match(route,/hiring_secondary_password_reset/);
+  assert.match(access,/hashAdminPassword\(input\.newPassword\)/);
+  assert.match(access,/must_change_password=true/);
+  assert.match(access,/session_version=session_version\+1/);
+  assert.match(migration,/session_version integer not null default 0/);
+  assert.match(adminLayout,/pathname\.startsWith\("\/admin\/hiring"\)/);
+  assert.match(adminLayout,/redirect\("\/admin\/hiring"\)/);
 });
 
 test("Sales workflow blocks eligibility until video and human review exist",()=>{

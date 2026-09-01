@@ -34,11 +34,20 @@ export async function POST(request: NextRequest) {
       role: string;
       is_active: boolean;
       must_change_password: boolean;
+      session_version: number;
+      hiring_role: string | null;
     }>(
       `
-        select id, name, email, password_hash, role, is_active, must_change_password
-        from admin_users
-        where lower(email) = lower($1)
+        select admin.id, admin.name, admin.email, admin.password_hash, admin.role,
+               admin.is_active, admin.must_change_password, admin.session_version,
+               access_grant.hiring_role
+        from admin_users admin
+        left join lateral (
+          select hiring_role from hiring_access_grants
+          where admin_user_id=admin.id and status='ACTIVE' and revoked_at is null
+          order by granted_at desc limit 1
+        ) access_grant on true
+        where lower(admin.email) = lower($1)
         limit 1
       `,
       [body.email]
@@ -71,7 +80,9 @@ export async function POST(request: NextRequest) {
         adminUserId: admin.id,
         email: admin.email,
         role: admin.role,
-        mustChangePassword: admin.must_change_password
+        hiringRole: admin.role === "super_admin" ? undefined : admin.hiring_role || undefined,
+        mustChangePassword: admin.must_change_password,
+        sessionVersion: admin.session_version
       },
       maxAge
     );
@@ -81,7 +92,13 @@ export async function POST(request: NextRequest) {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        mustChangePassword: admin.must_change_password
+        hiringRole: admin.role === "super_admin" ? undefined : admin.hiring_role || undefined,
+        mustChangePassword: admin.must_change_password,
+        destination: admin.must_change_password
+          ? "/admin/change-password"
+          : admin.role !== "super_admin" && admin.hiring_role
+            ? "/admin/hiring"
+            : "/admin/dashboard"
       }
     });
 

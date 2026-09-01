@@ -256,7 +256,7 @@ export const adminLoginSchema = z.object({
   password: z.string().min(8)
 });
 
-const strongAdminPassword = z
+export const strongAdminPassword = z
   .string()
   .min(14, "Use at least 14 characters.")
   .max(128, "Password is too long.")

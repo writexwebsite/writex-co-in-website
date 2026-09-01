@@ -33,9 +33,10 @@ export async function POST(request: NextRequest) {
       role: string;
       password_hash: string;
       is_active: boolean;
+      session_version: number;
     }>(
       `
-        select name, email, role, password_hash, is_active
+        select name, email, role, password_hash, is_active, session_version
         from admin_users
         where id = $1
         limit 1
@@ -53,14 +54,16 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await hashAdminPassword(body.newPassword);
-    await dbQuery(
+    const update = await dbQuery<{ session_version: number }>(
       `
         update admin_users
         set password_hash = $1,
             must_change_password = false,
             password_changed_at = now(),
+            session_version = session_version + 1,
             updated_at = now()
         where id = $2
+        returning session_version
       `,
       [passwordHash, session.adminUserId]
     );
@@ -72,13 +75,17 @@ export async function POST(request: NextRequest) {
         adminUserId: session.adminUserId,
         email: admin.email,
         role: admin.role,
-        mustChangePassword: false
+        hiringRole: session.hiringRole,
+        mustChangePassword: false,
+        sessionVersion: update.rows[0].session_version
       },
       maxAge
     );
     const response = apiOk({
       passwordChanged: true,
-      destination: "/admin/dashboard"
+      destination: session.role !== "super_admin" && session.hiringRole
+        ? "/admin/hiring"
+        : "/admin/dashboard"
     });
     setSessionCookie(response, token, maxAge);
 

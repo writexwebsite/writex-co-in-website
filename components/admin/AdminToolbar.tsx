@@ -40,6 +40,7 @@ export function AdminToolbar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const hiringOnly = role !== "super_admin" && Boolean(hiringRole);
   const items = useMemo(
     () =>
       [
@@ -102,12 +103,12 @@ export function AdminToolbar({
     .slice(0, normalizedQuery ? 12 : 8);
   const recordSearchResults = normalizedQuery.length >= 2
     ? [
-        {
+        ...(!hiringOnly ? [{
           href: `/admin/leads?search=${encodeURIComponent(query.trim())}`,
           label: `Search leads for "${query.trim()}"`,
           icon: FileSearch,
           group: "Leads"
-        },
+        }] : []),
         ...(role === "super_admin"
           ? [
               {
@@ -134,12 +135,12 @@ export function AdminToolbar({
               }
             ]
           : []),
-        {
+        ...(!hiringOnly ? [{
           href: `/admin/revisions?search=${encodeURIComponent(query.trim())}`,
           label: `Search requests or orders for "${query.trim()}"`,
           icon: ClipboardCheck,
           group: "Requests & orders"
-        },
+        }] : []),
         ...(role === "super_admin"
           ? [
               {
@@ -171,7 +172,7 @@ export function AdminToolbar({
           aria-label="Search Admin work and records"
         >
           <Search className="h-4 w-4 shrink-0" />
-          <span className="truncate">Search work, people, records and settings</span>
+          <span className="truncate">{hiringOnly ? "Search candidates and Hiring tools" : "Search work, people, records and settings"}</span>
           <span className="ml-auto hidden items-center gap-1 rounded border border-wxBorder bg-wxSurface px-2 py-1 text-[10px] font-semibold sm:inline-flex">
             <Command className="h-3 w-3" /> K
           </span>
@@ -180,11 +181,11 @@ export function AdminToolbar({
 
       <div className="ml-3 flex shrink-0 items-center gap-2">
         <Link
-          href="/admin/action-centre"
+          href={hiringOnly ? "/admin/hiring" : "/admin/action-centre"}
           className="hidden min-h-11 items-center gap-2 rounded-md border border-wxBorder bg-wxSurface px-3 text-sm font-medium text-wxIndigo700 transition hover:border-wxViolet700 hover:text-wxViolet700 xl:inline-flex"
         >
           <ShieldCheck className="h-4 w-4" />
-          Action Centre
+          {hiringOnly ? "Hiring Overview" : "Action Centre"}
         </Link>
 
         <span className="hidden rounded-full border border-wxGreen500/25 bg-wxGreen500/10 px-3 py-1.5 text-[11px] font-semibold text-wxIndigo700 md:inline-flex">
@@ -208,22 +209,23 @@ export function AdminToolbar({
                   Notifications
                 </p>
                 <Link
-                  href="/admin/action-centre"
+                  href={hiringOnly ? "/admin/hiring" : "/admin/action-centre"}
                   className="text-xs font-semibold text-wxViolet700"
                 >
-                  Open Action Centre
+                  {hiringOnly ? "Open Hiring Overview" : "Open Action Centre"}
                 </Link>
               </div>
               <p className="mt-3 rounded-md bg-wxSurfaceSoft px-3 py-4 text-sm leading-6 text-wxIndigo500">
-                Operational alerts are grouped by urgency in the Action Centre.
-                No decorative or browser-only alert count is shown here.
+                {hiringOnly
+                  ? "Candidate blockers and next actions are grouped in the Hiring Overview."
+                  : "Operational alerts are grouped by urgency in the Action Centre. No decorative or browser-only alert count is shown here."}
               </p>
             </div>
           ) : null}
         </div>
 
         <Link
-          href="/admin/help"
+          href={hiringOnly ? "/admin/hiring" : "/admin/help"}
           className="hidden h-11 w-11 items-center justify-center rounded-md border border-wxBorder bg-wxSurface text-wxIndigo700 transition hover:border-wxViolet700 hover:text-wxViolet700 sm:inline-flex"
           aria-label="Help and tutorials"
         >
@@ -249,13 +251,13 @@ export function AdminToolbar({
               <p className="truncate text-sm font-semibold text-wxIndigo900">
                 {email}
               </p>
-              <p className="mt-1 text-xs text-wxIndigo500">{humanise(role)}</p>
+              <p className="mt-1 text-xs text-wxIndigo500">{humanise(hiringOnly ? hiringRole || role : role)}</p>
               <div className="my-3 h-px bg-wxBorder" />
               <Link
-                href="/admin/settings"
+                href={hiringOnly ? "/admin/change-password" : "/admin/settings"}
                 className="flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-wxIndigo700 hover:bg-wxSurfaceSoft"
               >
-                Account settings
+                {hiringOnly ? "Change password" : "Account settings"}
               </Link>
               <AdminLogoutButton />
             </div>
@@ -332,5 +334,6 @@ export function AdminToolbar({
 function humanise(value: string) {
   return value
     .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bHr\b/g, "HR");
 }

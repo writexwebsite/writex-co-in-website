@@ -1,5 +1,8 @@
 begin;
 
+alter table admin_users
+  add column if not exists session_version integer not null default 0;
+
 create table if not exists hiring_access_grants (
   id uuid primary key default gen_random_uuid(),
   admin_user_id uuid not null references admin_users(id) on delete cascade,

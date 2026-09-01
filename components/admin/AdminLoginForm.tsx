@@ -40,9 +40,10 @@ export function AdminLoginForm() {
     }
 
     router.push(
-      payload?.data?.admin?.mustChangePassword
-        ? "/admin/change-password"
-        : "/admin/dashboard"
+      payload?.data?.admin?.destination ||
+        (payload?.data?.admin?.mustChangePassword
+          ? "/admin/change-password"
+          : "/admin/dashboard")
     );
     router.refresh();
   }

@@ -17,7 +17,9 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(canonicalUrl, 301);
     }
 
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-writex-pathname", request.nextUrl.pathname);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   if (resolution.type === "redirect") {

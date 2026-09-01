@@ -23,6 +23,7 @@ export type AdminSession = {
   role: string;
   hiringRole?: string;
   mustChangePassword: boolean;
+  sessionVersion?: number;
 };
 
 export type ClientSession = {

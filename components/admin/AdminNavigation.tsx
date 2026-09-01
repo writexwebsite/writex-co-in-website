@@ -29,6 +29,8 @@ export function AdminNavigation({
   hiringEnabled: boolean;
 }) {
   const pathname = usePathname();
+  const hiringOnly = role !== "super_admin" && Boolean(hiringRole);
+  const homeHref = hiringOnly ? "/admin/hiring" : "/admin/dashboard";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const visibleGroups = getVisibleAdminNavigation({ role, hiringRole, hiringEnabled });
@@ -89,7 +91,7 @@ export function AdminNavigation({
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex h-[72px] items-center justify-between border-b border-wxBorder px-4">
             <Link
-              href="/admin/dashboard"
+              href={homeHref}
               className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wxViolet700"
               title="WriteX Command Centre"
             >
@@ -106,10 +108,10 @@ export function AdminNavigation({
                   />
                   <span className="min-w-0 border-l border-wxBorder pl-3">
                     <span className="block truncate text-xs font-semibold uppercase tracking-[0.14em] text-wxViolet700">
-                      Command Centre
+                      {hiringOnly ? "Hiring Workspace" : "Command Centre"}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-wxIndigo500">
-                      Super Admin
+                      {hiringOnly ? humanise(hiringRole || "Hiring") : "Super Admin"}
                     </span>
                   </span>
                 </span>
@@ -275,4 +277,11 @@ export function AdminNavigation({
       />
     </>
   );
+}
+
+function humanise(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bHr\b/g, "HR");
 }

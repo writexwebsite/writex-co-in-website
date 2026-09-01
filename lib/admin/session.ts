@@ -7,6 +7,7 @@ import {
   verifySignedSessionToken,
   type AdminSession
 } from "@/lib/auth";
+import { ApiError } from "@/lib/api/response";
 import { enrichAdminSessionWithHiringAccess } from "@/lib/hiring/access";
 
 export async function getAdminSessionFromCookies() {
@@ -18,7 +19,12 @@ export async function getAdminSessionFromCookies() {
     return null;
   }
 
-  return enrichAdminSessionWithHiringAccess(session);
+  try {
+    return await enrichAdminSessionWithHiringAccess(session);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
 }
 
 export async function requireAdminSession() {

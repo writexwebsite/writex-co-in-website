@@ -14,7 +14,13 @@ export default async function AdminLoginPage() {
   const session = await getAdminSessionFromCookies();
 
   if (session) {
-    redirect(session.mustChangePassword ? "/admin/change-password" : "/admin/dashboard");
+    redirect(
+      session.mustChangePassword
+        ? "/admin/change-password"
+        : session.role !== "super_admin" && session.hiringRole
+          ? "/admin/hiring"
+          : "/admin/dashboard"
+    );
   }
 
   return (

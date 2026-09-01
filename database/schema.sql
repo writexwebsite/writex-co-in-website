@@ -16,6 +16,7 @@ create table if not exists admin_users (
   role text not null default 'viewer',
   is_active boolean not null default true,
   must_change_password boolean not null default false,
+  session_version integer not null default 0,
   password_changed_at timestamptz,
   last_login_at timestamptz,
   created_at timestamptz not null default now(),
@@ -24,6 +25,7 @@ create table if not exists admin_users (
 
 alter table admin_users
   add column if not exists must_change_password boolean not null default false,
+  add column if not exists session_version integer not null default 0,
   add column if not exists password_changed_at timestamptz;
 
 update admin_users

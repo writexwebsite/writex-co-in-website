@@ -248,14 +248,18 @@ export function getVisibleAdminNavigation({
   hiringRole?: string;
   hiringEnabled: boolean;
 }) {
+  const hiringOnly = role !== "super_admin" && Boolean(hiringRole);
   return adminNavigationGroups
+    .filter((group) => !hiringOnly || group.href === "/admin/hiring")
     .filter((group) => canViewItem(group, role, hiringRole, hiringEnabled))
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => canViewItem(item, role, hiringRole, hiringEnabled)),
-      advancedItems: (group.advancedItems || []).filter((item) =>
-        canViewItem(item, role, hiringRole, hiringEnabled)
-      )
+      advancedItems: hiringOnly
+        ? []
+        : (group.advancedItems || []).filter((item) =>
+            canViewItem(item, role, hiringRole, hiringEnabled)
+          )
     }))
     .filter((group) => group.items.length > 0 || group.advancedItems.length > 0);
 }

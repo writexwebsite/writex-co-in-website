@@ -30,6 +30,8 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const hiringEnabled = isHiringFeatureEnabled("admin");
+  const hiringOnly = session.role !== "super_admin" && Boolean(session.hiringRole);
+  const workspaceHref = hiringOnly ? "/admin/hiring" : "/admin/dashboard";
   const breadcrumb = (eyebrow || "Admin")
     .split("/")
     .map((part) => part.trim())
@@ -58,8 +60,8 @@ export function AdminShell({
               >
                 <AdminBackButton />
                 <span className="mx-1 h-4 w-px bg-wxBorder" aria-hidden />
-                <Link href="/admin/dashboard" className="hover:text-wxViolet700">
-                  WriteX Admin
+                <Link href={workspaceHref} className="hover:text-wxViolet700">
+                  {hiringOnly ? "Smart Hiring" : "WriteX Admin"}
                 </Link>
                 {breadcrumb.map((part) => (
                   <span key={part} className="inline-flex items-center gap-1">
@@ -89,16 +91,16 @@ export function AdminShell({
                   {actions || (
                     <>
                       <Link
-                        href="/admin/help"
+                        href={hiringOnly ? "/admin/hiring/applications" : "/admin/help"}
                         className="inline-flex min-h-11 items-center justify-center rounded-md border border-wxBorder bg-wxSurface px-4 text-sm font-semibold text-wxIndigo700 transition hover:border-wxViolet700"
                       >
-                        Page guidance
+                        {hiringOnly ? "Open Candidates" : "Page guidance"}
                       </Link>
                       <Link
-                        href="/admin/action-centre"
+                        href={hiringOnly ? "/admin/hiring" : "/admin/action-centre"}
                         className="wx-gradient-action inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white"
                       >
-                        Open Action Centre
+                        {hiringOnly ? "Hiring Overview" : "Open Action Centre"}
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </>
@@ -136,10 +138,10 @@ export function AdminShell({
           </div>
         </main>
 
-        <AdminGuidanceLayer
+        {!hiringOnly ? <AdminGuidanceLayer
           role={session.role}
           adminUserId={session.adminUserId}
-        />
+        /> : null}
       </div>
     </div>
   );
