@@ -69,6 +69,20 @@ function decodeCandidatePii(encrypted: string) {
   }
 }
 
+async function assertSalesVideoReady(application: { id: string; role_key: string }) {
+  if (application.role_key !== "sales_executive") return;
+  const result=await dbQuery<{has_video:boolean;has_review:boolean}>(`select
+    exists(select 1 from hiring_candidate_files where application_id=$1 and file_type='video_introduction' and revoked_at is null and deleted_at is null) as has_video,
+    exists(select 1 from hiring_video_reviews where application_id=$1 and superseded_at is null) as has_review`,[application.id]);
+  if(!result.rows[0]?.has_video)throw new ApiError(409,"BAD_REQUEST","Sales video introduction is missing. Request the candidate's consented 60-120 second video before eligibility review.");
+  if(!result.rows[0]?.has_review)throw new ApiError(409,"BAD_REQUEST","Watch the private Sales video and save the structured human video review before eligibility review.");
+}
+
+async function assertEligibilityReady(applicationId:string){
+  const result=await dbQuery<{id:string}>("select id from hiring_eligibility_reviews where application_id=$1 limit 1",[applicationId]);
+  if(!result.rows[0])throw new ApiError(409,"BAD_REQUEST","Complete and save the human eligibility review before releasing an assessment.");
+}
+
 async function recordNotification(applicationId: string, notificationType: string, recipient: string, result: {sent:boolean;provider?:string;messageId?:string;reason?:string;status?:number}) {
   await dbQuery(
     `insert into hiring_notifications(application_id,notification_type,recipient_hash,provider,provider_message_reference,status,safe_failure_reason,sent_at)
@@ -128,6 +142,7 @@ export async function runApplicationOperation(input: Extract<HiringOperation,{re
   } else {
     if(!input.stage)throw new ApiError(400,"BAD_REQUEST","A destination stage is required.");
     const destinationStage=input.stage;
+    if(destinationStage==="eligibility_review")await assertSalesVideoReady(application);
     if(["offer_released","joined"].includes(destinationStage))await assertOfferGate(application.id);
     const stageChange=await withDbTransaction(async query=>{
       await query("select pg_advisory_xact_lock(hashtext($1))",[`hiring-stage:${application.id}`]);
@@ -156,6 +171,7 @@ export async function runEligibilityOperation(
   adminUserId: string
 ) {
   const application = await applicationByReference(input.applicationReference);
+  await assertSalesVideoReady(application);
   const rules = buildEligibilityRules(application.role_key, input.checks);
   const advisory = calculateEligibility(application.role_key, rules);
 
@@ -266,6 +282,7 @@ export async function runAssessmentOperation(input: Extract<HiringOperation,{res
     await audit(application.id,adminUserId,"assessment_revoked","assessment",input.applicationReference,{reason:input.reason});
     return {ok:true};
   }
+  await assertEligibilityReady(application.id);
   const assessment=await dbQuery<{id:string;duration_minutes:number}>("select id,duration_minutes from hiring_assessments where role_key=$1 and active=true order by version desc limit 1",[application.role_key]);
   if(!assessment.rows[0])throw new ApiError(409,"BAD_REQUEST","No active assessment is configured for this role.");
   const questions=await questionsForRole(application.role_key);
@@ -468,6 +485,8 @@ export async function runIntegrityReviewOperation(
 export async function runInterviewOperation(input: Extract<HiringOperation,{resource:"interview"}>, adminUserId: string) {
   const application=await applicationByReference(input.applicationReference);
   if(input.action==="schedule"){
+    const review=await dbQuery<{id:string}>("select id from hiring_admin_reviews where application_id=$1 and superseded_at is null limit 1",[application.id]);
+    if(!review.rows[0])throw new ApiError(409,"BAD_REQUEST","Complete HR Review before scheduling the interview.");
     if(!input.scheduledAt||!input.interviewerAdminUserId||!input.interviewType)throw new ApiError(400,"BAD_REQUEST","Schedule, interviewer and interview type are required.");
     const scheduledAt=new Date(input.scheduledAt);
     const result=await withDbTransaction(async query=>{

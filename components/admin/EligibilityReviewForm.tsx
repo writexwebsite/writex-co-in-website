@@ -55,7 +55,7 @@ export function EligibilityReviewForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-4 rounded-lg border border-wxBorder bg-white p-5 shadow-soft">
+    <form id="candidate-eligibility-action" onSubmit={submit} className="grid gap-4 rounded-lg border border-wxBorder bg-white p-5 shadow-soft">
       <div>
         <h2 className="text-lg font-bold text-wxIndigo900">Eligibility review</h2>
         <p className="mt-1 text-sm text-wxIndigo500">

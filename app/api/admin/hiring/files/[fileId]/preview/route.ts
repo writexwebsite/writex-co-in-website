@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiError } from "@/lib/api/response";
 import { assertHiringPermission } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import {
   getCandidateFileInlinePreview,
   getCandidateFileType
@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     const { fileId } = await params;
     const type = await getCandidateFileType(fileId);
     assertHiringPermission(

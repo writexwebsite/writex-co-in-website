@@ -21,6 +21,7 @@ export type AdminSession = {
   adminUserId: string;
   email: string;
   role: string;
+  hiringRole?: string;
   mustChangePassword: boolean;
 };
 

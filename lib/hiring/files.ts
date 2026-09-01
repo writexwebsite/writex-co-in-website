@@ -16,6 +16,7 @@ function canRenderInline(mimeType: string) {
   return (
     mimeType === "application/pdf" ||
     mimeType.startsWith("audio/") ||
+    mimeType.startsWith("video/") ||
     mimeType.startsWith("image/")
   );
 }
@@ -160,7 +161,7 @@ export async function getCandidateFileInlinePreview(
   }
 
   assertInlinePreviewAllowed(file);
-  const buffer = await getPrivateObjectBuffer(file.s3_key, 10 * 1024 * 1024);
+  const buffer = await getPrivateObjectBuffer(file.s3_key, file.mime_type.startsWith("video/") ? 100 * 1024 * 1024 : 10 * 1024 * 1024);
   await audit(file, adminUserId, "previewed", reason);
 
   return {

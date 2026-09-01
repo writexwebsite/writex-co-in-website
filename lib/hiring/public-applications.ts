@@ -12,12 +12,16 @@ import { hiringApplicationSchema, type HiringApplicationInput } from "@/lib/hiri
 import { uploadFile, deleteFile, isStorageConfigured } from "@/lib/storage/s3";
 import { hasSupportedHiringFileSignature } from "@/lib/hiring/file-signatures";
 import { deliverNewApplicationNotifications } from "@/lib/hiring/application-notifications";
+import { defaultSalesVideoPolicy, type SalesVideoPolicy } from "@/lib/hiring/video-policy";
 
 export { hiringApplicationSchema };
 
 export type ValidatedHiringFile = {
   file: File;
-  type: "cv" | "writing_sample" | "voice_introduction";
+  type: "cv" | "writing_sample" | "voice_introduction" | "video_introduction";
+  captureSource?: "RECORDED" | "UPLOADED";
+  durationSeconds?: number;
+  retentionDays?: number;
 };
 
 const allowedMimeTypes = new Set([
@@ -26,17 +30,34 @@ const allowedMimeTypes = new Set([
   "audio/mpeg",
   "audio/mp4",
   "audio/webm"
+  ,"video/webm"
+  ,"video/mp4"
+  ,"video/quicktime"
 ]);
 
-export function validateHiringFile(file: File, type: ValidatedHiringFile["type"]) {
-  const limit = type === "voice_introduction" ? 12 : 10;
+export function validateHiringFile(
+  file: File,
+  type: ValidatedHiringFile["type"],
+  metadata: Pick<ValidatedHiringFile,"captureSource"|"durationSeconds"> = {},
+  videoPolicy: SalesVideoPolicy = defaultSalesVideoPolicy
+) {
+  const limitBytes = type === "video_introduction" ? videoPolicy.maxBytes : (type === "voice_introduction" ? 12 : 10) * 1024 * 1024;
   if (!allowedMimeTypes.has(file.type)) {
-    throw new ApiError(400, "BAD_REQUEST", "Upload a supported PDF, DOCX, MP3, M4A or WebM file.");
+    throw new ApiError(400, "BAD_REQUEST", "Upload a supported PDF, DOCX, WebM, MP4 or MOV file.");
   }
-  if (file.size <= 0 || file.size > limit * 1024 * 1024) {
-    throw new ApiError(400, "BAD_REQUEST", `The ${type.replace("_", " ")} must be ${limit} MB or smaller.`);
+  if (file.size <= 0 || file.size > limitBytes) {
+    throw new ApiError(400, "BAD_REQUEST", `The ${type.replace("_", " ")} must be ${Math.round(limitBytes / 1024 / 1024)} MB or smaller.`);
   }
-  return { file, type } satisfies ValidatedHiringFile;
+  if (type === "video_introduction") {
+    if (!metadata.durationSeconds || metadata.durationSeconds < videoPolicy.targetMinSeconds || metadata.durationSeconds > videoPolicy.targetMaxSeconds) throw new ApiError(400,"BAD_REQUEST",`Sales video introduction must be between ${videoPolicy.targetMinSeconds} and ${videoPolicy.targetMaxSeconds} seconds.`);
+    if (!metadata.captureSource) throw new ApiError(400,"BAD_REQUEST","Choose Record or Upload for the Sales video introduction.");
+  }
+  return {
+    file,
+    type,
+    ...metadata,
+    retentionDays: type === "video_introduction" ? videoPolicy.retentionDays : undefined
+  } satisfies ValidatedHiringFile;
 }
 
 function applicationReference() {
@@ -70,7 +91,7 @@ export async function createHiringApplication({
     email: input.email,
     mobile: input.mobile
   }));
-  const uploaded: Array<Awaited<ReturnType<typeof uploadFile>> & { type: ValidatedHiringFile["type"] }> = [];
+  const uploaded: Array<Awaited<ReturnType<typeof uploadFile>> & Pick<ValidatedHiringFile,"type"|"captureSource"|"durationSeconds"|"retentionDays">> = [];
 
   const existing = await dbQuery<{ id: string; application_reference: string }>(
     "select id, application_reference from hiring_applications where submission_key_hash=$1 limit 1",
@@ -91,10 +112,10 @@ export async function createHiringApplication({
         buffer,
         fileName: item.file.name,
         mimeType: item.file.type,
-        assetType: item.type === "voice_introduction" ? "hiring_voice_file" : "hiring_candidate_file",
+        assetType: item.type === "video_introduction" ? "hiring_video_file" : item.type === "voice_introduction" ? "hiring_voice_file" : "hiring_candidate_file",
         invoiceId: reference
       });
-      uploaded.push({ ...stored, type: item.type });
+      uploaded.push({ ...stored, type: item.type, captureSource:item.captureSource, durationSeconds:item.durationSeconds, retentionDays:item.retentionDays });
     }
 
     applicationId = await withDbTransaction(async (query) => {
@@ -139,6 +160,11 @@ export async function createHiringApplication({
          ) values ($1, null, 'application_received', 'candidate', 'application_submitted')`,
         [application[0].id]
       );
+      if (input.role === "sales_executive") {
+        await query(`insert into hiring_candidate_consents(application_id,consent_type,policy_version,granted,granted_at,safe_metadata)
+                     values($1,'video_introduction','hiring-video-v1',true,now(),'{"reviewType":"human_only"}'::jsonb)
+                     on conflict(application_id,consent_type,policy_version) do nothing`, [application[0].id]);
+      }
       await query(
         `insert into hiring_candidate_consents (
            application_id,consent_type,policy_version,granted,granted_at,safe_metadata
@@ -177,8 +203,10 @@ export async function createHiringApplication({
         await query(
           `insert into hiring_candidate_files (
              application_id, file_type, s3_key, safe_file_name,
-             mime_type, file_size, malware_scan_status
-           ) values ($1,$2,$3,$4,$5,$6,$7)`,
+             mime_type, file_size, malware_scan_status, capture_source,
+             duration_seconds, retention_review_at
+           ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,
+             case when $10::integer is null then null else now() + make_interval(days => $10::integer) end)`,
           [
             application[0].id,
             file.type,
@@ -186,7 +214,10 @@ export async function createHiringApplication({
             file.fileName,
             file.mimeType,
             file.fileSize,
-            "pending"
+            "pending",
+            file.captureSource || null,
+            file.durationSeconds || null,
+            file.retentionDays || null
           ]
         );
       }

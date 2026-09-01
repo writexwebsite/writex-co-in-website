@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, apiOk, badRequest } from "@/lib/api/response";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import { assertCanManageSmartHiring } from "@/lib/admin/permissions";
 import {
   getHiringOptions,
@@ -25,7 +25,7 @@ const optionSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     assertCanManageSmartHiring(admin);
     return apiOk(await getHiringOptions({ includeInactive: true }));
   } catch (error) {
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     assertSameOrigin(request);
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     if (admin.role !== "super_admin") {
       throw badRequest("Only a Super Admin can change application options.");
     }

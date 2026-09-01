@@ -21,15 +21,17 @@ import {
 
 export function AdminNavigation({
   role,
+  hiringRole,
   hiringEnabled
 }: {
   role: string;
+  hiringRole?: string;
   hiringEnabled: boolean;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const visibleGroups = getVisibleAdminNavigation({ role, hiringEnabled });
+  const visibleGroups = getVisibleAdminNavigation({ role, hiringRole, hiringEnabled });
   const activeGroup = visibleGroups.find((group) =>
     isAdminNavigationGroupActive(pathname, group)
   );

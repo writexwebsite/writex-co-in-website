@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk } from "@/lib/api/response";
 import { assertHiringPermission, type HiringPermission } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import {
   runApplicationOperation,
   runAdminReviewOperation,
@@ -42,7 +42,7 @@ const permissions: Record<string, HiringPermission> = {
 export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
-    const admin=getAdminSessionFromRequest(request);
+    const admin=await getHiringAdminSessionFromRequest(request);
     const input=await parseJson(request,hiringOperationSchema);
     assertHiringPermission(admin,permissions[input.resource]);
     const context=getRequestContext(request);

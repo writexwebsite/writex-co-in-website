@@ -29,6 +29,7 @@ export type FileAssetType =
   | "hiring_assessment_file"
   | "hiring_verification_file"
   | "hiring_voice_file"
+  | "hiring_video_file"
   | "hiring_interview_file"
   | "holiday_theme_asset"
   | "festival_pack_zip"
@@ -116,6 +117,10 @@ export function buildS3Key({
 
   if (type === "hiring_voice_file") {
     return `${privatePrefix}/hiring/voice/${invoiceId || "pending"}/${safeFileName}`;
+  }
+
+  if (type === "hiring_video_file") {
+    return `${privatePrefix}/hiring/video/${invoiceId || "pending"}/${safeFileName}`;
   }
 
   if (type === "hiring_interview_file") {

@@ -8,5 +8,9 @@ export function hasSupportedHiringFileSignature(buffer: Buffer, mimeType: string
   }
   if (mimeType === "audio/mp4") return buffer.length >= 12 && buffer.subarray(4, 8).toString("ascii") === "ftyp";
   if (mimeType === "audio/webm") return buffer.length >= 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  if (mimeType === "video/webm") return buffer.length >= 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
+    return buffer.length >= 12 && buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  }
   return false;
 }

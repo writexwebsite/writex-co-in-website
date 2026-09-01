@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk } from "@/lib/api/response";
 import { assertCanManageConnectedCandidateReviews } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import {
   getConnectedCandidateReviewSummary,
   listConnectedCandidateReviews
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     assertCanManageConnectedCandidateReviews(admin);
     const context = getRequestContext(request);
     assertRateLimit({

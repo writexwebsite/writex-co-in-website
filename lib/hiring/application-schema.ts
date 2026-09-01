@@ -20,13 +20,9 @@ const roleRequiredFields = {
   ],
   sales_executive: [
     "totalExperience",
-    "previousIndustry",
     "languages",
     "languageProficiency",
     "communicationComfort",
-    "leadHandling",
-    "targetHistory",
-    "conversionExperience",
     "objectionHandling",
     "salaryStructure",
     "fullTimeCommitment",
@@ -53,6 +49,7 @@ export const hiringApplicationSchema = z.object({
   consent: z.literal(true),
   assessmentMonitoringConsent: z.literal(true),
   declaration: z.literal(true),
+  videoIntroductionConsent: z.boolean().optional(),
   website: z.string().max(0).optional()
 }).superRefine((value, context) => {
   for (const field of roleRequiredFields[value.role]) {
@@ -84,6 +81,16 @@ export const hiringApplicationSchema = z.object({
       path: ["aiUsageDisclosure"],
       message: "AI usage disclosure is required for Academic Writer applications."
     });
+  }
+  if (value.role === "sales_executive") {
+    if (!value.videoIntroductionConsent) {
+      context.addIssue({ code: "custom", path: ["videoIntroductionConsent"], message: "Consent to private video review is required for Sales applications." });
+    }
+    if (value.roleDetails.totalExperience !== "Fresher") {
+      for (const field of ["previousIndustry", "leadHandling", "targetHistory", "conversionExperience"]) {
+        if (!value.roleDetails[field]?.trim()) context.addIssue({ code: "custom", path: ["roleDetails", field], message: "Complete the previous-sales experience field." });
+      }
+    }
   }
 });
 

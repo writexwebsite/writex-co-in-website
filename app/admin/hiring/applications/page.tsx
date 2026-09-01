@@ -79,11 +79,14 @@ export default async function HiringApplicationsPage({
               caption="Hiring applications"
               rows={data.applications.map((item) => ({
                 id: item.reference,
-                reference: item.reference,
+                candidate: item.candidate,
+                applicationId: item.reference,
                 role: hiringRoleLabel(item.role),
                 stage: item.stage,
                 assigned: item.assigned,
                 reviewer: item.reviewer,
+                nextAction: item.nextAction,
+                lastActivity: item.lastActivity,
                 source: item.source,
                 qualification: item.qualification,
                 experience: item.experience,
@@ -95,22 +98,20 @@ export default async function HiringApplicationsPage({
               }))}
               columns={[
                 {
-                  key: "reference",
-                  label: "Reference",
+                  key: "candidate",
+                  label: "Candidate",
                   primary: true
                 },
                 { key: "role", label: "Role" },
+                { key: "applicationId", label: "App ID" },
                 { key: "stage", label: "Stage", type: "status" },
                 {
-                  key: "assigned",
-                  label: "Reviewer assigned",
-                  type: "boolean"
-                },
-                {
                   key: "reviewer",
-                  label: "Reviewer",
-                  defaultVisible: false
+                  label: "Owner"
                 },
+                { key: "nextAction", label: "Next action" },
+                { key: "lastActivity", label: "Last activity", type: "date" },
+                { key: "assigned", label: "Reviewer assigned", type: "boolean", defaultVisible: false },
                 { key: "source", label: "Source", defaultVisible: false },
                 {
                   key: "qualification",
@@ -146,7 +147,7 @@ export default async function HiringApplicationsPage({
                   type: "status",
                   defaultVisible: false
                 },
-                { key: "submittedAt", label: "Submitted", type: "date" }
+                { key: "submittedAt", label: "Submitted", type: "date", defaultVisible: false }
               ]}
               detailHrefPrefix="/admin/hiring/applications"
               detailLabel="Review"

@@ -13,6 +13,7 @@ import {
   getRequestContext,
   hashValue
 } from "@/lib/security";
+import { getSalesVideoPolicy } from "@/lib/hiring/video-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,12 +55,15 @@ export async function POST(request: NextRequest) {
     if (writingSample instanceof File && writingSample.size) {
       files.push(validateHiringFile(writingSample, "writing_sample"));
     }
-    const voiceIntroduction = formData.get("voiceIntroduction");
+    const videoIntroduction = formData.get("videoIntroduction");
     if (parsed.data.role === "sales_executive") {
-      if (!(voiceIntroduction instanceof File) || !voiceIntroduction.size) {
-        throw badRequest("Upload a short voice introduction to continue.");
+      const videoPolicy = await getSalesVideoPolicy();
+      if (!(videoIntroduction instanceof File) || !videoIntroduction.size) {
+        throw badRequest(`Record or upload your ${videoPolicy.targetMinSeconds}-${videoPolicy.targetMaxSeconds} second Sales video introduction to continue.`);
       }
-      files.push(validateHiringFile(voiceIntroduction, "voice_introduction"));
+      const durationSeconds = Number(formData.get("videoDurationSeconds"));
+      const captureSource = String(formData.get("videoCaptureSource") || "") as "RECORDED" | "UPLOADED";
+      files.push(validateHiringFile(videoIntroduction, "video_introduction", { durationSeconds, captureSource }, videoPolicy));
     }
     const result = await createHiringApplication({
       input: parsed.data,

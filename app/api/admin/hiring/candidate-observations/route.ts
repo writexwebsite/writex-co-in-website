@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiOk } from "@/lib/api/response";
 import { assertCanManageConnectedCandidateReviews } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import {
   candidateObservationSchema,
   recordCandidateObservation
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     assertCanManageConnectedCandidateReviews(admin);
     const context = getRequestContext(request);
     assertRateLimit({

@@ -227,6 +227,20 @@ export function CandidateDocumentActions({
                     Your browser cannot preview this audio file.
                   </audio>
                 </div>
+              ) : mimeType.startsWith("video/") ? (
+                <div className="grid h-full place-items-center bg-black p-3">
+                  <video
+                    controls
+                    autoPlay={false}
+                    playsInline
+                    src={preview.url}
+                    onLoadedData={() => setPreviewLoaded(true)}
+                    onError={() => setPreviewFailed(true)}
+                    className="max-h-full w-full max-w-4xl"
+                  >
+                    Your browser cannot preview this private video.
+                  </video>
+                </div>
               ) : mimeType.startsWith("image/") ? (
                 <Image
                   src={preview.url}

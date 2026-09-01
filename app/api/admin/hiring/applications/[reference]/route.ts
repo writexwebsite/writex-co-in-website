@@ -5,7 +5,7 @@ import {
   assertHiringPermission,
   canViewHiringCandidateIdentity
 } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import { getHiringApplicationDetail } from "@/lib/hiring/admin";
 import {
   assertRateLimit,
@@ -21,7 +21,7 @@ export async function GET(
 ) {
   const correlationId = randomUUID();
   try {
-    const session = getAdminSessionFromRequest(request);
+    const session = await getHiringAdminSessionFromRequest(request);
     assertHiringPermission(session, "hiring.applications.view");
     const context = getRequestContext(request);
     assertRateLimit({

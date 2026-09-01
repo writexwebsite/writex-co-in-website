@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiError } from "@/lib/api/response";
 import { assertHiringPermission } from "@/lib/admin/permissions";
-import { getAdminSessionFromRequest } from "@/lib/auth";
+import { getHiringAdminSessionFromRequest } from "@/lib/hiring/access";
 import { dbQuery } from "@/lib/db";
 import { hiringRoleLabel } from "@/lib/hiring/domain";
 import { assertRateLimit, getRequestContext } from "@/lib/security";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const admin = getAdminSessionFromRequest(request);
+    const admin = await getHiringAdminSessionFromRequest(request);
     assertHiringPermission(admin, "hiring.applications.export");
     const context = getRequestContext(request);
     assertRateLimit({

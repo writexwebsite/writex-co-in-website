@@ -7,6 +7,7 @@ import {
   verifySignedSessionToken,
   type AdminSession
 } from "@/lib/auth";
+import { enrichAdminSessionWithHiringAccess } from "@/lib/hiring/access";
 
 export async function getAdminSessionFromCookies() {
   const cookieStore = await cookies();
@@ -17,7 +18,7 @@ export async function getAdminSessionFromCookies() {
     return null;
   }
 
-  return session;
+  return enrichAdminSessionWithHiringAccess(session);
 }
 
 export async function requireAdminSession() {

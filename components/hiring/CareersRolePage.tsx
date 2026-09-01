@@ -13,6 +13,7 @@ import { PageHero } from "@/components/PageHero";
 import { ProcessSteps } from "@/components/ProcessSteps";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SpectrumBackground } from "@/components/visual/SpectrumBackground";
+import { getSalesVideoPolicy } from "@/lib/hiring/video-policy";
 
 type RoleContent = {
   eyebrow: string;
@@ -131,8 +132,9 @@ const process = [
   }
 ];
 
-export function CareersRolePage({ role }: { role: HiringRole }) {
+export async function CareersRolePage({ role }: { role: HiringRole }) {
   const content = roleContent[role];
+  const salesVideoPolicy = role === "sales_executive" ? await getSalesVideoPolicy() : undefined;
 
   return (
     <div className="min-h-screen">
@@ -244,7 +246,7 @@ export function CareersRolePage({ role }: { role: HiringRole }) {
               title="Apply Securely in Five Focused Steps"
               description="This is a full-time employment opportunity. Freelance, part-time, contract, and hourly engagements are not available for this role."
             />
-            <HiringApplicationForm role={role} />
+            <HiringApplicationForm role={role} salesVideoPolicy={salesVideoPolicy} />
           </div>
         </section>
       </SpectrumBackground>

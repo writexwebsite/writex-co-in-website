@@ -23,11 +23,13 @@ import { adminSearchActions, getVisibleAdminNavigation } from "@/lib/admin/navig
 export function AdminToolbar({
   email,
   role,
+  hiringRole,
   environment,
   hiringEnabled
 }: {
   email: string;
   role: string;
+  hiringRole?: string;
   environment: string;
   hiringEnabled: boolean;
 }) {
@@ -41,7 +43,7 @@ export function AdminToolbar({
   const items = useMemo(
     () =>
       [
-        ...getVisibleAdminNavigation({ role, hiringEnabled }).flatMap((group) => [
+        ...getVisibleAdminNavigation({ role, hiringRole, hiringEnabled }).flatMap((group) => [
           { ...group, group: "Workspaces" },
           ...group.items.map((item) => ({ ...item, group: group.label })),
           ...group.advancedItems.map((item) => ({
@@ -53,7 +55,7 @@ export function AdminToolbar({
           ? adminSearchActions.map((item) => ({ ...item, group: "Festival Studio" }))
           : [])
       ],
-    [role, hiringEnabled]
+    [role, hiringRole, hiringEnabled]
   );
 
   useEffect(() => {

@@ -37,12 +37,13 @@ export function AdminShell({
 
   return (
     <div className="flex min-h-screen bg-wxBg text-wxIndigo900">
-      <AdminNavigation role={session.role} hiringEnabled={hiringEnabled} />
+      <AdminNavigation role={session.role} hiringRole={session.hiringRole} hiringEnabled={hiringEnabled} />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-40 flex h-[72px] items-center border-b border-wxBorder bg-wxSurfaceElevated/92 px-4 shadow-[0_8px_32px_rgba(85,22,242,.05)] backdrop-blur-xl lg:px-6">
           <AdminToolbar
             email={session.email}
             role={session.role}
+            hiringRole={session.hiringRole}
             environment={process.env.APP_ENV || process.env.NODE_ENV || "unknown"}
             hiringEnabled={hiringEnabled}
           />

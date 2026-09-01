@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { hiringOperationSchema } from "../../lib/hiring/operations-schema";
 import { questionInputSchema, questionMutationSchema } from "../../lib/hiring/question-bank-schema";
+import { getHiringWorkflow } from "../../lib/hiring/workflow";
 
 test("Admin Review and Final Decision are separate validated actions",()=>{
   assert.equal(hiringOperationSchema.safeParse({resource:"admin_review",applicationReference:"WX-HR-TEST123",decision:"accept",recommendationAction:"confirm",structuredNotes:{strengths:"Clear reasoning"},reason:"Human review completed"}).success,true);
@@ -27,8 +28,8 @@ test("candidate workspace exposes every guided review section",()=>{
   assert.match(page,/candidateOperationView/);
   assert.match(page,/view=\{operationView\}/);
   assert.match(page,/finalDecisionReady/);
-  assert.match(page,/stage==="shortlisted"&&hasAdminReview/);
-  assert.match(page,/stage==="interview_scheduled"&&hasAdminReview/);
+  assert.equal(getHiringWorkflow({role:"academic_writer",stage:"shortlisted",assignedReviewer:true,hasEligibility:true,hasAssessment:true,assessmentState:"submitted",hasSystemReview:true,hasAdminReview:true}).next.label,"Schedule interview");
+  assert.equal(getHiringWorkflow({role:"academic_writer",stage:"interview_scheduled",assignedReviewer:true,hasEligibility:true,hasAssessment:true,assessmentState:"submitted",hasSystemReview:true,hasAdminReview:true,hasInterview:true}).next.label,"Complete interview");
 });
 
 test("accepted Admin Reviews require Viva or interview completion before Final Decision",()=>{
@@ -37,7 +38,7 @@ test("accepted Admin Reviews require Viva or interview completion before Final D
   assert.match(operations,/\["accept","request_viva"\]\.includes\(input\.decision\)/);
   assert.match(operations,/application\.current_stage!=="interview_completed"/);
   assert.match(operations,/Complete the required Viva or interview before recording the Final Decision/);
-  assert.match(controls,/!hasAdminReview\|\|!finalDecisionReady/);
+  assert.match(controls,/!hasAdminReview \|\| !finalDecisionReady/);
 });
 
 test("visible interview completion includes a structured scorecard",()=>{
@@ -59,8 +60,14 @@ test("completed decisions do not show stale interview guidance",()=>{
   const controls=readFileSync(new URL("../../components/admin/CandidateReviewControls.tsx",import.meta.url),"utf8");
   assert.match(page,/hasFinalDecision=\{Boolean\(item\.finalDecision\)\}/);
   assert.match(page,/The completed interview is ready for an authorised Final Decision/);
-  assert.match(controls,/hasFinalDecision\|\|!hasAdminReview\|\|!finalDecisionReady/);
-  assert.match(controls,/The final decision is already recorded/);
+  assert.match(controls,/hasAdminReview && !hasFinalDecision/);
+  assert.match(controls,/The final decision is recorded/);
+});
+
+test("completed decisions do not ask HR to choose another destination",()=>{
+  const workflow=getHiringWorkflow({role:"sales_executive",stage:"talent_pool",assignedReviewer:true,hasEligibility:true,hasAssessment:true,assessmentState:"submitted",hasSystemReview:true,hasAdminReview:true,hasInterview:true,interviewCompleted:true,hasFinalDecision:true,hasSalesVideo:true,hasSalesVideoReview:true});
+  assert.equal(workflow.next.label,"Journey complete");
+  assert.match(workflow.next.reason,/final human hiring outcome is recorded/i);
 });
 
 test("manual stage changes and retry-sensitive actions fail safely",()=>{

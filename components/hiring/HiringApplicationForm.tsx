@@ -39,6 +39,8 @@ import {
   TextField
 } from "@/components/hiring/ApplicationFormControls";
 import { ConnectedCandidateDisclosureFields } from "@/components/hiring/ConnectedCandidateDisclosureFields";
+import { VideoIntroductionField } from "@/components/hiring/VideoIntroductionField";
+import type { SalesVideoPolicy } from "@/lib/hiring/video-policy";
 
 const steps = [
   { title: "About You", description: "Contact and employment details" },
@@ -102,7 +104,13 @@ function activeLabels(options: OptionMap, key: HiringOptionSetKey) {
   return options[key].filter((option) => option.active).map((option) => option.label);
 }
 
-export function HiringApplicationForm({ role }: { role: HiringRole }) {
+export function HiringApplicationForm({
+  role,
+  salesVideoPolicy
+}: {
+  role: HiringRole;
+  salesVideoPolicy?: SalesVideoPolicy;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
@@ -113,6 +121,7 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
   const [fullTimeCommitment, setFullTimeCommitment] = useState("");
   const [options, setOptions] = useState<OptionMap>(defaultHiringOptions);
   const [submissionKey, setSubmissionKey] = useState("");
+  const [salesExperienceType, setSalesExperienceType] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -130,9 +139,14 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
   const requiredByStep = useMemo<Record<number, string[]>>(
     () => ({
       ...stepRequiredNames,
-      1: roleFieldNames[role].filter((name) => name !== "aiUsageDisclosure")
+      1: roleFieldNames[role].filter((name) =>
+        name !== "aiUsageDisclosure" &&
+        !(role === "sales_executive" && salesExperienceType === "Fresher" && ["previousIndustry","leadHandling","targetHistory","conversionExperience"].includes(name))
+      ),
+      2: role === "sales_executive" ? ["cv", "videoIntroduction"] : ["cv"]
+      ,3: role === "sales_executive" ? [...stepRequiredNames[3], "videoIntroductionConsent"] : stepRequiredNames[3]
     }),
-    [role]
+    [role, salesExperienceType]
   );
 
   function fieldValue(name: string) {
@@ -337,6 +351,7 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
         assessmentMonitoringConsent:
           raw.get("assessmentMonitoringConsent") === "on",
         declaration: raw.get("declaration") === "on",
+        videoIntroductionConsent: raw.get("videoIntroductionConsent") === "on",
         website: raw.get("website")
       })
     );
@@ -522,7 +537,7 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
           {role === "academic_writer" ? (
             <WriterExperience options={options} />
           ) : (
-            <SalesExperience options={options} />
+            <SalesExperience options={options} experienceType={salesExperienceType} onExperienceChange={setSalesExperienceType} />
           )}
         </FormSection>
       </div>
@@ -541,13 +556,7 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
                 helperText="Optional at this stage. Do not upload confidential client work."
               />
             ) : (
-              <FileField
-                name="voiceIntroduction"
-                label="Short voice introduction"
-                required
-                accept="audio/mpeg,audio/mp4,audio/webm"
-                helperText="Briefly introduce your communication experience. Avoid personal identity documents."
-              />
+              {salesVideoPolicy ? <VideoIntroductionField policy={salesVideoPolicy} /> : null}
             )}
           </div>
         </FormSection>
@@ -574,6 +583,10 @@ export function HiringApplicationForm({ role }: { role: HiringRole }) {
               name="declaration"
               label="I confirm that the information and submitted work are accurate and my own."
             />
+            {role === "sales_executive" ? <ConsentCheckbox
+              name="videoIntroductionConsent"
+              label="I consent to my private video introduction being stored and reviewed by authorised hiring staff for this application."
+            /> : null}
             <details className="mt-4 rounded-md border border-wxBorder bg-wxSurfaceSoft p-4 text-sm text-wxIndigo600">
               <summary className="cursor-pointer font-semibold text-wxIndigo900">
                 How we use your information
@@ -738,7 +751,7 @@ function WriterExperience({ options }: { options: OptionMap }) {
   );
 }
 
-function SalesExperience({ options }: { options: OptionMap }) {
+function SalesExperience({ options, experienceType, onExperienceChange }: { options: OptionMap; experienceType: string; onExperienceChange: (value: string) => void }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       <StructuredRangeSelect
@@ -746,14 +759,15 @@ function SalesExperience({ options }: { options: OptionMap }) {
         label="Total experience"
         options={["Fresher", ...activeLabels(options, "writing_experience").slice(1)]}
         required
+        onValueChange={onExperienceChange}
       />
-      <MultiSelect
+      {experienceType !== "Fresher" ? <MultiSelect
         name="previousIndustry"
         label="Previous industry"
         options={activeLabels(options, "sales_industry")}
         otherFieldName="otherIndustry"
         required
-      />
+      /> : <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"><strong>Fresher path selected.</strong><br/>Previous industry, past targets, conversion history and prior lead-handling evidence are not required.</div>}
       <MultiSelect
         name="languages"
         label="Languages"
@@ -768,25 +782,25 @@ function SalesExperience({ options }: { options: OptionMap }) {
         options={activeLabels(options, "communication_channel")}
         required
       />
-      <MultiSelect
+      {experienceType !== "Fresher" ? <MultiSelect
         name="leadHandling"
         label="Lead-handling experience"
         options={activeLabels(options, "lead_experience")}
         required
-      />
-      <SearchableSelect
+      /> : null}
+      {experienceType !== "Fresher" ? <SearchableSelect
         name="targetHistory"
         label="Monthly target experience"
         options={activeLabels(options, "target_experience")}
         required
         helperText="This will be reviewed later and is not treated as verified fact."
-      />
-      <SearchableSelect
+      /> : null}
+      {experienceType !== "Fresher" ? <SearchableSelect
         name="conversionExperience"
         label="Conversion experience"
         options={activeLabels(options, "conversion_experience")}
         required
-      />
+      /> : null}
       <MultiSelect
         name="objectionHandling"
         label="Objection-handling experience"

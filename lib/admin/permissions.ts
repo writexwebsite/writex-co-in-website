@@ -1,6 +1,10 @@
 import type { AdminSession } from "@/lib/auth";
 import { forbidden } from "@/lib/api/response";
 
+function getEffectiveHiringRole(session: AdminSession) {
+  return session.role === "super_admin" ? "super_admin" : session.hiringRole || session.role;
+}
+
 export function assertCanMutateAdmin(session: AdminSession) {
   if (session.role === "viewer") {
     throw forbidden("Viewer admins cannot change internal records.");
@@ -115,11 +119,11 @@ export function canManageSmartHiring(session: AdminSession) {
     "assessor",
     "interviewer",
     "read_only_auditor"
-  ].includes(session.role);
+  ].includes(getEffectiveHiringRole(session));
 }
 
 export function canViewHiringCandidateIdentity(session: AdminSession) {
-  return ["super_admin", "hr_admin", "hiring_manager"].includes(session.role);
+  return ["super_admin", "hr_admin", "hiring_manager"].includes(getEffectiveHiringRole(session));
 }
 
 export type HiringPermission =
@@ -131,11 +135,12 @@ export type HiringPermission =
   | "hiring.verification.review"
   | "hiring.offers.approve"
   | "hiring.question_bank.manage"
+  | "hiring.settings.manage"
   | "hiring.audit.view";
 
 const hiringPermissionsByRole: Record<string, HiringPermission[]> = {
-  super_admin: ["hiring.applications.view","hiring.applications.manage","hiring.applications.export","hiring.assessments.review","hiring.interviews.manage","hiring.verification.review","hiring.offers.approve","hiring.question_bank.manage","hiring.audit.view"],
-  hr_admin: ["hiring.applications.view","hiring.applications.manage","hiring.applications.export","hiring.assessments.review","hiring.interviews.manage","hiring.verification.review","hiring.question_bank.manage","hiring.audit.view"],
+  super_admin: ["hiring.applications.view","hiring.applications.manage","hiring.applications.export","hiring.assessments.review","hiring.interviews.manage","hiring.verification.review","hiring.offers.approve","hiring.question_bank.manage","hiring.settings.manage","hiring.audit.view"],
+  hr_admin: ["hiring.applications.view","hiring.applications.manage","hiring.applications.export","hiring.assessments.review","hiring.interviews.manage","hiring.verification.review","hiring.question_bank.manage","hiring.settings.manage","hiring.audit.view"],
   hiring_manager: ["hiring.applications.view","hiring.applications.manage","hiring.applications.export","hiring.assessments.review","hiring.interviews.manage","hiring.question_bank.manage","hiring.audit.view"],
   assessor: ["hiring.applications.view","hiring.assessments.review"],
   interviewer: ["hiring.applications.view","hiring.interviews.manage"],
@@ -143,7 +148,7 @@ const hiringPermissionsByRole: Record<string, HiringPermission[]> = {
 };
 
 export function canUseHiringPermission(session: AdminSession, permission: HiringPermission) {
-  return (hiringPermissionsByRole[session.role] ?? []).includes(permission);
+  return (hiringPermissionsByRole[getEffectiveHiringRole(session)] ?? []).includes(permission);
 }
 
 export function assertHiringPermission(session: AdminSession, permission: HiringPermission) {

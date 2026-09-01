@@ -50,6 +50,7 @@ test("Sales Executive applications require the approved sales evidence fields", 
   const valid = hiringApplicationSchema.safeParse({
     ...base,
     role: "sales_executive",
+    videoIntroductionConsent: true,
     roleDetails: {
       totalExperience: "2-4 years",
       previousIndustry: "Education services",
@@ -73,6 +74,26 @@ test("Sales Executive applications require the approved sales evidence fields", 
     roleDetails: { languages: "English" }
   });
   assert.equal(incomplete.success, false);
+});
+
+test("Sales Fresher applications do not require previous-employment evidence", () => {
+  const fresher = hiringApplicationSchema.safeParse({
+    ...base,
+    role: "sales_executive",
+    videoIntroductionConsent: true,
+    roleDetails: {
+      totalExperience: "Fresher",
+      languages: "English, Hindi",
+      languageProficiency: "Professional",
+      communicationComfort: "Voice, WhatsApp and email",
+      objectionHandling: "Would clarify the customer's concern before answering",
+      salaryStructure: "Fixed + incentive",
+      fullTimeCommitment: "Yes",
+      currentEmploymentStatus: "Not currently employed",
+      joiningAvailability: "Immediate"
+    }
+  });
+  assert.equal(fresher.success, true);
 });
 
 test("rejects non-full-time engagement values in new public applications", () => {

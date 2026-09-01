@@ -86,6 +86,9 @@ export const allowedHiringFileTypes = new Set([
   "audio/mpeg",
   "audio/mp4",
   "audio/webm",
+  "video/webm",
+  "video/mp4",
+  "video/quicktime",
   "image/jpeg",
   "image/png"
 ]);

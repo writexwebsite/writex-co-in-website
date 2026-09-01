@@ -137,14 +137,14 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
     hiring: true,
     keywords: ["applicant", "candidate", "cv", "interview"],
     items: [
-      { href: "/admin/hiring", label: "Today", icon: ClipboardCheck, hiring: true },
+      { href: "/admin/hiring", label: "Overview", icon: ClipboardCheck, hiring: true },
       { href: "/admin/hiring/applications", label: "Candidates", icon: UsersRound, hiring: true },
+      { href: "/admin/hiring/assessments", label: "Assessments", icon: ClipboardCheck, hiring: true },
       { href: "/admin/hiring/interviews", label: "Interviews", icon: CalendarDays, hiring: true },
       { href: "/admin/hiring/talent-pool", label: "Talent Pool", icon: Star, hiring: true },
       { href: "/admin/hiring/settings", label: "Settings", icon: Settings, hiring: true }
     ],
     advancedItems: [
-      { href: "/admin/hiring/assessments", label: "Assessments", icon: ClipboardCheck, hiring: true },
       { href: "/admin/hiring/question-bank", label: "Assessment Questions", icon: NotebookTabs, hiring: true },
       { href: "/admin/hiring/referrals", label: "Referrals", icon: Share2, hiring: true },
       { href: "/admin/hiring/connected-candidates", label: "Connected Candidates", icon: Handshake, hiring: true },
@@ -230,28 +230,31 @@ const hiringRoles = new Set([
 function canViewItem(
   item: Pick<AdminNavigationItem, "superAdminOnly" | "roles" | "hiring">,
   role: string,
+  hiringRole: string | undefined,
   hiringEnabled: boolean
 ) {
   if (item.superAdminOnly && role !== "super_admin") return false;
   if (item.roles && !item.roles.includes(role)) return false;
-  if (item.hiring && (!hiringEnabled || !hiringRoles.has(role))) return false;
+  if (item.hiring && (!hiringEnabled || !hiringRoles.has(hiringRole || role))) return false;
   return true;
 }
 
 export function getVisibleAdminNavigation({
   role,
+  hiringRole,
   hiringEnabled
 }: {
   role: string;
+  hiringRole?: string;
   hiringEnabled: boolean;
 }) {
   return adminNavigationGroups
-    .filter((group) => canViewItem(group, role, hiringEnabled))
+    .filter((group) => canViewItem(group, role, hiringRole, hiringEnabled))
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canViewItem(item, role, hiringEnabled)),
+      items: group.items.filter((item) => canViewItem(item, role, hiringRole, hiringEnabled)),
       advancedItems: (group.advancedItems || []).filter((item) =>
-        canViewItem(item, role, hiringEnabled)
+        canViewItem(item, role, hiringRole, hiringEnabled)
       )
     }))
     .filter((group) => group.items.length > 0 || group.advancedItems.length > 0);

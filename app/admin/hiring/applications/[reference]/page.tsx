@@ -9,15 +9,14 @@ import {
   CheckCircle2,
   CircleAlert,
   FileText,
-  Link2,
   NotebookPen,
-  ShieldCheck,
   UserRound
 } from "lucide-react";
 import { EligibilityReviewForm } from "@/components/admin/EligibilityReviewForm";
 import { CandidateDocumentActions } from "@/components/admin/CandidateDocumentActions";
 import { HiringOperationsConsole } from "@/components/admin/HiringOperationsConsole";
 import { CandidateReviewControls } from "@/components/admin/CandidateReviewControls";
+import { SalesVideoReviewForm } from "@/components/admin/SalesVideoReviewForm";
 import {
   AdminActivityTimeline,
   AdminButton,
@@ -38,6 +37,8 @@ import {
   hiringRoleLabel,
   type HiringRole
 } from "@/lib/hiring/domain";
+import { getHiringWorkflow } from "@/lib/hiring/workflow";
+import { listActiveHiringPeople } from "@/lib/hiring/access";
 
 export const metadata: Metadata = {
   title: "Candidate Profile | WriteX Admin",
@@ -101,17 +102,20 @@ export default async function CandidateProfilePage({
     );
   }
   if (!item) notFound();
+  const hiringPeople=await listActiveHiringPeople();
   const canManage = canUseHiringPermission(
     session,
     "hiring.applications.manage"
   );
-  const next = nextCandidateAction(item.stage,Boolean(item.systemReview),Boolean(item.adminReview),Boolean(item.finalDecision));
+  const salesVideo=item.files.find((file)=>file.file_type==="video_introduction"&&!file.revoked_at&&!file.deleted_at);
+  const workflow=getHiringWorkflow({role:item.role,stage:item.stage,assignedReviewer:Boolean(item.assignedReviewer),hasEligibility:Boolean(item.eligibility),hasAssessment:Boolean(item.assessment),assessmentState:item.assessment?.state||null,hasSystemReview:Boolean(item.systemReview),hasAdminReview:Boolean(item.adminReview),hasInterview:item.interviews.length>0,interviewCompleted:item.interviews.some((interview)=>interview.status==="completed"),hasFinalDecision:Boolean(item.finalDecision),hasSalesVideo:Boolean(salesVideo),hasSalesVideoReview:Boolean(item.videoReview)});
+  const next = workflow.next;
   const operationView = candidateOperationView(item.stage);
   const finalDecisionReady = Boolean(item.adminReview) && (
     !["accept", "request_viva"].includes(item.adminReview?.decision || "")
     || item.stage === "interview_completed"
   );
-  const blocker =
+  const verificationBlocker =
     item.verification.find((check) =>
       ["unable_to_verify", "review_required", "blocked"].includes(check.status)
     ) || null;
@@ -128,7 +132,7 @@ export default async function CandidateProfilePage({
             Applications
           </AdminButton>
           {canManage ? (
-            <AdminButton href="#candidate-action" tone="primary">
+            <AdminButton href={next.href} tone="primary">
               {next.label}
             </AdminButton>
           ) : null}
@@ -137,23 +141,18 @@ export default async function CandidateProfilePage({
       nextAction={{
         label: next.label,
         reason: next.reason,
-        href: canManage ? "#candidate-action" : "#candidate-application"
+        href: canManage ? next.href : "#candidate-application"
       }}
     >
       <div className="mb-6 overflow-x-auto rounded-md border border-wxBorder bg-wxSurface p-2 shadow-soft">
         <nav className="flex min-w-max gap-1" aria-label="Candidate profile sections">
           {[
-            ["Application", "#candidate-application", UserRound],
-            ["CV & Files", "#candidate-files", FileText],
-            ["Eligibility", "#candidate-eligibility", ShieldCheck],
+            ["Candidate", "#candidate-application", UserRound],
+            ["Evidence", "#candidate-files", FileText],
             ["Assessment", "#candidate-assessment", NotebookPen],
-            ["System Review", "#candidate-system-review", Activity],
-            ["Integrity", "#candidate-integrity", ShieldCheck],
-            ["Interview / Viva", "#candidate-interview", UserRound],
-            ["Admin Review", "#candidate-admin-review", NotebookPen],
-            ["Decision", "#candidate-decision", CheckCircle2],
-            ["Communication", "#candidate-communication", Link2],
-            ["History", "#candidate-history", Activity]
+            ["Reviews", "#candidate-system-review", Activity],
+            ["Interview", "#candidate-interview", UserRound],
+            ["Outcome", "#candidate-decision", CheckCircle2]
           ].map(([label, href, Icon]) => {
             const IconComponent = Icon as typeof UserRound;
             return (
@@ -170,9 +169,11 @@ export default async function CandidateProfilePage({
         </nav>
       </div>
 
-      <ol className="mb-6 grid gap-2 sm:grid-cols-4" aria-label="Candidate hiring progress">
-        {[["Application",true],["Assessment",Boolean(item.assessment)],["Interview",item.interviews.length>0],["Decision",Boolean(item.finalDecision)]].map(([label,complete],index)=><li key={String(label)} className={`rounded-md border p-3 text-sm font-bold ${complete?"border-emerald-200 bg-emerald-50 text-emerald-900":"border-wxBorder bg-wxSurfaceSoft text-wxIndigo500"}`}><span className="mr-2">{index+1}.</span>{String(label)}</li>)}
+      <ol className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-6" aria-label="Candidate hiring progress">
+        {workflow.steps.map((step,index)=><li key={step.label} className={`rounded-md border p-3 text-sm font-bold ${step.complete?"border-emerald-200 bg-emerald-50 text-emerald-900":"border-wxBorder bg-wxSurfaceSoft text-wxIndigo500"}`}><span className="mr-2">{index+1}.</span>{step.label}</li>)}
       </ol>
+
+      {workflow.blockers.length?<div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-4"><div className="flex items-start gap-3"><CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-800"/><div><p className="font-semibold text-amber-950">{workflow.blockers[0].title}</p><p className="mt-1 text-sm leading-6 text-amber-900">{workflow.blockers[0].detail}</p><Link href={workflow.blockers[0].href} className="mt-2 inline-flex min-h-10 items-center font-semibold text-wxViolet700 underline">{workflow.blockers[0].action}</Link></div></div></div>:null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -189,6 +190,7 @@ export default async function CandidateProfilePage({
                 <Detail label="Application reference" value={item.reference} />
                 <Detail label="Candidate reference" value={item.candidateReference} />
                 <Detail label="Role" value={humaniseAdminStatus(item.role)} />
+                <Detail label="Owner" value={item.assignedReviewer || "Unassigned"} />
                 <Detail label="Email" value={item.candidate.email} />
                 <Detail label="Mobile" value={item.candidate.mobile} />
                 <Detail
@@ -216,9 +218,9 @@ export default async function CandidateProfilePage({
               title="CV & Files"
               description="Safe file names and scan state only. S3 keys and public URLs are not shown."
             >
-              {item.files.length ? (
+              {item.files.filter((file)=>file.file_type!=="video_introduction").length ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {item.files.map((file) => (
+                  {item.files.filter((file)=>file.file_type!=="video_introduction").map((file) => (
                     <article
                       key={file.id}
                       className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4"
@@ -251,6 +253,8 @@ export default async function CandidateProfilePage({
               )}
             </AdminPanel>
           </div>
+
+          {item.role==="sales_executive"?<div id="candidate-video" style={{order:25}}><AdminPanel title="Sales video introduction" description="Private 60-120 second candidate evidence. Watch through the audited preview, then record a structured human review. No automated body-language or appearance inference is used.">{salesVideo?<div><div className="rounded-md border border-wxBorder bg-wxSurfaceSoft p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-wxIndigo900">{salesVideo.safe_file_name}</p><p className="mt-1 text-xs text-wxIndigo500">{salesVideo.capture_source?.toLowerCase()||"submitted"} / {salesVideo.duration_seconds||"unknown"} seconds / private S3</p></div><AdminStatus status={salesVideo.malware_scan_status}/></div><CandidateDocumentActions fileId={salesVideo.id} fileName={salesVideo.safe_file_name} mimeType={salesVideo.mime_type}/></div>{item.videoReview?<div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"><p className="font-semibold">Human review recorded by {item.videoReview.reviewer}</p><p className="mt-1">Recommendation: {humaniseAdminStatus(item.videoReview.recommendation)}. {item.videoReview.notes}</p></div>:null}{canManage?<SalesVideoReviewForm applicationReference={item.reference} candidateFileId={salesVideo.id} initialReview={item.videoReview}/>:null}</div>:<AdminEmptyState title="Video introduction missing" description="Request the consented Sales video before continuing eligibility review."/>}</AdminPanel></div>:null}
 
           <div id="candidate-eligibility" style={{ order: 30 }}>
             <AdminPanel title="Eligibility" description="System eligibility evidence and the recorded human review remain visible separately.">
@@ -518,6 +522,8 @@ export default async function CandidateProfilePage({
               <CandidateReviewControls
                 applicationReference={item.reference}
                 systemRecommendation={item.systemReview?.recommendation||null}
+                hasSubmittedAssessment={item.assessment?.state==="submitted"}
+                hasSystemReview={Boolean(item.systemReview)}
                 hasAdminReview={Boolean(item.adminReview)}
                 hasFinalDecision={Boolean(item.finalDecision)}
                 finalDecisionReady={finalDecisionReady}
@@ -526,6 +532,8 @@ export default async function CandidateProfilePage({
                 <HiringOperationsConsole
                   view={operationView}
                   applicationReference={item.reference}
+                  hiringPeople={hiringPeople}
+                  interviews={item.interviews}
                 />
               </div>
             </div>
@@ -572,16 +580,18 @@ export default async function CandidateProfilePage({
           </AdminPanel>
 
           <AdminPanel title="Blockers and approvals">
-            {blocker ? (
+            {workflow.blockers.length ? (
               <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-950">
                 <CircleAlert className="h-5 w-5" />
                 <p className="mt-2 text-sm font-semibold">
-                  {humaniseAdminStatus(blocker.verification_type)}
+                  {workflow.blockers[0].title}
                 </p>
                 <p className="mt-1 text-xs leading-5">
-                  {humaniseAdminStatus(blocker.status)}
+                  {workflow.blockers[0].detail}
                 </p>
               </div>
+            ) : verificationBlocker ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-950"><CircleAlert className="h-5 w-5"/><p className="mt-2 text-sm font-semibold">{humaniseAdminStatus(verificationBlocker.verification_type)}</p><p className="mt-1 text-xs leading-5">{humaniseAdminStatus(verificationBlocker.status)}</p></div>
             ) : (
               <p className="text-sm leading-6 text-wxIndigo500">
                 No verification blocker is currently recorded.
@@ -664,47 +674,6 @@ function ApplicationDataPanel({
         ))}
       </dl>
     </AdminPanel>
-  );
-}
-
-function nextCandidateAction(stage: string,hasSystemReview:boolean,hasAdminReview:boolean,hasFinalDecision:boolean) {
-  if(stage==="assessment_submitted"&&!hasSystemReview)return{label:"Run System Review",reason:"The assessment is submitted and awaits the independent System Review."};
-  if(["assessment_submitted","under_review"].includes(stage)&&hasSystemReview&&!hasAdminReview)return{label:"Record Admin Review",reason:"System Review is complete; an authorised reviewer must now record the separate human review."};
-  if(stage==="shortlisted"&&hasAdminReview)return{label:"Schedule interview",reason:"Admin Review is complete; schedule the required Viva or interview before the final decision."};
-  if(stage==="interview_scheduled"&&hasAdminReview)return{label:"Complete interview",reason:"Record the Viva or interview outcome before making the final decision."};
-  if(stage==="interview_completed"&&hasAdminReview&&!hasFinalDecision)return{label:"Record Final Decision",reason:"The Viva or interview is complete and the final hiring outcome is ready for confirmation."};
-  if(hasAdminReview&&!hasFinalDecision)return{label:"Record Final Decision",reason:"Admin Review is complete and the final hiring outcome is ready for confirmation."};
-  const actions: Record<string, { label: string; reason: string }> = {
-    application_received: {
-      label: "Review application",
-      reason: "Eligibility and reviewer assignment have not yet been recorded."
-    },
-    eligibility_review: {
-      label: "Invite to assessment",
-      reason: "Complete the human eligibility review before sending an invitation."
-    },
-    assessment_submitted: {
-      label: "Review assessment",
-      reason: "The submitted response and advisory integrity events need a human score."
-    },
-    shortlisted: {
-      label: "Schedule interview",
-      reason: "The candidate has reached the interview scheduling stage."
-    },
-    interview_completed: {
-      label: "Submit decision",
-      reason: "Record the final human recommendation and its supporting reason."
-    },
-    selected: {
-      label: "Open verification",
-      reason: "Identity and education checks must complete before an offer gate."
-    }
-  };
-  return (
-    actions[stage] || {
-      label: "Review current stage",
-      reason: "Confirm the record and choose the next approved action."
-    }
   );
 }
 

@@ -2,11 +2,13 @@ import "server-only";
 
 import { isDatabaseConfigured, optionalDbQuery } from "@/lib/db";
 import { decryptHiringReviewValue } from "@/lib/hiring/candidate-disclosure";
+import { getHiringWorkflow } from "@/lib/hiring/workflow";
 
 export type HiringAdminSnapshot = {
   counts: Record<string, number>;
   applications: Array<{
     reference: string;
+    candidate: string;
     role: string;
     stage: string;
     submittedAt: string;
@@ -19,6 +21,8 @@ export type HiringAdminSnapshot = {
     verificationStatus: string;
     notificationStatus: string;
     risk: string;
+    nextAction: string;
+    lastActivity: string;
   }>;
   assessments: Array<{
     reference: string;
@@ -92,6 +96,7 @@ export async function getHiringAdminSnapshot(): Promise<HiringAdminSnapshot> {
       optionalDbQuery<{ current_stage: string; count: string }>("select current_stage, count(*)::text as count from hiring_applications group by current_stage"),
       optionalDbQuery<{
         application_reference: string;
+        candidate_reference: string;
         role_key: string;
         current_stage: string;
         submitted_at: Date;
@@ -104,15 +109,30 @@ export async function getHiringAdminSnapshot(): Promise<HiringAdminSnapshot> {
         verification_status: string;
         notification_status: string;
         risk: string;
+        updated_at: Date;
+        has_eligibility: boolean; assessment_state: string | null; has_system_review: boolean;
+        has_admin_review: boolean; has_interview: boolean; interview_completed: boolean;
+        has_final_decision: boolean; has_sales_video: boolean; has_sales_video_review: boolean;
       }>(`
         select
           application.application_reference,
+          candidate.candidate_reference,
           application.role_key,
           application.current_stage,
           application.submitted_at,
           application.assigned_admin_user_id,
           reviewer.name as reviewer,
           application.source,
+          application.updated_at,
+          exists(select 1 from hiring_eligibility_reviews where application_id=application.id) as has_eligibility,
+          (select state from hiring_assessment_sessions where application_id=application.id order by created_at desc limit 1) as assessment_state,
+          exists(select 1 from hiring_system_reviews where application_id=application.id and superseded_at is null) as has_system_review,
+          exists(select 1 from hiring_admin_reviews where application_id=application.id and superseded_at is null) as has_admin_review,
+          exists(select 1 from hiring_candidate_interviews where application_id=application.id) as has_interview,
+          exists(select 1 from hiring_candidate_interviews where application_id=application.id and status='completed') as interview_completed,
+          exists(select 1 from hiring_final_decisions where application_id=application.id and superseded_at is null) as has_final_decision,
+          exists(select 1 from hiring_candidate_files where application_id=application.id and file_type='video_introduction' and revoked_at is null and deleted_at is null) as has_sales_video,
+          exists(select 1 from hiring_video_reviews where application_id=application.id and superseded_at is null) as has_sales_video_review,
           coalesce(nullif(application.application_payload->>'qualification', ''), 'Not provided') as qualification,
           coalesce(nullif(application.application_payload->>'experience', ''), 'Not provided') as experience,
           coalesce((
@@ -150,6 +170,7 @@ export async function getHiringAdminSnapshot(): Promise<HiringAdminSnapshot> {
             limit 1
           ), 'low') as risk
         from hiring_applications application
+        join hiring_candidates candidate on candidate.id=application.candidate_id
         left join admin_users reviewer on reviewer.id = application.assigned_admin_user_id
         order by application.submitted_at desc
         limit 100
@@ -263,6 +284,7 @@ export async function getHiringAdminSnapshot(): Promise<HiringAdminSnapshot> {
       counts: Object.fromEntries((stageRows?.rows ?? []).map((row) => [row.current_stage, Number(row.count)])),
       applications: (applications?.rows ?? []).map((row) => ({
         reference: row.application_reference,
+        candidate: row.candidate_reference,
         role: row.role_key,
         stage: row.current_stage,
         submittedAt: row.submitted_at.toISOString(),
@@ -274,7 +296,9 @@ export async function getHiringAdminSnapshot(): Promise<HiringAdminSnapshot> {
         assessmentStatus: row.assessment_status,
         verificationStatus: row.verification_status,
         notificationStatus: row.notification_status,
-        risk: row.risk
+        risk: row.risk,
+        nextAction:getHiringWorkflow({role:row.role_key,stage:row.current_stage,assignedReviewer:Boolean(row.assigned_admin_user_id),hasEligibility:row.has_eligibility,hasAssessment:Boolean(row.assessment_state),assessmentState:row.assessment_state,hasSystemReview:row.has_system_review,hasAdminReview:row.has_admin_review,hasInterview:row.has_interview,interviewCompleted:row.interview_completed,hasFinalDecision:row.has_final_decision,hasSalesVideo:row.has_sales_video,hasSalesVideoReview:row.has_sales_video_review}).next.label,
+        lastActivity:row.updated_at.toISOString()
       })),
       assessments: (assessments?.rows ?? []).map((row) => ({
         reference: row.session_reference,
@@ -373,9 +397,9 @@ export async function getHiringApplicationDetail(
   let pii:{fullName?:string;email?:string;mobile?:string}={};try{pii=JSON.parse(decryptHiringReviewValue(row.pii_encrypted)||"{}");}catch{pii={};}
   const maskEmail=(value?:string)=>{if(!value)return"Unavailable";const[local,domain]=value.split("@");return `${local.slice(0,2)}***@${domain||"hidden"}`;};
   const maskMobile=(value?:string)=>value?`******${value.replace(/\D/g,"").slice(-4)}`:"Unavailable";
-  const[history,files,interviews,verification,eligibility,audit,consents,assessment,notifications,disclosure,systemReview,adminReview,finalDecision,integritySummary]=await Promise.all([
+  const[history,files,interviews,verification,eligibility,audit,consents,assessment,notifications,disclosure,systemReview,adminReview,finalDecision,integritySummary,videoReview]=await Promise.all([
     optionalDbQuery<{previous_stage:string|null;new_stage:string;reason:string;changed_at:Date}>("select previous_stage,new_stage,reason,changed_at from hiring_application_status_history where application_id=$1 order by changed_at desc limit 100",[row.id]),
-    optionalDbQuery<{id:string;file_type:string;safe_file_name:string;mime_type:string;file_size:string;malware_scan_status:string;revoked_at:Date|null;deleted_at:Date|null;created_at:Date}>("select id,file_type,safe_file_name,mime_type,file_size::text,malware_scan_status,revoked_at,deleted_at,created_at from hiring_candidate_files where application_id=$1 order by created_at desc",[row.id]),
+    optionalDbQuery<{id:string;file_type:string;safe_file_name:string;mime_type:string;file_size:string;malware_scan_status:string;capture_source:string|null;duration_seconds:number|null;revoked_at:Date|null;deleted_at:Date|null;created_at:Date}>("select id,file_type,safe_file_name,mime_type,file_size::text,malware_scan_status,capture_source,duration_seconds,revoked_at,deleted_at,created_at from hiring_candidate_files where application_id=$1 order by created_at desc",[row.id]),
     optionalDbQuery<{id:string;interview_type:string;status:string;scheduled_at:Date|null;recommendation:string|null}>("select id,interview_type,status,scheduled_at,recommendation from hiring_candidate_interviews where application_id=$1 order by created_at desc",[row.id]),
     optionalDbQuery<{id:string;verification_type:string;status:string;final_clearance_status:string|null;discrepancy_count:number}>("select id,verification_type,status,final_clearance_status,discrepancy_count from hiring_verification_cases where application_id=$1 order by created_at",[row.id]),
     optionalDbQuery<{rules:Array<{key:string;label:string;weight:number;passed:boolean;reason:string}>;automated_score:string;system_outcome:string;reviewer_outcome:string;reviewer_notes:string;review_reason:string;reviewed_at:Date}>("select rules,automated_score::text,system_outcome,reviewer_outcome,reviewer_notes,review_reason,reviewed_at from hiring_eligibility_reviews where application_id=$1 limit 1",[row.id]),
@@ -387,13 +411,15 @@ export async function getHiringApplicationDetail(
     optionalDbQuery<{id:string;review_version:number;system_version:string;rule_version:string;question_set_version:string|null;eligibility_outcome:string;assessment_score:string|null;integrity_risk:string;recommendation:string;reasoning:string[];attention:string[];confidence:string;created_at:Date}>("select id,review_version,system_version,rule_version,question_set_version,eligibility_outcome,assessment_score::text,integrity_risk,recommendation,reasoning,attention,confidence,created_at from hiring_system_reviews where application_id=$1 and superseded_at is null limit 1",[row.id]),
     optionalDbQuery<{id:string;decision:string;admin_score:string|null;structured_notes:Record<string,string>;notes:string|null;recommendation_action:string;override_status:string;override_reason:string|null;reviewer_name:string;reviewed_at:Date}>("select review.id,review.decision,review.admin_score::text,review.structured_notes,review.notes,review.recommendation_action,review.override_status,review.override_reason,admin.name as reviewer_name,review.reviewed_at from hiring_admin_reviews review join admin_users admin on admin.id=review.reviewed_by_admin_user_id where review.application_id=$1 and review.superseded_at is null limit 1",[row.id]),
     optionalDbQuery<{id:string;outcome:string;reason:string;decider_name:string;decided_at:Date}>("select decision.id,decision.outcome,decision.reason,admin.name as decider_name,decision.decided_at from hiring_final_decisions decision join admin_users admin on admin.id=decision.decided_by_admin_user_id where decision.application_id=$1 and decision.superseded_at is null limit 1",[row.id]),
-    optionalDbQuery<{total:string;review_required:string;reviewed:string}>("select count(*)::text as total,count(*) filter(where severity='review_required' or severity='advisory')::text as review_required,count(*) filter(where reviewed_at is not null)::text as reviewed from hiring_assessment_integrity_events event join hiring_assessment_sessions session on session.id=event.session_id where session.application_id=$1",[row.id])
+    optionalDbQuery<{total:string;review_required:string;reviewed:string}>("select count(*)::text as total,count(*) filter(where severity='review_required' or severity='advisory')::text as review_required,count(*) filter(where reviewed_at is not null)::text as reviewed from hiring_assessment_integrity_events event join hiring_assessment_sessions session on session.id=event.session_id where session.application_id=$1",[row.id]),
+    optionalDbQuery<{id:string;candidate_file_id:string;clarity:string;role_motivation:string;communication_structure:string;customer_orientation:string;recommendation:string;notes:string;reviewer_name:string;created_at:Date}>("select review.id,review.candidate_file_id,review.clarity,review.role_motivation,review.communication_structure,review.customer_orientation,review.recommendation,review.notes,admin.name as reviewer_name,review.created_at from hiring_video_reviews review join admin_users admin on admin.id=review.reviewer_admin_user_id where review.application_id=$1 and review.superseded_at is null limit 1",[row.id]).catch((error)=>{if((error as{code?:string}).code==="42P01")return null;throw error;})
   ]);
   const eligibilityRow=eligibility?.rows[0];
   const disclosureRow=disclosure?.rows[0];
   const systemReviewRow=systemReview?.rows[0];
   const adminReviewRow=adminReview?.rows[0];
   const finalDecisionRow=finalDecision?.rows[0];
+  const videoReviewRow=videoReview?.rows[0];
   const reveal=options.revealContact===true;
   const decryptOptional=(value:string|null)=>{
     if(!value||!reveal)return null;
@@ -448,6 +474,13 @@ export async function getHiringApplicationDetail(
     finalDecision:finalDecisionRow?{
       id:finalDecisionRow.id,outcome:finalDecisionRow.outcome,reason:finalDecisionRow.reason,
       decidedBy:finalDecisionRow.decider_name,decidedAt:finalDecisionRow.decided_at.toISOString()
+    }:null,
+    videoReview:videoReviewRow?{
+      id:videoReviewRow.id,candidateFileId:videoReviewRow.candidate_file_id,
+      clarity:videoReviewRow.clarity,roleMotivation:videoReviewRow.role_motivation,
+      communicationStructure:videoReviewRow.communication_structure,customerOrientation:videoReviewRow.customer_orientation,
+      recommendation:videoReviewRow.recommendation,notes:videoReviewRow.notes,reviewer:videoReviewRow.reviewer_name,
+      createdAt:videoReviewRow.created_at.toISOString()
     }:null,
     integrity:{
       total:Number(integritySummary?.rows[0]?.total||0),

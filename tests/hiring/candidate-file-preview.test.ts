@@ -17,7 +17,7 @@ test("candidate previews stay same-origin without weakening the site CSP", async
   assert.match(files, /\/api\/admin\/hiring\/files\/\$\{encodeURIComponent\(file\.id\)\}\/preview/);
   assert.doesNotMatch(files, /getSignedPreviewUrl/);
   assert.doesNotMatch(files, /preview_requested/);
-  assert.match(previewRoute, /getAdminSessionFromRequest/);
+  assert.match(previewRoute, /getHiringAdminSessionFromRequest/);
   assert.match(previewRoute, /assertHiringPermission/);
   assert.match(previewRoute, /getCandidateFileInlinePreview/);
   assert.match(previewRoute, /private, no-store, max-age=0/);
