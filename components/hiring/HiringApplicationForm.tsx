@@ -555,9 +555,9 @@ export function HiringApplicationForm({
                 label="Writing sample"
                 helperText="Optional at this stage. Do not upload confidential client work."
               />
-            ) : (
-              {salesVideoPolicy ? <VideoIntroductionField policy={salesVideoPolicy} /> : null}
-            )}
+            ) : salesVideoPolicy ? (
+              <VideoIntroductionField policy={salesVideoPolicy} />
+            ) : null}
           </div>
         </FormSection>
       </div>
