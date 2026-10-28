@@ -1,6 +1,10 @@
 import { dbQuery, isDatabaseConfigured } from "@/lib/db";
 import { hashRepresentativeMobile } from "@/lib/trust/representative-hash";
 import {
+  isRepresentativeSyncFresh,
+  readRepresentativeSyncMaxAgeHours
+} from "@/lib/trust/representative-sync-freshness";
+import {
   RepresentativeDirectoryUnavailableError,
   toPublicRepresentative,
   UnavailableRepresentativeDirectoryProvider,
@@ -20,6 +24,44 @@ function hashMobile(normalizedMobile: string) {
   return hashRepresentativeMobile(normalizedMobile, secret);
 }
 
+type RepresentativeSyncStateRow = {
+  last_attempted_at: Date | string | null;
+  last_successful_at: Date | string | null;
+  safe_failure_reason: string | null;
+};
+
+function representativeDirectorySource() {
+  const legacyMode = process.env.REPRESENTATIVE_DIRECTORY_MODE;
+  return (
+    process.env.REPRESENTATIVE_DIRECTORY_SOURCE ||
+    (legacyMode === "database" ? "excel" : legacyMode) ||
+    "unavailable"
+  );
+}
+
+async function assertLtsDirectoryFresh() {
+  const result = await dbQuery<RepresentativeSyncStateRow>(
+    `
+      select last_attempted_at, last_successful_at, safe_failure_reason
+      from representative_sync_state
+      where source_system = 'lts'
+      limit 1
+    `
+  );
+  const state = result.rows[0];
+  const fresh = isRepresentativeSyncFresh(
+    state
+      ? {
+          lastAttemptedAt: state.last_attempted_at,
+          lastSuccessfulAt: state.last_successful_at,
+          safeFailureReason: state.safe_failure_reason
+        }
+      : undefined,
+    { maxAgeHours: readRepresentativeSyncMaxAgeHours() }
+  );
+  if (!fresh) throw new RepresentativeDirectoryUnavailableError();
+}
+
 export class DatabaseRepresentativeDirectoryProvider
   implements RepresentativeDirectoryProvider
 {
@@ -29,6 +71,10 @@ export class DatabaseRepresentativeDirectoryProvider
     }
 
     try {
+      if (representativeDirectorySource() === "lts") {
+        await assertLtsDirectoryFresh();
+      }
+
       const result = await dbQuery<DirectoryRecord>(
         `
           select representative.full_name,
@@ -68,11 +114,7 @@ export class DatabaseRepresentativeDirectoryProvider
 }
 
 export function getRepresentativeDirectoryProvider() {
-  const legacyMode = process.env.REPRESENTATIVE_DIRECTORY_MODE;
-  const source =
-    process.env.REPRESENTATIVE_DIRECTORY_SOURCE ||
-    (legacyMode === "database" ? "excel" : legacyMode) ||
-    "unavailable";
+  const source = representativeDirectorySource();
 
   if (source === "lts" || source === "excel" || source === "database") {
     return new DatabaseRepresentativeDirectoryProvider();
