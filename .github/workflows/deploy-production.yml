@@ -75,3 +75,90 @@ jobs:
           tar -xzf "$archive" -C "$source_dir"
           SOURCE_DIR="$source_dir" bash "$source_dir/scripts/deploy-production.sh"
           REMOTE
+
+  rollback-previous:
+    if: inputs.confirmation == 'ROLLBACK_PREVIOUS_WRITEX_CO_IN'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure pinned SSH host
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.LIGHTSAIL_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Restore immediately preceding verified release
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          ssh "${USER}@${HOST}" "RUN_ID='${GITHUB_RUN_ID}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          app_root="/var/www/writex-co-in"
+          release_root="${app_root}/releases"
+          current_link="${app_root}/current"
+          env_file="${app_root}/shared/.env.production"
+          current="$(readlink -f "$current_link")"
+
+          if [[ "$current" != "${release_root}/"* || ! -d "$current" ]]; then
+            echo "Current WriteX release is unavailable or outside its isolated app root." >&2
+            exit 1
+          fi
+
+          target="$(
+            find "$release_root" -mindepth 1 -maxdepth 1 -type d ! -path "$current" -printf '%T@ %p\n' \
+              | sort -rn \
+              | head -n 1 \
+              | cut -d' ' -f2-
+          )"
+
+          if [[ -z "$target" || "$target" != "${release_root}/"* || ! -f "$target/ecosystem.config.cjs" ]]; then
+            echo "The immediately preceding WriteX release is unavailable." >&2
+            exit 1
+          fi
+
+          if ! grep -Rqs --exclude-dir=.next --exclude-dir=node_modules '__employee_login' "$target"; then
+            echo "The preceding release does not contain the established LTS login handoff; refusing rollback." >&2
+            exit 1
+          fi
+
+          receipt_dir="${app_root}/backups/rollbacks/$(date -u +%Y%m%dT%H%M%SZ)-${RUN_ID}"
+          install -d -m 750 "$receipt_dir"
+          printf '%s\n' "$current" > "$receipt_dir/from-release.txt"
+          printf '%s\n' "$target" > "$receipt_dir/to-release.txt"
+          pm2 describe writex-co-in > "$receipt_dir/pm2-before.txt"
+
+          restore_current() {
+            local exit_code=$?
+            restore_link="${app_root}/.current-restore-${RUN_ID}"
+            ln -sfn "$current" "$restore_link"
+            mv -Tf "$restore_link" "$current_link"
+            set -a
+            source "$env_file"
+            set +a
+            pm2 startOrReload "$current_link/ecosystem.config.cjs" --only writex-co-in --update-env || true
+            exit "$exit_code"
+          }
+          trap restore_current ERR
+
+          next_link="${app_root}/.current-rollback-${RUN_ID}"
+          ln -sfn "$target" "$next_link"
+          mv -Tf "$next_link" "$current_link"
+
+          set -a
+          source "$env_file"
+          set +a
+          pm2 startOrReload "$current_link/ecosystem.config.cjs" --only writex-co-in --update-env
+          curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://127.0.0.1:3002/api/health
+          test "$(readlink -f "$current_link")" = "$target"
+
+          trap - ERR
+          pm2 describe writex-co-in > "$receipt_dir/pm2-after.txt"
+          printf 'ROLLBACK_FROM=%s\nROLLBACK_TO=%s\nRECEIPT=%s\n' "$current" "$target" "$receipt_dir"
+          REMOTE
