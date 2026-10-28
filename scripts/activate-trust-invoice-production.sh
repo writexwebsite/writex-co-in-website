@@ -66,14 +66,25 @@ process.exit(result.status ?? 1);
 NODE
 }
 
+wait_for_http() {
+  local url="$1" attempt
+  for attempt in $(seq 1 60); do
+    if curl --silent --fail --max-time 10 "${url}" >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  printf 'WEBSITE_READINESS_TIMEOUT url=%s\n' "${url}" >&2
+  return 1
+}
+
 rollback() {
   local status=$?
   trap - ERR
   set +e
   sudo -u writexdeploy ln -sfn "${OLD_RELEASE}" "${CURRENT_LINK}"
   reload_with_saved_env
-  curl --silent --show-error --fail --max-time 15 \
-    http://127.0.0.1:3002/api/health >/dev/null
+  wait_for_http http://127.0.0.1:3002/api/health
   rm -f "${ROLLBACK_ENV}"
   printf 'WEBSITE_ACTIVATION=ROLLED_BACK\nOLD_RELEASE=%s\n' "${OLD_RELEASE}"
   exit "${status}"
@@ -83,10 +94,8 @@ trap rollback ERR
 sudo -u writexdeploy ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}"
 reload_with_env_file "${NEW_RELEASE}"
 
-curl --silent --show-error --fail --max-time 15 \
-  http://127.0.0.1:3002/api/health >/dev/null
-curl --silent --show-error --fail --max-time 20 \
-  http://127.0.0.1:3002/trust-centre >/dev/null
+wait_for_http http://127.0.0.1:3002/api/health
+wait_for_http http://127.0.0.1:3002/trust-centre
 
 invoice_status="$(curl --silent --show-error --max-time 20 \
   -o /tmp/writex-invoice-production-probe.json \
