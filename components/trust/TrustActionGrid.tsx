@@ -8,52 +8,55 @@ import {
   ReceiptText
 } from "lucide-react";
 
-const actions = [
-  {
-    title: "Verify Representative",
-    description: "Check an official WriteX representative by mobile number.",
-    href: "#verify-representative",
-    icon: BadgeCheck,
-    status: "Live"
-  },
-  {
-    title: "Verify Invoice",
-    description: "Confirm an invoice against the official billing system.",
-    href: "#verify-invoice",
-    icon: ReceiptText,
-    status: "Connecting"
-  },
-  {
-    title: "Check Payment Status",
-    description: "Review the last verified status recorded for an invoice.",
-    href: "#check-payment-status",
-    icon: CircleDollarSign,
-    status: "Connecting"
-  },
-  {
-    title: "Verify Enquiry",
-    description: "Confirm whether an enquiry reference is recognised.",
-    href: "#verify-enquiry",
-    icon: FileCheck2,
-    status: "Connecting"
-  },
-  {
-    title: "Report Suspicious Activity",
-    description: "Send suspicious details and private evidence to WriteX.",
-    href: "/trust-centre/report",
-    icon: MessageSquareWarning,
-    status: "Secure report"
-  },
-  {
-    title: "Official Communication Channels",
-    description: "Use only the website and email addresses published by WriteX.",
-    href: "#official-channels",
-    icon: Building2,
-    status: "Published"
-  }
-];
+function trustActions(invoiceLive: boolean) {
+  return [
+    {
+      title: "Verify Representative",
+      description: "Check an official WriteX representative by mobile number.",
+      href: "#verify-representative",
+      icon: BadgeCheck,
+      status: "Live"
+    },
+    {
+      title: "Verify Invoice",
+      description: "Confirm an invoice against the official billing system.",
+      href: "#verify-invoice",
+      icon: ReceiptText,
+      status: invoiceLive ? "Live" : "Connecting"
+    },
+    {
+      title: "Check Payment Status",
+      description: "Review the last verified status recorded for an invoice.",
+      href: "#check-payment-status",
+      icon: CircleDollarSign,
+      status: "Connecting"
+    },
+    {
+      title: "Verify Enquiry",
+      description: "Confirm whether an enquiry reference is recognised.",
+      href: "#verify-enquiry",
+      icon: FileCheck2,
+      status: "Connecting"
+    },
+    {
+      title: "Report Suspicious Activity",
+      description: "Send suspicious details and private evidence to WriteX.",
+      href: "/trust-centre/report",
+      icon: MessageSquareWarning,
+      status: "Secure report"
+    },
+    {
+      title: "Official Communication Channels",
+      description: "Use only the website and email addresses published by WriteX.",
+      href: "#official-channels",
+      icon: Building2,
+      status: "Published"
+    }
+  ];
+}
 
-export function TrustActionGrid() {
+export function TrustActionGrid({ invoiceLive }: { invoiceLive: boolean }) {
+  const actions = trustActions(invoiceLive);
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {actions.map((action) => {

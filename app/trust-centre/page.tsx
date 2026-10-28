@@ -18,6 +18,9 @@ import { TrustSystemVerificationForms } from "@/components/trust/TrustSystemVeri
 import { SpectrumBackground } from "@/components/visual/SpectrumBackground";
 import { breadcrumbSchema } from "@/lib/schema";
 import { absoluteUrl } from "@/lib/site";
+import { getTrustProviderStatus } from "@/lib/trust/providers";
+
+export const dynamic = "force-dynamic";
 
 const pageTitle =
   "WriteX Trust Centre™ | Verify Representatives, Invoices & Payments";
@@ -83,6 +86,8 @@ const trustProtocol = [
 ];
 
 export default function TrustCentrePage() {
+  const providerStatus = getTrustProviderStatus();
+  const invoiceLive = providerStatus.invoice === "live";
   return (
     <>
       <JsonLd
@@ -123,9 +128,9 @@ export default function TrustCentrePage() {
           <SectionHeader
             eyebrow="Trust Hub quick actions"
             title="Choose what you need to verify"
-            description="Use one focused check at a time. Services that are still being connected are labelled clearly and never return a fabricated result."
+            description="Use one focused check at a time. Live checks use official WriteX records; services still being connected are labelled clearly."
           />
-          <TrustActionGrid />
+          <TrustActionGrid invoiceLive={invoiceLive} />
         </section>
       </SpectrumBackground>
 
@@ -158,9 +163,9 @@ export default function TrustCentrePage() {
           <SectionHeader
             eyebrow="Official record checks"
             title="Invoice, payment, and enquiry verification"
-            description="The public interfaces are ready, but they remain unavailable until their approved live LTS endpoints and credentials are connected."
+            description="Invoice verification checks the official LTS billing record. Payment-only and enquiry checks remain unavailable until their approved live endpoints are connected."
           />
-          <TrustSystemVerificationForms />
+          <TrustSystemVerificationForms invoiceLive={invoiceLive} />
         </section>
       </SpectrumBackground>
 

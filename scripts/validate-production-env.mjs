@@ -147,11 +147,51 @@ for (const name of [
 ]) {
   const value = process.env[name];
   const allowed =
-    name === "TRUST_REPRESENTATIVE_PROVIDER"
+    name === "TRUST_REPRESENTATIVE_PROVIDER" ||
+    name === "TRUST_INVOICE_PROVIDER"
       ? ["lts", "live", "unavailable"]
       : ["live", "unavailable"];
   if (value && !allowed.includes(value)) {
     errors.push(`${name} must be one of: ${allowed.join(", ")}.`);
+  }
+}
+
+if (["live", "lts"].includes(process.env.TRUST_INVOICE_PROVIDER || "")) {
+  const invoiceRequirements = [
+    "LTS_INVOICE_VERIFICATION_URL",
+    "LTS_INVOICE_VERIFICATION_SHARED_SECRET",
+    "LTS_INVOICE_VERIFICATION_ISSUER",
+    "LTS_INVOICE_VERIFICATION_SUBJECT",
+    "LTS_INVOICE_VERIFICATION_AUDIENCE"
+  ];
+  for (const name of invoiceRequirements) {
+    if (!process.env[name]) {
+      errors.push(`${name} is required when TRUST_INVOICE_PROVIDER is live.`);
+    }
+  }
+  if (
+    process.env.LTS_INVOICE_VERIFICATION_SHARED_SECRET &&
+    process.env.LTS_INVOICE_VERIFICATION_SHARED_SECRET.length < 32
+  ) {
+    errors.push("LTS_INVOICE_VERIFICATION_SHARED_SECRET must be at least 32 characters.");
+  }
+  const lifetime = Number(
+    process.env.LTS_INVOICE_VERIFICATION_TOKEN_LIFETIME_SECONDS || 120
+  );
+  if (!Number.isSafeInteger(lifetime) || lifetime < 1 || lifetime > 300) {
+    errors.push(
+      "LTS_INVOICE_VERIFICATION_TOKEN_LIFETIME_SECONDS must be between 1 and 300."
+    );
+  }
+  try {
+    if (
+      new URL(process.env.LTS_INVOICE_VERIFICATION_URL || "").protocol !==
+      "https:"
+    ) {
+      errors.push("LTS_INVOICE_VERIFICATION_URL must use HTTPS.");
+    }
+  } catch {
+    errors.push("LTS_INVOICE_VERIFICATION_URL must be a valid HTTPS URL.");
   }
 }
 

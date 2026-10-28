@@ -77,6 +77,21 @@ test("unavailable record providers cannot return mock success", async () => {
   assert.equal(source.includes("mock"), false);
 });
 
+test("invoice verification stays server-side and renders only an approved live result", async () => {
+  const [provider, route, form] = await Promise.all([
+    readFile("lib/trust/lts-invoice-verification.ts", "utf8"),
+    readFile("app/api/trust/verify-invoice/route.ts", "utf8"),
+    readFile("components/trust/TrustSystemVerificationForms.tsx", "utf8")
+  ]);
+  assert.match(provider, /createHmac\("sha256"/);
+  assert.match(provider, /redirect: "error"/);
+  assert.match(route, /recordSuccessfulVerification/);
+  assert.match(route, /public_invoice_verified/);
+  assert.match(form, /Verified WriteX invoice/);
+  assert.match(form, /verificationId/);
+  assert.equal(form.includes("LTS_INVOICE_VERIFICATION_SHARED_SECRET"), false);
+});
+
 test("Trust Centre migration preserves private evidence and audit records", async () => {
   const migration = await readFile(
     "database/migrations/20260723_trust_centre_hub.sql",

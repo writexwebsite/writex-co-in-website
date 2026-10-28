@@ -3,7 +3,7 @@ import { AdminMetricCard } from "@/components/admin/AdminPrimitives";
 type Summary = {
   providers: {
     representative: "live" | "unavailable";
-    invoice: "unavailable";
+    invoice: "live" | "unavailable";
     payment: "unavailable";
     enquiry: "unavailable";
   };
@@ -50,11 +50,15 @@ export function TrustCentreOperationsSummary({
       />
       <AdminMetricCard
         label="External record checks"
-        value="Awaiting APIs"
+        value={summary.providers.invoice === "live" ? "Invoice live" : "Awaiting APIs"}
         href="/admin/invoice-verification"
         actionLabel="Review dependencies"
-        priority="action"
-        caption="Invoice, payment and enquiry providers remain truthfully unavailable."
+        priority={summary.providers.invoice === "live" ? "normal" : "action"}
+        caption={
+          summary.providers.invoice === "live"
+            ? "LTS-backed invoice verification is live; payment and enquiry checks remain unavailable."
+            : "Invoice, payment and enquiry providers remain truthfully unavailable."
+        }
       />
     </div>
   );

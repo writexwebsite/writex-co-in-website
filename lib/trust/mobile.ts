@@ -50,6 +50,23 @@ export function normalizeIndianMobile(value: string) {
   return `+91${nationalNumber}`;
 }
 
+export function normalizeVerificationMobile(value: string) {
+  const input = value.trim();
+  if (
+    !input ||
+    !allowedMobileCharacters.test(input) ||
+    !hasBalancedParentheses(input)
+  ) {
+    return null;
+  }
+  const plusCount = input.match(/\+/g)?.length ?? 0;
+  if (plusCount > 1 || (plusCount === 1 && !input.startsWith("+"))) return null;
+  let digits = input.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+}
+
 export function mobileLastFour(normalizedMobile: string) {
   return normalizedMobile.slice(-4);
 }

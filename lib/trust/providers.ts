@@ -5,6 +5,11 @@ import {
   RepresentativeDirectoryUnavailableError
 } from "@/lib/trust/representative-directory";
 import type { PublicRepresentative } from "@/lib/trust/representative-public";
+import {
+  fetchLtsInvoiceVerification,
+  LtsInvoiceVerificationUnavailableError,
+  readLtsInvoiceVerificationConfig
+} from "@/lib/trust/lts-invoice-verification";
 
 export type TrustProviderMode = "live" | "unavailable";
 
@@ -15,6 +20,7 @@ export type RepresentativeVerificationInput = {
 export type InvoiceVerificationInput = {
   invoiceNumber: string;
   normalizedMobile: string;
+  correlationId?: string;
 };
 
 export type EnquiryVerificationInput = {
@@ -24,12 +30,14 @@ export type EnquiryVerificationInput = {
 
 export type InvoiceVerificationResult = {
   verified: boolean;
+  invoiceNumber?: string;
   invoiceDate?: string;
   currency?: string;
   totalAmount?: number;
   paymentStatus?: string;
   invoiceState?: "Active" | "Cancelled" | "Superseded";
   dataSource?: string;
+  generatedAt?: string;
 };
 
 export type PaymentStatusResult = {
@@ -65,6 +73,7 @@ export interface RepresentativeVerificationProvider {
 
 export interface InvoiceVerificationProvider {
   readonly mode: TrustProviderMode;
+  readonly dataSource: string;
   verify(input: InvoiceVerificationInput): Promise<InvoiceVerificationResult>;
 }
 
@@ -131,12 +140,33 @@ class UnavailableInvoiceVerificationProvider
   implements InvoiceVerificationProvider
 {
   readonly mode = "unavailable" as const;
+  readonly dataSource = "unavailable";
 
   async verify(
     input: InvoiceVerificationInput
   ): Promise<InvoiceVerificationResult> {
     void input;
     throw new TrustProviderUnavailableError("invoice");
+  }
+}
+
+class LiveInvoiceVerificationProvider implements InvoiceVerificationProvider {
+  readonly mode = "live" as const;
+  readonly dataSource = "lts";
+
+  async verify(
+    input: InvoiceVerificationInput
+  ): Promise<InvoiceVerificationResult> {
+    const config = readLtsInvoiceVerificationConfig(process.env);
+    if (!config) throw new TrustProviderUnavailableError("invoice");
+    try {
+      return await fetchLtsInvoiceVerification({ config, ...input });
+    } catch (error) {
+      if (error instanceof LtsInvoiceVerificationUnavailableError) {
+        throw new TrustProviderUnavailableError("invoice");
+      }
+      throw error;
+    }
   }
 }
 
@@ -183,13 +213,12 @@ export function getRepresentativeVerificationProvider(): RepresentativeVerificat
     : new UnavailableRepresentativeVerificationProvider();
 }
 
-/*
- * These factories are the production adapter boundaries. Until an approved
- * LTS contract is supplied, "live" is intentionally not treated as success.
- */
+/* These factories keep each public check behind its own production adapter. */
 export function getInvoiceVerificationProvider(): InvoiceVerificationProvider {
-  void providerMode(process.env.TRUST_INVOICE_PROVIDER, ["live", "lts"]);
-  return new UnavailableInvoiceVerificationProvider();
+  return providerMode(process.env.TRUST_INVOICE_PROVIDER, ["live", "lts"]) ===
+      "live" && readLtsInvoiceVerificationConfig(process.env)
+    ? new LiveInvoiceVerificationProvider()
+    : new UnavailableInvoiceVerificationProvider();
 }
 
 export function getPaymentStatusProvider(): PaymentStatusProvider {
@@ -212,7 +241,11 @@ export function getTrustProviderStatus() {
       ) === "live"
         ? "live"
         : "unavailable",
-    invoice: "unavailable",
+    invoice:
+      providerMode(process.env.TRUST_INVOICE_PROVIDER, ["live", "lts"]) ===
+        "live" && readLtsInvoiceVerificationConfig(process.env)
+        ? "live"
+        : "unavailable",
     payment: "unavailable",
     enquiry: "unavailable"
   } as const;

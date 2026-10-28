@@ -3,6 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
   ChevronDown,
+  CheckCircle2,
   CircleDollarSign,
   FileCheck2,
   ReceiptText
@@ -13,6 +14,19 @@ type RequestState =
   | { status: "loading" }
   | { status: "unavailable"; title: string; message: string }
   | { status: "not-verified"; message: string }
+  | {
+      status: "verified";
+      result: {
+        invoiceNumber: string;
+        invoiceDate: string;
+        currency: string;
+        totalAmount: number;
+        paymentStatus: string;
+        invoiceState: string;
+        verificationId: string;
+        verifiedAt: string;
+      };
+    }
   | { status: "error"; message: string };
 
 type VerificationFormProps = {
@@ -22,6 +36,7 @@ type VerificationFormProps = {
   endpoint: string;
   buttonLabel: string;
   icon: ReactNode;
+  availability: "live" | "connecting";
   fields: Array<{
     name: string;
     label: string;
@@ -38,6 +53,7 @@ function VerificationForm({
   endpoint,
   buttonLabel,
   icon,
+  availability,
   fields
 }: VerificationFormProps) {
   const [state, setState] = useState<RequestState>({ status: "idle" });
@@ -69,6 +85,20 @@ function VerificationForm({
         setState({
           status: "not-verified",
           message: "No verified record matched those details."
+        });
+      } else if (response.ok && body?.verified === true) {
+        setState({
+          status: "verified",
+          result: {
+            invoiceNumber: body.invoiceNumber,
+            invoiceDate: body.invoiceDate,
+            currency: body.currency,
+            totalAmount: body.totalAmount,
+            paymentStatus: body.paymentStatus,
+            invoiceState: body.invoiceState,
+            verificationId: body.verificationId,
+            verifiedAt: body.verifiedAt
+          }
         });
       } else if (!response.ok) {
         setState({
@@ -117,8 +147,16 @@ function VerificationForm({
         />
       </summary>
       <div className="border-t border-wxBorder px-5 py-5 sm:px-6">
-        <div className="rounded-md border border-wxOrange500/25 bg-wxSurfaceSoft px-4 py-3 text-sm leading-6 text-wxIndigo700">
-          Verification service is currently being connected.
+        <div
+          className={`rounded-md border px-4 py-3 text-sm leading-6 text-wxIndigo700 ${
+            availability === "live"
+              ? "border-wxGreen500/25 bg-wxGreen500/5"
+              : "border-wxOrange500/25 bg-wxSurfaceSoft"
+          }`}
+        >
+          {availability === "live"
+            ? "Live check against the official WriteX billing system."
+            : "Verification service is currently being connected."}
         </div>
         <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
           {fields.map((field) => (
@@ -152,7 +190,42 @@ function VerificationForm({
           aria-busy={state.status === "loading"}
           className="mt-4 min-h-6"
         >
-          {state.status === "unavailable" ? (
+          {state.status === "verified" ? (
+            <div className="rounded-md border border-wxGreen500/30 bg-wxGreen500/5 p-4 text-wxIndigo900">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="h-5 w-5 text-wxGreen500" aria-hidden />
+                Verified WriteX invoice
+              </div>
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-wxIndigo500">Invoice number</dt>
+                  <dd className="font-semibold">{state.result.invoiceNumber}</dd>
+                </div>
+                <div>
+                  <dt className="text-wxIndigo500">Invoice date</dt>
+                  <dd className="font-semibold">{state.result.invoiceDate}</dd>
+                </div>
+                <div>
+                  <dt className="text-wxIndigo500">Official payable amount</dt>
+                  <dd className="font-semibold">
+                    {new Intl.NumberFormat("en-IN", {
+                      style: "currency",
+                      currency: state.result.currency
+                    }).format(state.result.totalAmount)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-wxIndigo500">Recorded status</dt>
+                  <dd className="font-semibold">
+                    {state.result.invoiceState} · {state.result.paymentStatus}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 border-t border-wxGreen500/20 pt-3 text-xs leading-5 text-wxIndigo500">
+                Verification reference: {state.result.verificationId}
+              </p>
+            </div>
+          ) : state.status === "unavailable" ? (
             <div className="rounded-md border border-wxOrange500/25 bg-white p-4">
               <p className="font-semibold text-wxIndigo900">{state.title}</p>
               <p className="mt-1 text-sm leading-6 text-wxIndigo500">
@@ -171,7 +244,11 @@ function VerificationForm({
   );
 }
 
-export function TrustSystemVerificationForms() {
+export function TrustSystemVerificationForms({
+  invoiceLive
+}: {
+  invoiceLive: boolean;
+}) {
   return (
     <div className="grid gap-4">
       <VerificationForm
@@ -181,6 +258,7 @@ export function TrustSystemVerificationForms() {
         endpoint="/api/trust/verify-invoice"
         buttonLabel="Verify Invoice"
         icon={<ReceiptText className="h-5 w-5" aria-hidden />}
+        availability={invoiceLive ? "live" : "connecting"}
         fields={[
           {
             name: "invoiceNumber",
@@ -202,6 +280,7 @@ export function TrustSystemVerificationForms() {
         endpoint="/api/trust/check-payment-status"
         buttonLabel="Check Payment Status"
         icon={<CircleDollarSign className="h-5 w-5" aria-hidden />}
+        availability="connecting"
         fields={[
           {
             name: "invoiceNumber",
@@ -223,6 +302,7 @@ export function TrustSystemVerificationForms() {
         endpoint="/api/trust/verify-enquiry"
         buttonLabel="Verify Enquiry"
         icon={<FileCheck2 className="h-5 w-5" aria-hidden />}
+        availability="connecting"
         fields={[
           {
             name: "enquiryReference",
