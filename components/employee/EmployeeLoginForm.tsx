@@ -6,16 +6,23 @@ import { useRouter } from "next/navigation";
 import { AuthInput, SecretInput } from "@/components/auth/AuthFields";
 import { DemoEmployeeLogin } from "@/components/demo/DemoEmployeeLogin";
 import { navigateWithAxoTransition } from "@/lib/auth/axoLoginTransition";
+import { LTS_EMPLOYEE_LOGIN_ACTION_URL } from "@/lib/auth/ltsEmployeeLogin";
 
 type Workspace = { key: string; label: string; defaultRoute: string; role?: string; description?: string };
 
 const GENERIC_LOGIN_ERROR = "Unable to sign in with those details. Please try again or contact WriteX IT Support.";
 const AUTH_SERVICE_UNAVAILABLE = "Employee sign-in is temporarily unavailable while the secure employee directory connection is being completed. Please contact WriteX IT Support.";
 
-export function EmployeeLoginForm() {
+export function EmployeeLoginForm({
+  ltsReady = false,
+  initialError = ""
+}: {
+  ltsReady?: boolean;
+  initialError?: string;
+}) {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -23,6 +30,11 @@ export function EmployeeLoginForm() {
   useEffect(() => { const frame = requestAnimationFrame(() => setIdentifier(localStorage.getItem("writexRememberedEmployeeIdentifier") || "")); return () => cancelAnimationFrame(frame); }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
+    if (ltsReady) {
+      setError("");
+      setLoading(true);
+      return;
+    }
     event.preventDefault();
     setError("");
     setLoading(true);
@@ -70,7 +82,7 @@ export function EmployeeLoginForm() {
   );
 
   return (
-    <form className="wx-auth-form" onSubmit={submit} aria-busy={loading}>
+    <form className="wx-auth-form" action={ltsReady ? LTS_EMPLOYEE_LOGIN_ACTION_URL : undefined} method={ltsReady ? "post" : undefined} onSubmit={submit} aria-busy={loading}>
       <div className="text-center"><h1 className="text-3xl font-semibold text-wxIndigo900 sm:text-[2.15rem]">Welcome Back</h1><p className="mx-auto mt-3 max-w-md text-base leading-7 text-wxIndigo500">Sign in to access your assigned WriteX workspace.</p></div>
       <div className="mt-7"><AuthInput id="auth-first-input" label="Employee ID, email, or username" icon={UserRound} name="identifier" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required aria-describedby={error ? "employee-login-error" : undefined} placeholder="Enter your employee ID or email" /></div>
       <div className="mt-5"><SecretInput label="Password" name="password" autoComplete="current-password" required minLength={8} aria-describedby={error ? "employee-login-error" : undefined} placeholder="Enter your password" /></div>
@@ -78,7 +90,7 @@ export function EmployeeLoginForm() {
       {forgot ? <p className="rounded-lg border border-wxBorder bg-wxSurfaceSoft p-3 text-sm text-wxIndigo700">Please contact WriteX IT Support or your authorised administrator to reset your password.</p> : null}
       {error ? <p id="employee-login-error" role="alert" aria-live="polite" className="mt-4 rounded-lg border border-deepCrimson/20 bg-deepCrimson/5 p-3 text-sm font-semibold text-deepCrimson">{error}</p> : null}
       <button disabled={loading} className="wx-gradient-action mt-6 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-lg px-5 font-semibold text-white disabled:opacity-60">{loading ? "Preparing Workspace..." : "Sign In"}{loading ? null : <ArrowRight className="h-5 w-5" />}</button>
-      <DemoEmployeeLogin />
+      {ltsReady ? null : <DemoEmployeeLogin />}
       <p className="mt-6 flex items-center justify-center gap-2 text-sm text-wxIndigo500"><Headphones className="h-5 w-5" />Need help? <a href="mailto:business@writex.co.in" className="font-semibold text-wxViolet700">Contact IT Support</a></p>
     </form>
   );

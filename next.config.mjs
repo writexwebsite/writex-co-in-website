@@ -80,7 +80,7 @@ const nextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'`
+            value: `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://lts.writex.co.in; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'`
           },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }
         ]
