@@ -45,11 +45,9 @@ load_runtime_env() {
 
 restart_writex() {
   load_runtime_env
-  if [[ -n "$(pm2 pid writex-co-in 2>/dev/null || true)" ]]; then
-    pm2 restart writex-co-in --update-env
-  else
-    pm2 start "${CURRENT_LINK}/ecosystem.config.cjs" --only writex-co-in --update-env
-  fi
+  pm2 startOrReload "${CURRENT_LINK}/ecosystem.config.cjs" \
+    --only writex-co-in \
+    --update-env
 }
 
 mkdir -p "${RELEASE_DIR}"
