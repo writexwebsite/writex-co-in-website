@@ -53,13 +53,13 @@ jobs:
             --exclude=artifacts \
             --exclude=handoff \
             --exclude=handoff-work \
-            -czf release-source.tgz .
+            -czf "$RUNNER_TEMP/release-source.tgz" .
 
       - name: Upload release source
         env:
           HOST: ${{ secrets.LIGHTSAIL_HOST }}
           USER: ${{ secrets.LIGHTSAIL_USER }}
-        run: scp release-source.tgz "${USER}@${HOST}:/tmp/writex-co-in-${GITHUB_RUN_ID}.tgz"
+        run: scp "$RUNNER_TEMP/release-source.tgz" "${USER}@${HOST}:/tmp/writex-co-in-${GITHUB_RUN_ID}.tgz"
 
       - name: Run isolated deployment
         env:
