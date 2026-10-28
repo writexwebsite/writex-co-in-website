@@ -162,3 +162,40 @@ jobs:
           pm2 describe writex-co-in > "$receipt_dir/pm2-after.txt"
           printf 'ROLLBACK_FROM=%s\nROLLBACK_TO=%s\nRECEIPT=%s\n' "$current" "$target" "$receipt_dir"
           REMOTE
+
+  export-recovery-key:
+    if: inputs.confirmation == 'EXPORT_LIGHTSAIL_RECOVERY_KEY'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ephemeral recovery public key
+        uses: actions/checkout@v4
+
+      - name: Encrypt pinned Lightsail key for one-use recovery
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$RUNNER_TEMP/lightsail-key.pem"
+          openssl rand -out "$RUNNER_TEMP/content-key.bin" 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in "$RUNNER_TEMP/lightsail-key.pem" \
+            -out "$RUNNER_TEMP/lightsail-key.enc" \
+            -pass file:"$RUNNER_TEMP/content-key.bin"
+          openssl pkeyutl -encrypt -pubin \
+            -inkey ops/recovery-ephemeral-public.pem \
+            -in "$RUNNER_TEMP/content-key.bin" \
+            -out "$RUNNER_TEMP/content-key.enc" \
+            -pkeyopt rsa_padding_mode:oaep \
+            -pkeyopt rsa_oaep_md:sha256
+          shred -u "$RUNNER_TEMP/lightsail-key.pem" "$RUNNER_TEMP/content-key.bin"
+
+      - name: Upload encrypted one-use package
+        uses: actions/upload-artifact@v4
+        with:
+          name: lightsail-recovery-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/lightsail-key.enc
+            ${{ runner.temp }}/content-key.enc
+          if-no-files-found: error
+          retention-days: 1
