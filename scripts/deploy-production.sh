@@ -120,7 +120,9 @@ trap - ERR
 mapfile -t old_releases < <(find "${RELEASES_DIR}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | tail -n "+$((KEEP_RELEASES + 1))" | cut -d' ' -f2-)
 for old_release in "${old_releases[@]:-}"; do
   if [[ -n "${old_release}" && "${old_release}" == "${RELEASES_DIR}/"* && "${old_release}" != "$(readlink -f "${CURRENT_LINK}")" ]]; then
-    rm -rf -- "${old_release}"
+    if ! rm -rf -- "${old_release}"; then
+      echo "Warning: retained old release because it could not be removed: ${old_release}" >&2
+    fi
   fi
 done
 
