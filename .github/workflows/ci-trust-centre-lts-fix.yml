@@ -35,6 +35,9 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Run signed LTS employee-login tests
+        run: pnpm exec tsx --test tests/axo/lts-employee-login.test.ts
+
       - name: Run Trust Centre tests
         run: pnpm run test:trust
 
