@@ -6,8 +6,11 @@ import {
   resolveLtsEmployeeLoginState
 } from "../../lib/auth/ltsEmployeeLogin";
 
-test("ordinary employee login remains on the website authentication path", () => {
-  assert.deepEqual(resolveLtsEmployeeLoginState({}), { ready: false, message: undefined });
+test("ordinary employee login establishes the signed LTS bootstrap", () => {
+  assert.deepEqual(resolveLtsEmployeeLoginState({}), {
+    ready: false,
+    recoveryUrl: "https://lts.writex.co.in/__employee_login_start"
+  });
 });
 
 test("LTS bootstrap marks the form ready for the exact protected LTS action", () => {
@@ -40,6 +43,6 @@ test("an LTS authentication failure keeps the renewed form ready and shows a saf
 test("unrecognised query values cannot create an external recovery redirect", () => {
   assert.deepEqual(resolveLtsEmployeeLoginState({ lts: "https://example.test" }), {
     ready: false,
-    message: undefined
+    recoveryUrl: "https://lts.writex.co.in/__employee_login_start"
   });
 });

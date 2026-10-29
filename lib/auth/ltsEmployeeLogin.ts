@@ -55,11 +55,14 @@ export function resolveLtsEmployeeLoginState(searchParams: {
   const rawReason = first(searchParams.lts);
   const reason = rawReason && ltsLoginReasons.has(rawReason) ? rawReason : undefined;
 
-  if (reason && !ready) {
+  // Every public employee-login entry must establish the short-lived LTS
+  // browser bootstrap before the form can submit credentials. The website's
+  // separate directory adapter is not the authority for legacy LTS accounts.
+  if (!ready) {
     const recovery = new URL(LTS_EMPLOYEE_LOGIN_START_URL);
-    recovery.searchParams.set("reason", reason);
+    if (reason) recovery.searchParams.set("reason", reason);
     return { ready: false, recoveryUrl: recovery.toString() };
   }
 
-  return { ready, message: ready ? messageFor(reason) : undefined };
+  return { ready: true, message: messageFor(reason) };
 }
