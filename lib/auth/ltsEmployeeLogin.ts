@@ -4,6 +4,15 @@ export const LTS_EMPLOYEE_LOGIN_START_URL =
 export const LTS_EMPLOYEE_LOGIN_ACTION_URL =
   "https://lts.writex.co.in/__employee_login";
 
+// The legacy LTS authority accepts any non-empty existing password. Keep the
+// branded handoff compatible with those credentials; password policy belongs
+// to account creation/reset, not to sign-in.
+export const LTS_EMPLOYEE_PASSWORD_MIN_LENGTH = 1;
+
+export function employeePasswordMinLength(ltsReady: boolean) {
+  return ltsReady ? LTS_EMPLOYEE_PASSWORD_MIN_LENGTH : 8;
+}
+
 const ltsLoginReasons = new Set([
   "auth-failed",
   "bootstrap-required",

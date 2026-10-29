@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  employeePasswordMinLength,
   LTS_EMPLOYEE_LOGIN_ACTION_URL,
   resolveLtsEmployeeLoginState
 } from "../../lib/auth/ltsEmployeeLogin";
@@ -14,6 +15,11 @@ test("LTS bootstrap marks the form ready for the exact protected LTS action", ()
   assert.equal(state.ready, true);
   assert.equal(state.recoveryUrl, undefined);
   assert.equal(LTS_EMPLOYEE_LOGIN_ACTION_URL, "https://lts.writex.co.in/__employee_login");
+});
+
+test("LTS sign-in does not reject a valid legacy password by applying a new length policy", () => {
+  assert.equal(employeePasswordMinLength(true), 1);
+  assert.equal(employeePasswordMinLength(false), 8);
 });
 
 test("a consumed or missing LTS browser flow is renewed before credentials are submitted", () => {

@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { AuthInput, SecretInput } from "@/components/auth/AuthFields";
 import { DemoEmployeeLogin } from "@/components/demo/DemoEmployeeLogin";
 import { navigateWithAxoTransition } from "@/lib/auth/axoLoginTransition";
-import { LTS_EMPLOYEE_LOGIN_ACTION_URL } from "@/lib/auth/ltsEmployeeLogin";
+import {
+  employeePasswordMinLength,
+  LTS_EMPLOYEE_LOGIN_ACTION_URL
+} from "@/lib/auth/ltsEmployeeLogin";
 
 type Workspace = { key: string; label: string; defaultRoute: string; role?: string; description?: string };
 
@@ -85,7 +88,7 @@ export function EmployeeLoginForm({
     <form className="wx-auth-form" action={ltsReady ? LTS_EMPLOYEE_LOGIN_ACTION_URL : undefined} method={ltsReady ? "post" : undefined} onSubmit={submit} aria-busy={loading}>
       <div className="text-center"><h1 className="text-3xl font-semibold text-wxIndigo900 sm:text-[2.15rem]">Welcome Back</h1><p className="mx-auto mt-3 max-w-md text-base leading-7 text-wxIndigo500">Sign in to access your assigned WriteX workspace.</p></div>
       <div className="mt-7"><AuthInput id="auth-first-input" label="Employee ID, email, or username" icon={UserRound} name="identifier" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required aria-describedby={error ? "employee-login-error" : undefined} placeholder="Enter your employee ID or email" /></div>
-      <div className="mt-5"><SecretInput label="Password" name="password" autoComplete="current-password" required minLength={8} aria-describedby={error ? "employee-login-error" : undefined} placeholder="Enter your password" /></div>
+      <div className="mt-5"><SecretInput label="Password" name="password" autoComplete="current-password" required minLength={employeePasswordMinLength(ltsReady)} aria-describedby={error ? "employee-login-error" : undefined} placeholder="Enter your password" /></div>
       <div className="mt-4 flex items-center justify-between gap-3 text-sm"><label className="flex min-h-11 items-center gap-2 text-wxIndigo500"><input name="remember" type="checkbox" className="h-4 w-4 accent-wxViolet700" />Remember username</label><button type="button" onClick={() => setForgot(true)} className="min-h-11 font-semibold text-wxViolet700">Forgot Password?</button></div>
       {forgot ? <p className="rounded-lg border border-wxBorder bg-wxSurfaceSoft p-3 text-sm text-wxIndigo700">Please contact WriteX IT Support or your authorised administrator to reset your password.</p> : null}
       {error ? <p id="employee-login-error" role="alert" aria-live="polite" className="mt-4 rounded-lg border border-deepCrimson/20 bg-deepCrimson/5 p-3 text-sm font-semibold text-deepCrimson">{error}</p> : null}
